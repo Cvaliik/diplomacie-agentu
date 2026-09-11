@@ -9,3 +9,7 @@ desktop.ini
 # Runtime vystupy hry (odkomentuj, pokud je nechces verzovat)
 # history/
 # chronicle/
+
+# Python
+__pycache__/
+*.pyc
