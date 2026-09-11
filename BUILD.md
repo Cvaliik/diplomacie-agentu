@@ -44,7 +44,7 @@ Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER
 
 ## 4. validate.py
 
-Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 10; fáze se posunula o víc než jeden krok, nebo bez záznamu prahu v `minsky.phase_log`; hráč má víc akcí než limit; součet `pop` světa se změnil jinak než migrací; `turn` neroste o 1; chybí `applied_rules`; pohledy obsahují skrytá pole.
+Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 10; fáze se posunula o víc než jeden krok, nebo bez záznamu prahu v `minsky.phase_log`; hráč má víc akcí než limit; změna součtu `pop` světa není pokrytá záznamem v `applied_rules` od pravidla, které `pop` měnit smí (4.3 bída, 3.3 invaze a uprchlíci, 5 migrace); `turn` neroste o 1; chybí `applied_rules`; pohledy obsahují skrytá pole.
 
 ## 5. run_chronicle.py
 
@@ -73,7 +73,7 @@ Jedna statická stránka, žádný build, žádný backend. Načítá `history/*
 
 ## 8. test_run.py (před prvním ostrým tahem)
 
-Suchý běh 12 tahů se skriptovanými tahy bez volání modelů: A půjčuje N6 od tahu 8, B chrání N7, oba obchodují obilí, N6 exploruje. Musí projít: displacement v tahu 7, boom, euphoria, overtrading, distress, panic, crash, vznik Unie s aspoň 3 členy, index spočítán každý tah, validate bez chyb. Pokud Minsky neprojde všemi fázemi do tahu 12 (prahy z pravidel jsou odhad), zapiš do `docs/OPEN_QUESTIONS.md` konkrétní čísla a navrhni úpravu prahů, ale pravidla neměň.
+Suchý běh 45 tahů se skriptovanými tahy bez volání modelů: A půjčuje N6 od tahu 8, B chrání N7, oba obchodují obilí, N6 exploruje. Musí projít (kritéria beze změny, jen delší okno): displacement v tahu 7, boom, euphoria, overtrading, distress, panic, crash, vznik Unie s aspoň 3 členy, index spočítán každý tah, validate bez chyb. Pokud Minsky neprojde všemi fázemi do tahu 45 (prahy z pravidel jsou odhad), zapiš do `docs/OPEN_QUESTIONS.md` konkrétní čísla a navrhni úpravu prahů, ale pravidla neměň.
 
 Pak jeden ostrý tah ručně (`python run_turn.py --once`), Adam zkontroluje výstup, teprve pak zapnout routiny.
 

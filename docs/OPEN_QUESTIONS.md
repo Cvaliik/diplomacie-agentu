@@ -8,6 +8,16 @@ nejkonzervativnější interpretaci engine zatím používá, aby běh nebyl blo
 
 Stav ke dni: 11. 9. 2026, před prvním ostrým tahem.
 
+> **Vyřešeno rozhodnutím Adama z 11. 9. 2026.** Všechny výklady v částech A, B a C
+> jsou potvrzené a zapsané do `docs/pravidla.md` (verze v1.1) jako závazný text.
+> Část D je vyřešená změnami pravidel: D1 delším testovacím oknem (`BUILD.md` část 8,
+> 12 na 45 tahů), D2 snížením prahu `overtrading` na 40 %, D3 počítáním nesplácení
+> až od vstupu do `overtrading`, D4 stropem `min(1.5, W_real / W_0)` v indexu
+> a D5 novým pravidlem 4.1a o obchodu NPC mezi sebou.
+>
+> Části A až D zůstávají v souboru jako doklad, proč pravidla vypadají, jak vypadají.
+> Nově otevřené otázky z implementace v1.1 jsou v části C9 až C12, výsledky testů v části E.
+
 ## Co naopak sedí (ověřeno skriptem)
 
 - ID států: `npc.json` a `state.json` mají shodně N1 až N12, z toho 10 `normal` a 2 `fallen`.
@@ -34,7 +44,7 @@ smysl ani `influence` obou hráčů, ani návrat na `independent`.
 
 **Otázka:** Může být hráč v bídě, a pokud ano, co se stane po třech tazích? Padá mu vláda?
 
-**Zatímní interpretace:** hráč se do `n_bída` započítává (index by jinak nesouhlasil s dělitelem 14),
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** hráč se do `n_bída` započítává (index by jinak nesouhlasil s dělitelem 14),
 efekty bídy `pop −3` a `power −1` se na něj vztahují, ale pád vlády se u hráče neprovádí.
 Engine si `poverty_streak` a `coups` u hráčů drží ve stejně pojmenovaných polích, která
 do `state.json` doplní při prvním zápisu.
@@ -47,7 +57,7 @@ obě nastavená na 0, a není určeno, které je zdrojem pravdy.
 
 **Otázka:** Je `fund` jen zrcadlo `wealth`, nebo dvě oddělené kapsy?
 
-**Zatímní interpretace:** `wealth` je zdroj pravdy, `fund` se na konci každého tahu přepíše
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** `wealth` je zdroj pravdy, `fund` se na konci každého tahu přepíše
 na stejnou hodnotu. Akce `union_fund` čerpá z `wealth`.
 
 ### A3. Unie nemá `prod`, `need`, `pop`, `occupied`
@@ -59,7 +69,7 @@ protože ty zůstávají členům (vnitřní trh v 7.2). Pravidlo 8 přitom poč
 **Otázka:** Započítává se fond Unie do `W_real`? A je Unie "aktér" pro `max_share`,
 tedy může svou velikostí index srážet stejně jako velmoc?
 
-**Zatímní interpretace:** fond Unie se do `W_real` **nezapočítává** (prostředky pocházejí
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** fond Unie se do `W_real` **nezapočítává** (prostředky pocházejí
 z bohatství členů, které se počítá u nich, započtení by je zdvojilo) a Unie **není** aktér
 pro `max_share`. Obojí je volba ve prospěch vyššího indexu, tedy mírnější, a právě index
 rozhoduje verdikt "všichni vyhráli / všichni prohráli". Stojí za potvrzení.
@@ -69,7 +79,7 @@ rozhoduje verdikt "všichni vyhráli / všichni prohráli". Stojí za potvrzení
 Tabulka v části 2 uvádí `status` jako pole "každého státu", ale hodnoty
 (`independent`, `sphere_X`, `occupied_X`, `union`, `candidate`) dávají smysl jen u NPC.
 
-**Zatímní interpretace:** hráči status nemají, engine ho u nich nečte ani nezapisuje.
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** hráči status nemají, engine ho u nich nečte ani nezapisuje.
 
 ---
 
@@ -82,7 +92,7 @@ různá čtení téhož pole: přechod na `distress` při "prvním nesplácení"
 "druhém nesplácení" (globálně, napříč světem), a ve fázi `crash` se ptá, které NPC nesplácelo
 konkrétnímu věřiteli X ("má záznam v `defaults` vůči X").
 
-**Zatímní interpretace:** `defaults` je seznam záznamů `{"turn": N, "npc": "N6", "creditor": "A"}`,
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** `defaults` je seznam záznamů `{"turn": N, "npc": "N6", "creditor": "A"}`,
 jeden za každou dvojici dlužník a věřitel a tah. Počítadlo pro fázi bere počet **tahů**,
 ve kterých došlo aspoň k jednomu nesplácení, ne počet záznamů. Jinak by jediný tah,
 kdy nesplácejí tři NPC, přeskočil `distress` rovnou do `panic`.
@@ -92,7 +102,7 @@ kdy nesplácejí tři NPC, přeskočil `distress` rovnou do `panic`.
 Všechna pole jsou na startu prázdná a schéma není nikde popsané. Akce `cancel` přitom
 bere `deal_id`, takže obchody, pakty i sankce musí mít stabilní identifikátor.
 
-**Zatímní interpretace:** engine používá jednotný seznam `deals` se záznamy
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** engine používá jednotný seznam `deals` se záznamy
 `{"id": "d7", "type": "trade|protect|pressure", "owner": "A", "target": "N6", ...}`.
 Identifikátor je `d` plus pořadové číslo, nikdy se nerecykluje. Schéma je popsané
 v hlavičce `engine.py`.
@@ -101,7 +111,7 @@ v hlavičce `engine.py`.
 
 Část 3 popisuje tři tahy denně (7:00, 13:00, 20:00), ale `slot` je `null` a číselník chybí.
 
-**Zatímní interpretace:** `slot` je 1, 2, 3 pro ráno, poledne, večer. Den je `((turn - 1) // 3) + 1`,
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** `slot` je 1, 2, 3 pro ráno, poledne, večer. Den je `((turn - 1) // 3) + 1`,
 slot je `((turn - 1) % 3) + 1`. Sedí na zadání: tah 7 vychází na den 3 ráno (displacement)
 a den 30 na tahy 88 až 90.
 
@@ -120,7 +130,7 @@ přesně dva dárce za tah.
 
 **Otázka:** Jak se dárci vybírají? Sousedé? Nejchudší? Náhodně?
 
-**Zatímní interpretace:** dva dárci za tah, vybraní deterministicky z NPC bez oritu
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** dva dárci za tah, vybraní deterministicky z NPC bez oritu
 přes `random.Random(rng_seed + turn)`, s vyloučením padlých říší (7a jsou uzavřené)
 a států s `pop ≤ 0`. Součet `pop` světa tak zůstává zachovaný, což vyžaduje `validate.py`.
 
@@ -133,7 +143,7 @@ migrant nevrátí", tedy do fáze `crash`, kde pravidlo 5 říká "migrace zpět
 migrací". Jenže `pop` mění i bída (4.3: `pop −3/tah`) a dobytí (3.3: `pop −20 %`, uprchlíci
 jdou do sousedního NPC). Invariant, jak je napsaný, by spadl u prvního hladomoru.
 
-**Zatímní interpretace:** validace hlídá, že každá změna součtu `pop` je pokrytá záznamem
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** validace hlídá, že každá změna součtu `pop` je pokrytá záznamem
 v `applied_rules` od pravidla, které `pop` měnit smí (4.3 bída, 3.3 invaze a uprchlíci,
 5 migrace). Nevysvětlený rozdíl je chyba. Znění invariantu v `BUILD.md` by se mělo upřesnit.
 
@@ -142,7 +152,7 @@ v `applied_rules` od pravidla, které `pop` měnit smí (4.3 bída, 3.3 invaze a
 Parametry jsou `target`, `res`, `qty`, `price_per_unit`, ale není určeno, zda hráč nakupuje
 nebo prodává. Pravidlo říká jen "NPC přijme, pokud má přebytek/deficit".
 
-**Zatímní interpretace:** směr určuje bilance NPC u dané suroviny. Přebytek znamená, že NPC
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** směr určuje bilance NPC u dané suroviny. Přebytek znamená, že NPC
 prodává hráči, deficit, že od hráče nakupuje. Nulová bilance znamená odmítnutí.
 
 ### C4. Automatický `explore` NPC stojí jinak než hráčův
@@ -152,7 +162,7 @@ za `explore`", zatímco hráčova akce `explore` stojí 5 wealth za 15 % šanci 
 
 **Otázka:** Má levnější varianta NPC i nižší šanci, nebo jde o stejných 15 % za 2 wealth?
 
-**Zatímní interpretace:** stejných 15 %. Formulace "utrácí 2 wealth za `explore`" se čte
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** stejných 15 %. Formulace "utrácí 2 wealth za `explore`" se čte
 jako tatáž akce za jinou cenu.
 
 ### C5. Co přesně jsou "jednotky produkce" v metrice B
@@ -161,7 +171,7 @@ Pravidlo 8: `B_resource_share` je "(jednotky produkce B + okupovaných B + 0.5 �
 / světová produkce". Není určeno, zda jde o surové `prod`, nebo o efektivní produkci
 po započtení `tech` (4.1) a `pop` (10.2).
 
-**Zatímní interpretace:** efektivní produkce, tedy `prod × (1 + tech/20) × pop/100`.
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** efektivní produkce, tedy `prod × (1 + tech/20) × pop/100`.
 Metrika pak reaguje na migraci a technologii, což odpovídá smyslu pravidla 10.2
 ("migrace reálně přesouvá výrobu").
 
@@ -182,7 +192,7 @@ a splácí novým dluhem". Pravidlo 4.5 zároveň definuje nesplácení jako "ta
 nesplatilo nic". Doslovným čtením je každý rolovaný tah nesplácením, což by spustilo
 `distress` hned v prvním tahu `overtrading` a celá Ponziho zóna by trvala jeden tah.
 
-**Zatímní interpretace:** rolování **není** nesplácení. Formálně dluh obsloužen je,
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** rolování **není** nesplácení. Formálně dluh obsloužen je,
 jen novým dluhem, což přesně odpovídá obrazu v `docs/faze.md` ("Státy si půjčují na
 splátky starých půjček"). Nesplácení je až situace, kdy NPC nezaplatí a ani neroluje,
 typicky kvůli dolní hranici `wealth 10` z pravidla 4.5.
@@ -195,7 +205,7 @@ spotřebovanou jednotku, automatický `explore` NPC, povinná zpráva rozhodčí
 Kdyby ty druhé platily jen během `displacement`, přestaly by platit v okamžiku, kdy
 začne `boom`, a spotřeba oritu by rázem nic neznamenala.
 
-**Zatímní interpretace:** jednorázové nastavení proběhne při vstupu do fáze, trvalé efekty
+**Potvrzeno 11. 9. 2026, zapsáno do pravidel v1.1:** jednorázové nastavení proběhne při vstupu do fáze, trvalé efekty
 platí od `displacement` dál až do konce hry.
 
 ---
@@ -316,3 +326,220 @@ Není to chyba, plyne to přímo z pravidel. Ale znamená to, že hráči mají 
 prostoru na mocenské hry, než by se z pravidel zdálo: dvě akce za tah proti dvanácti
 NPC, které hladovějí od začátku. Stojí za zvážení, jestli je to záměr, nebo jestli
 mají NPC mezi sebou obchodovat automaticky.
+
+---
+
+## C9 až C12. Nově otevřené otázky z implementace v1.1
+
+Tyto body vznikly při zapracování rozhodnutí z 11. 9. Neopravuji je,
+engine u nich používá uvedený výklad.
+
+### C9. Jak spojit "nejvyšší fragility" se "souvislým územím" u zakladatelů Unie
+
+Pravidlo 7.1 (v1.1) žádá zároveň dvě věci: zakladatelé musí tvořit souvislé území
+a zároveň se vybírají čtyři s nejvyšší `fragility`. Když jsou čtyři nejkřehčí státy
+rozházené po mapě, nejdou splnit obě podmínky najednou.
+
+**Výklad enginu:** nejdřív se najdou souvislé skupiny způsobilých států a vybere se
+největší (při shodě ta s nižším průměrným `wealth`). Uvnitř ní se začne nejkřehčím
+státem a postupně se přidává vždy nejkřehčí soused už vybrané skupiny, dokud nejsou
+čtyři. Výběr tak zůstane souvislý a zároveň co nejkřehčí.
+
+### C10. Vyřazuje převrat člena z Unie?
+
+Pravidlo 4.3 při pádu vlády nastaví `status = independent`, ale nikde neříká, co se
+stane s členstvím v Unii. Bez vyřazení zůstal stát v seznamu členů a zároveň byl
+`independent`, takže se v dalším tahu připojil znovu a v seznamu byl dvakrát.
+
+**Výklad enginu:** převrat vyřazuje z členů i z kandidátů, protože `independent`
+a členství se vylučují. Stát se může ucházet znovu podle 7.4.
+
+### C11. Stát na nule má převrat každý tah
+
+Pravidlo 4.3 zní "Tři tahy bídy v řadě (nebo `wealth = 0`): vláda padá". Druhá
+podmínka nemá počítadlo ani pauzu, takže stát držený na nule má převrat **každý tah**,
+a protože pád vlády ruší všechny obchody a pakty, nemůže se z nuly nikdy dostat.
+
+V devadesátitahovém běhu to dělá **695 až 724 převratů** místo teoretického maxima
+360 při čtení "jen tři tahy bídy". Je to hlavní motor spirály popsané v E3.
+
+**Otázka:** má mít podmínka `wealth = 0` stejné počítadlo tří tahů jako bída,
+nebo aspoň pauzu, než může vláda padnout znovu?
+
+**Výklad enginu:** zatím doslovné znění, tedy převrat každý tah. Doporučuji změnit,
+návrh je v E3.
+
+### C12. Pořadí vnitřního trhu Unie a obchodu NPC mezi sebou
+
+Pravidlo 4.1a říká, že obchod NPC mezi sebou přijde "po vyhodnocení obchodů hráčů".
+Vnitřní trh Unie (7.2) je ale taky obchod mezi NPC a pravidla neurčují, co z toho jde první.
+
+**Výklad enginu:** nejdřív obchody hráčů, pak vnitřní trh Unie zdarma mezi členy,
+pak placené párování 4.1a na tom, co zbylo. Členové tak nejdřív využijí vlastní trh
+a teprve zbytek řeší nákupem od sousedů, což je pro ně výhodnější a odpovídá smyslu 7.2.
+
+---
+
+## E. Výsledky testů po zapracování v1.1
+
+Běh `test_run.py` z 11. 9. 2026. Kritéria se měří v okně 45 tahů podle nového
+znění `BUILD.md` části 8, tabulky pokračují do tahu 90.
+
+**Souhrn:** varianta (b) splnila všechna kritéria včetně vzniku Unie.
+Varianta (a) se zastavila v `euphoria`. Validace nehlásila chybu ani v jednom
+z 90 tahů v žádné z variant (a: 0 chyb, b: 0 chyb).
+
+### E.a Varianta (a): scénář ze zadání
+
+A půjčuje N6 od tahu 8, B chrání N7, oba obchodují obilím.
+
+#### E.a.1 Fáze
+
+| fáze | tah | den | spouštěč |
+|---|---|---|---|
+| `pre` | 1 | 1 | start |
+| `displacement` | 7 | 3 | tah 7 |
+| `boom` | 8 | 3 | prvni loan po displacementu |
+| `euphoria` | 13 | 5 | cena oritu >= 20 |
+| `overtrading` | - | - | nenastala |
+| `distress` | - | - | nenastala |
+| `panic` | - | - | nenastala |
+| `crash` | - | - | nenastala |
+| `depression` | - | - | nenastala |
+| `recovery` | - | - | nenastala |
+
+Cyklus se zastavil v `euphoria`. Důvod: práh `overtrading` je 40 % součtu reálného
+`wealth` NPC, tedy zhruba 160 při jediném věřiteli. A má na startu 100 `wealth`
+a půjčuje 10 za tah, takže mu peníze dojdou dřív, než dluh NPC toho prahu dosáhne.
+Jeden půjčující hráč krizi nevyvolá.
+
+Vedlejší důsledek: `euphoria` nemá jiný východ než `overtrading`, takže cena oritu
+roste o 20 % za tah donekonečna. V tahu 90 je **26 323 936**. Viz E3.
+
+#### E.a.2 Index a ceny
+
+| tah | index | W_real | v bídě (ze 14) | ceny zdrojů |
+|---|---|---|---|---|
+| 1 | 83.98 | 655.5 | 0 | grain 0.77, metal 0.84, oil 0.86 |
+| 12 | 17.46 | 456.6 | 9 | grain 0.95, metal 0.84, oil 0.84, orit 26.24 |
+| 30 | 8.88 | 384.7 | 10 | grain 1.20, metal 1.80, oil 1.18, orit 312.37 |
+| 45 | 7.52 | 511.0 | 11 | grain 1.20, metal 1.80, oil 1.50, orit 4812.68 |
+| 60 | 10.93 | 786.5 | 11 | grain 1.20, metal 1.80, oil 1.50, orit 74149.09 |
+| 90 | 8.30 | 1992.5 | 12 | grain 1.20, metal 1.80, oil 1.50, orit 26323936.45 |
+
+#### E.a.3 Unie
+
+Unie nevznikla, fáze `crash` do tahu 90 nenastala.
+
+#### E.a.4 Obchod
+
+| tah | objem NPC s NPC | objem hráčů | podíl NPC |
+|---|---|---|---|
+| 6 | 8.59 | 4.80 | 64.1 % |
+| 30 | 2.83 | 0.00 | 100.0 % |
+| 60 | 3.00 | 0.00 | 100.0 % |
+| 90 | 0.00 | 0.00 | 0.0 % |
+
+### E.b Varianta (b): realistické půjčování
+
+Hráč půjčí jen v tahu, kdy nějaké NPC žádá půjčku (euforie) nebo má deficit oritu,
+nejvýš jedna půjčka na hráče a tah.
+
+#### E.b.1 Fáze
+
+| fáze | tah | den | spouštěč |
+|---|---|---|---|
+| `pre` | 1 | 1 | start |
+| `displacement` | 7 | 3 | tah 7 |
+| `boom` | 8 | 3 | prvni loan po displacementu |
+| `euphoria` | 13 | 5 | cena oritu >= 20 |
+| `overtrading` | 19 | 7 | dluhy NPC > 40 % jejich wealth |
+| `distress` | 20 | 7 | prvni nesplaceni |
+| `panic` | 21 | 7 | druhe nesplaceni nebo 2 tahy distress |
+| `crash` | 22 | 8 | po jednom tahu paniky |
+| `depression` | 28 | 10 | 6 tahu po crash |
+| `recovery` | 34 | 12 | 12 tahu po crash |
+
+Celý cyklus proběhl a vešel se do okna: od displacementu v tahu 7 po `crash` v tahu 22,
+tedy do osmého herního dne. Unie vznikla ve stejném tahu se čtyřmi zakladateli.
+
+#### E.b.2 Index a ceny
+
+| tah | index | W_real | v bídě (ze 14) | ceny zdrojů |
+|---|---|---|---|---|
+| 1 | 83.98 | 655.5 | 0 | grain 0.77, metal 0.84, oil 0.86 |
+| 12 | 18.44 | 456.1 | 9 | grain 0.95, metal 0.84, oil 0.86, orit 26.24 |
+| 30 | 10.67 | 409.1 | 10 | grain 1.20, metal 1.72, oil 1.36, orit 3.66 |
+| 45 | 8.13 | 500.4 | 11 | grain 1.20, metal 1.80, oil 1.50, orit 3.50 |
+| 60 | 7.10 | 725.0 | 12 | grain 1.20, metal 1.80, oil 1.50, orit 5.34 |
+| 90 | 9.16 | 1867.0 | 12 | grain 1.20, metal 1.80, oil 1.50, orit 7.50 |
+
+#### E.b.3 Unie
+
+Zakladatelé (tah 22): **N1, N11, N6, N5**
+
+| tah | členů | kdo | kandidátů | kdo |
+|---|---|---|---|---|
+| 22 | 4 | N1, N11, N6, N5 | 2 | N7, N8 |
+| 60 | 1 | N11 | 2 | N1, N8 |
+| 90 | 1 | N11 | 2 | N1, N8 |
+
+#### E.b.4 Obchod
+
+| tah | objem NPC s NPC | objem hráčů | podíl NPC |
+|---|---|---|---|
+| 6 | 8.59 | 4.80 | 64.1 % |
+| 30 | 6.03 | 0.00 | 100.0 % |
+| 60 | 0.00 | 0.00 | 0.0 % |
+| 90 | 0.00 | 0.00 | 0.0 % |
+
+### E1. Dva hráči jsou pro krizi nutní
+
+Rozdíl mezi variantami je jen v tom, kdo půjčuje. S jedním věřitelem (a) krize
+nepřijde, se dvěma (b) přijde v tahu 19. Práh `overtrading` je tedy nastavený tak,
+že bublinu musí nafouknout **oba** hráči. Pokud jeden z nich půjčovat odmítne,
+Minskyho cyklus se zasekne v euforii a pojistka z části 5 ("pokud do tahu 45
+nenastane `boom`") na to nedosáhne, protože ta hlídá jen `boom`, ne pozdější fáze.
+
+**Návrh:** rozšířit pojistku i na `euphoria`, například "pokud cyklus uvázne
+v jedné fázi víc než 15 tahů, engine ho posune dál a rozhodčí vydá zprávu".
+
+### E2. Euforie bez východu žene cenu do nesmyslných čísel
+
+Ve variantě (a) stojí orit v tahu 90 přes 26 milionů, protože `euphoria` násobí cenu
+1.2 za tah a nemá strop. Je to přímý důsledek E1, ale stojí za vlastní pojistku:
+`paper_wealth` se počítá z ceny oritu, takže s ní roste i on.
+
+**Návrh:** zastropovat cenu oritu, například na dvacetinásobek výchozí hodnoty (200).
+
+### E3. Stát na nule padá každý tah a tím se svět zasekne
+
+Nejsilnější dynamika obou běhů, viz C11. Stát s `wealth = 0` má podle doslovného
+znění 4.3 převrat každý tah, a protože pád vlády ruší všechny obchody a pakty,
+nemá jak se z nuly dostat. V obou variantách napočítáno **695** (a) a **724** (b)
+převratů za 90 tahů.
+
+Důsledky jsou vidět ve všech tabulkách:
+
+- obchod úplně ustal, ve variantě (a) v tahu 76, ve variantě (b) už v tahu 43,
+  protože zrušené obchody se každý tah ruší znovu;
+- Unie se rozpadla ze čtyř členů na jednoho, protože členům padaly vlády;
+- v tahu 90 je **12 ze 14 států v bídě** a oba hráči mají `wealth` 0;
+- jediné, kdo bohatne, jsou padlé říše: N11 má 1 221 a N12 798, dohromady
+  přes polovinu světového bohatství. Jsou uzavřené (7a), takže je spirála míjí:
+  nepotřebují orit, nepůjčují si a prodávají jen za 1.3násobek ceny.
+
+Index proto skončí na 8.30 (a) a 9.16 (b) proti prahu vítězství 70. Strop
+`min(1.5, W_real / W_0)` funguje podle záměru, ale verdikt teď spolehlivě padá
+na druhou stranu: svět je chudý a nerovný, ne bohatý a nerovný.
+
+**Návrh, v pořadí podle síly účinku:**
+
+1. Dát podmínce `wealth = 0` stejné počítadlo tří tahů jako bídě, nebo pauzu
+   aspoň tří tahů mezi dvěma převraty téhož státu (řeší C11 i E3).
+2. Nerušit při pádu vlády obchody, které stát zásobují obilím, jinak se hladomor
+   nedá zvrátit.
+3. Zvážit, jestli mají padlé říše zůstat úplně mimo krizi. Momentálně jsou to
+   jediní vítězové a hráči na ně nedosáhnou.
+
+Žádnou z těchto změn jsem neprovedl, jsou to návrhy k rozhodnutí.
