@@ -1,0 +1,465 @@
+{
+  "meta": {
+    "version": "v1",
+    "turn": 0,
+    "day": 0,
+    "slot": null,
+    "rng_seed": 20260910,
+    "started_at": null,
+    "paused": false
+  },
+  "phase": "pre",
+  "minsky": {
+    "orit_price": null,
+    "orit_price_start": 10,
+    "boom_started_turn": null,
+    "crash_turn": null,
+    "fragility": 0,
+    "defaults": [],
+    "phase_log": []
+  },
+  "players": {
+    "A": {
+      "name": "Kalverská federace",
+      "wealth": 100,
+      "paper_wealth": 0,
+      "power": 80,
+      "law": 7,
+      "tech": 6,
+      "prod": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 8
+      },
+      "need": {
+        "oil": 6,
+        "grain": 6,
+        "metal": 4
+      },
+      "pop": 100,
+      "active": true,
+      "occupied": []
+    },
+    "B": {
+      "name": "Lidová republika Ostrogard",
+      "wealth": 80,
+      "paper_wealth": 0,
+      "power": 100,
+      "law": 3,
+      "tech": 4,
+      "prod": {
+        "oil": 8,
+        "grain": 3,
+        "metal": 2
+      },
+      "need": {
+        "oil": 4,
+        "grain": 6,
+        "metal": 6
+      },
+      "pop": 100,
+      "active": true,
+      "occupied": []
+    },
+    "C": {
+      "name": null,
+      "wealth": 0,
+      "paper_wealth": 0,
+      "power": 0,
+      "law": null,
+      "tech": null,
+      "members": [],
+      "fund": 0,
+      "active": false,
+      "founded_turn": null,
+      "law_threshold": null,
+      "candidates": []
+    }
+  },
+  "npc": {
+    "N1": {
+      "wealth": 40,
+      "paper_wealth": 0,
+      "power": 8,
+      "law": 5,
+      "tech": 3,
+      "prod": {
+        "oil": 0,
+        "grain": 9,
+        "metal": 1
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N2": {
+      "wealth": 35,
+      "paper_wealth": 0,
+      "power": 6,
+      "law": 4,
+      "tech": 2,
+      "prod": {
+        "oil": 0,
+        "grain": 8,
+        "metal": 0
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N3": {
+      "wealth": 45,
+      "paper_wealth": 0,
+      "power": 10,
+      "law": 3,
+      "tech": 3,
+      "prod": {
+        "oil": 8,
+        "grain": 1,
+        "metal": 0
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N4": {
+      "wealth": 42,
+      "paper_wealth": 0,
+      "power": 9,
+      "law": 6,
+      "tech": 4,
+      "prod": {
+        "oil": 7,
+        "grain": 2,
+        "metal": 0
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N5": {
+      "wealth": 38,
+      "paper_wealth": 0,
+      "power": 9,
+      "law": 6,
+      "tech": 4,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 7
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N6": {
+      "wealth": 20,
+      "paper_wealth": 0,
+      "power": 3,
+      "law": 2,
+      "tech": 1,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 1
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N7": {
+      "wealth": 36,
+      "paper_wealth": 0,
+      "power": 8,
+      "law": 4,
+      "tech": 3,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 6
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N8": {
+      "wealth": 20,
+      "paper_wealth": 0,
+      "power": 4,
+      "law": 3,
+      "tech": 1,
+      "prod": {
+        "oil": 0,
+        "grain": 3,
+        "metal": 0
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N9": {
+      "wealth": 20,
+      "paper_wealth": 0,
+      "power": 5,
+      "law": 2,
+      "tech": 1,
+      "prod": {
+        "oil": 1,
+        "grain": 2,
+        "metal": 0
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N10": {
+      "wealth": 20,
+      "paper_wealth": 0,
+      "power": 4,
+      "law": 4,
+      "tech": 2,
+      "prod": {
+        "oil": 0,
+        "grain": 3,
+        "metal": 1
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N11": {
+      "wealth": 90,
+      "paper_wealth": 0,
+      "power": 6,
+      "law": 9,
+      "tech": 8,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 1
+      },
+      "need": {
+        "oil": 1,
+        "grain": 2,
+        "metal": 1
+      },
+      "pop": 60,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "fallen",
+      "coups": 0
+    },
+    "N12": {
+      "wealth": 80,
+      "paper_wealth": 0,
+      "power": 7,
+      "law": 8,
+      "tech": 7,
+      "prod": {
+        "oil": 2,
+        "grain": 1,
+        "metal": 2
+      },
+      "need": {
+        "oil": 1,
+        "grain": 2,
+        "metal": 1
+      },
+      "pop": 60,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "fallen",
+      "coups": 0
+    }
+  },
+  "deals": [],
+  "invasions": [],
+  "messages_pending": [],
+  "news": [],
+  "metrics": {
+    "prosperity_index": null,
+    "A_trade_share": 0,
+    "B_resource_share": 0,
+    "C_min_member": null,
+    "W0": 666
+  },
+  "log": []
+}

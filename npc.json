@@ -1,0 +1,401 @@
+{
+  "world": {
+    "name": "Ardan",
+    "map": {
+      "width": 1000,
+      "height": 700,
+      "projection": "fiktivní kontinent, A na západě, B na východě, NPC mezi nimi a na okrajích"
+    },
+    "rare_resource": {
+      "id": "orit",
+      "name": "orit",
+      "description": "vzácný kov, násobí výnos technologie; objeví se v displacementu"
+    },
+    "terrain_note": "v1 bez terénu; ostrov/hory jsou jen popis pro kronikáře, mechanika je v pravidle padlých říší (v2: terén jako modifikátor sousednosti)"
+  },
+  "players": {
+    "A": {
+      "name": "Kalverská federace",
+      "short": "Kalvera",
+      "x": 150,
+      "y": 340,
+      "color_hint": "modrá"
+    },
+    "B": {
+      "name": "Lidová republika Ostrogard",
+      "short": "Ostrogard",
+      "x": 850,
+      "y": 360,
+      "color_hint": "červená"
+    },
+    "C": {
+      "name": "Unie (název zvolí Unie při vzniku)",
+      "short": "Unie",
+      "x": null,
+      "y": null,
+      "color_hint": "zelená"
+    }
+  },
+  "npc": [
+    {
+      "id": "N1",
+      "name": "Velmora",
+      "role": "obilnice",
+      "x": 330,
+      "y": 520,
+      "wealth": 40,
+      "power": 8,
+      "law": 5,
+      "tech": 3,
+      "prod": {
+        "oil": 0,
+        "grain": 9,
+        "metal": 1
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N2",
+      "name": "Sarnie",
+      "role": "obilnice",
+      "x": 660,
+      "y": 560,
+      "wealth": 35,
+      "power": 6,
+      "law": 4,
+      "tech": 2,
+      "prod": {
+        "oil": 0,
+        "grain": 8,
+        "metal": 0
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N3",
+      "name": "Tuluk",
+      "role": "ropa",
+      "x": 480,
+      "y": 150,
+      "wealth": 45,
+      "power": 10,
+      "law": 3,
+      "tech": 3,
+      "prod": {
+        "oil": 8,
+        "grain": 1,
+        "metal": 0
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N4",
+      "name": "Halden",
+      "role": "ropa",
+      "x": 740,
+      "y": 200,
+      "wealth": 42,
+      "power": 9,
+      "law": 6,
+      "tech": 4,
+      "prod": {
+        "oil": 7,
+        "grain": 2,
+        "metal": 0
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N5",
+      "name": "Brenhold",
+      "role": "kovy",
+      "x": 300,
+      "y": 180,
+      "wealth": 38,
+      "power": 9,
+      "law": 6,
+      "tech": 4,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 7
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N6",
+      "name": "Dorvan",
+      "role": "chudé, budoucí ložisko oritu",
+      "x": 500,
+      "y": 370,
+      "wealth": 20,
+      "power": 3,
+      "law": 2,
+      "tech": 1,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 1
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N7",
+      "name": "Kessar",
+      "role": "kovy",
+      "x": 600,
+      "y": 330,
+      "wealth": 36,
+      "power": 8,
+      "law": 4,
+      "tech": 3,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 6
+      },
+      "need": {
+        "oil": 2,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N8",
+      "name": "Ilme",
+      "role": "chudé",
+      "x": 400,
+      "y": 620,
+      "wealth": 20,
+      "power": 4,
+      "law": 3,
+      "tech": 1,
+      "prod": {
+        "oil": 0,
+        "grain": 3,
+        "metal": 0
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N9",
+      "name": "Tarsk",
+      "role": "chudé",
+      "x": 560,
+      "y": 80,
+      "wealth": 20,
+      "power": 5,
+      "law": 2,
+      "tech": 1,
+      "prod": {
+        "oil": 1,
+        "grain": 2,
+        "metal": 0
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N10",
+      "name": "Quenna",
+      "role": "chudé",
+      "x": 800,
+      "y": 600,
+      "wealth": 20,
+      "power": 4,
+      "law": 4,
+      "tech": 2,
+      "prod": {
+        "oil": 0,
+        "grain": 3,
+        "metal": 1
+      },
+      "need": {
+        "oil": 1,
+        "grain": 3,
+        "metal": 1
+      },
+      "pop": 100,
+      "kind": "normal"
+    },
+    {
+      "id": "N11",
+      "name": "Aurelie",
+      "role": "padlá říše: stará kupecká republika na ostrově",
+      "kind": "fallen",
+      "x": 120,
+      "y": 600,
+      "wealth": 90,
+      "power": 6,
+      "law": 9,
+      "tech": 8,
+      "prod": {
+        "oil": 0,
+        "grain": 2,
+        "metal": 1
+      },
+      "need": {
+        "oil": 1,
+        "grain": 2,
+        "metal": 1
+      },
+      "pop": 60
+    },
+    {
+      "id": "N12",
+      "name": "Ysmar",
+      "role": "padlá říše: horské knížectví",
+      "kind": "fallen",
+      "x": 900,
+      "y": 120,
+      "wealth": 80,
+      "power": 7,
+      "law": 8,
+      "tech": 7,
+      "prod": {
+        "oil": 2,
+        "grain": 1,
+        "metal": 2
+      },
+      "need": {
+        "oil": 1,
+        "grain": 2,
+        "metal": 1
+      },
+      "pop": 60
+    }
+  ],
+  "adjacency": {
+    "A": [
+      "N1",
+      "N5",
+      "N6",
+      "N8",
+      "N11"
+    ],
+    "B": [
+      "N2",
+      "N4",
+      "N7",
+      "N10",
+      "N12"
+    ],
+    "N1": [
+      "A",
+      "N6",
+      "N8",
+      "N11"
+    ],
+    "N2": [
+      "B",
+      "N7",
+      "N10",
+      "N8"
+    ],
+    "N3": [
+      "N5",
+      "N6",
+      "N9",
+      "N4"
+    ],
+    "N4": [
+      "B",
+      "N3",
+      "N7",
+      "N9",
+      "N12"
+    ],
+    "N5": [
+      "A",
+      "N3",
+      "N6"
+    ],
+    "N6": [
+      "A",
+      "N1",
+      "N3",
+      "N5",
+      "N7",
+      "N8"
+    ],
+    "N7": [
+      "B",
+      "N2",
+      "N4",
+      "N6"
+    ],
+    "N8": [
+      "A",
+      "N1",
+      "N2",
+      "N6",
+      "N11"
+    ],
+    "N9": [
+      "N3",
+      "N4"
+    ],
+    "N10": [
+      "B",
+      "N2"
+    ],
+    "N11": [
+      "A",
+      "N1",
+      "N8"
+    ],
+    "N12": [
+      "B",
+      "N4"
+    ]
+  }
+}

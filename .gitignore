@@ -1,0 +1,11 @@
+# OS / editor
+Thumbs.db
+desktop.ini
+.DS_Store
+*~
+.vscode/
+.idea/
+
+# Runtime vystupy hry (odkomentuj, pokud je nechces verzovat)
+# history/
+# chronicle/
