@@ -81,7 +81,9 @@
       "active": false,
       "founded_turn": null,
       "law_threshold": null,
-      "candidates": []
+      "candidates": [],
+      "tariff_rate": 0.1,
+      "tariff_next": null
     }
   },
   "npc": {
