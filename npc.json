@@ -43,7 +43,7 @@
       "role": "obilnice",
       "x": 330,
       "y": 520,
-      "wealth": 40,
+      "wealth": 45,
       "power": 8,
       "law": 5,
       "tech": 3,
@@ -53,12 +53,8 @@
         "grain": 9,
         "metal": 1
       },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 190,
+      "pop_start": 190,
       "kind": "normal"
     },
     {
@@ -67,7 +63,7 @@
       "role": "obilnice",
       "x": 660,
       "y": 560,
-      "wealth": 35,
+      "wealth": 40,
       "power": 6,
       "law": 4,
       "tech": 2,
@@ -77,12 +73,8 @@
         "grain": 8,
         "metal": 0
       },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 160,
+      "pop_start": 160,
       "kind": "normal"
     },
     {
@@ -91,22 +83,18 @@
       "role": "ropa",
       "x": 480,
       "y": 150,
-      "wealth": 45,
+      "wealth": 60,
       "power": 10,
       "law": 3,
       "tech": 3,
-      "industry": 3,
+      "industry": 4,
       "prod": {
         "oil": 8,
         "grain": 1,
         "metal": 0
       },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 120,
+      "pop_start": 120,
       "kind": "normal"
     },
     {
@@ -115,22 +103,18 @@
       "role": "ropa",
       "x": 740,
       "y": 200,
-      "wealth": 42,
+      "wealth": 55,
       "power": 9,
       "law": 6,
       "tech": 4,
-      "industry": 3,
+      "industry": 4,
       "prod": {
         "oil": 7,
         "grain": 2,
         "metal": 0
       },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 110,
+      "pop_start": 110,
       "kind": "normal"
     },
     {
@@ -139,7 +123,7 @@
       "role": "kovy",
       "x": 300,
       "y": 180,
-      "wealth": 38,
+      "wealth": 40,
       "power": 9,
       "law": 6,
       "tech": 4,
@@ -149,12 +133,8 @@
         "grain": 2,
         "metal": 7
       },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
-      },
       "pop": 100,
+      "pop_start": 100,
       "kind": "normal"
     },
     {
@@ -163,7 +143,7 @@
       "role": "chudé, budoucí ložisko oritu",
       "x": 500,
       "y": 370,
-      "wealth": 20,
+      "wealth": 22,
       "power": 3,
       "law": 2,
       "tech": 1,
@@ -173,12 +153,8 @@
         "grain": 2,
         "metal": 1
       },
-      "need": {
-        "oil": 1,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 90,
+      "pop_start": 90,
       "kind": "normal"
     },
     {
@@ -187,7 +163,7 @@
       "role": "kovy",
       "x": 600,
       "y": 330,
-      "wealth": 36,
+      "wealth": 38,
       "power": 8,
       "law": 4,
       "tech": 3,
@@ -197,12 +173,8 @@
         "grain": 2,
         "metal": 6
       },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 110,
+      "pop_start": 110,
       "kind": "normal"
     },
     {
@@ -211,7 +183,7 @@
       "role": "chudé",
       "x": 400,
       "y": 620,
-      "wealth": 20,
+      "wealth": 22,
       "power": 4,
       "law": 3,
       "tech": 1,
@@ -221,12 +193,8 @@
         "grain": 3,
         "metal": 0
       },
-      "need": {
-        "oil": 1,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 80,
+      "pop_start": 80,
       "kind": "normal"
     },
     {
@@ -245,12 +213,8 @@
         "grain": 2,
         "metal": 0
       },
-      "need": {
-        "oil": 1,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 60,
+      "pop_start": 60,
       "kind": "normal"
     },
     {
@@ -259,7 +223,7 @@
       "role": "chudé",
       "x": 800,
       "y": 600,
-      "wealth": 20,
+      "wealth": 25,
       "power": 4,
       "law": 4,
       "tech": 2,
@@ -269,12 +233,8 @@
         "grain": 3,
         "metal": 1
       },
-      "need": {
-        "oil": 1,
-        "grain": 3,
-        "metal": 1
-      },
-      "pop": 100,
+      "pop": 85,
+      "pop_start": 85,
       "kind": "normal"
     },
     {
@@ -290,16 +250,12 @@
       "tech": 8,
       "industry": 7,
       "prod": {
-        "oil": 0,
-        "grain": 2,
-        "metal": 1
-      },
-      "need": {
         "oil": 1,
         "grain": 2,
         "metal": 1
       },
-      "pop": 60
+      "pop": 50,
+      "pop_start": 50
     },
     {
       "id": "N12",
@@ -318,12 +274,8 @@
         "grain": 1,
         "metal": 2
       },
-      "need": {
-        "oil": 1,
-        "grain": 2,
-        "metal": 1
-      },
-      "pop": 60
+      "pop": 70,
+      "pop_start": 70
     }
   ],
   "adjacency": {

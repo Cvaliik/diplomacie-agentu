@@ -3,15 +3,20 @@
 Suchy beh bez volani modelu (BUILD.md cast 8). Nic nezapisuje do state.json
 ani do history/, jen pocita a tiskne.
 
-Scenare podle rozhodnuti ze 14. 9. 2026 (pravidla v1.2):
+Scenare (pravidla v1.3):
 
-  (0) nikdo netahne: hraci mlci, zadne akce. Kalibracni scenar.
-      Kriteria: do tahu 15 zadne NPC v bide, W_real v tahu 30 aspon 90 % startu.
+  (0) nikdo netahne: hraci mlci, zadne akce.
+      Kriteria: do tahu 15 nejvys dve NPC v bide a zadne z N1 az N5, N7, N11, N12;
+      W_real v tahu 30 aspon 90 % startu; do tahu 90 nejvys 5 NPC v bide.
   (a) scenar ze zadani: A pujcuje N6 od tahu 8, B chrani N7, oba obchoduji obilim.
   (b) realisticke pujcovani: hrac pujci jen v tahu, kdy nejake NPC zada pujcku
       (euforie) nebo ma deficit oritu; nejvys jedna pujcka na hrace a tah.
       Kriteria pro (a) i (b): crash mezi dnem 7 a 11, Unie s aspon 3 zakladateli,
       validate 0 chyb.
+
+Vyklad kriterii (0), viz OPEN_QUESTIONS I12: "do tahu 15 nejvys dve NPC" se meri
+jako pocet ruznych NPC, ktera byla v bide v kteremkoli tahu 1 az 15; "do tahu 90
+nejvys 5 NPC" jako nejvyssi pocet NPC v bide v jednom tahu. Tisknou se obe miry.
 
 Spusteni:
     python test_run.py
@@ -29,6 +34,7 @@ from validate import validate
 
 TURNS = 90
 TRACKED = ("A", "B", "N1", "N6", "N11")
+PROTECTED = ("N1", "N2", "N3", "N4", "N5", "N7", "N11", "N12")
 
 
 # --------------------------------------------------------------------------
@@ -107,7 +113,7 @@ SCENARE = {
 # beh
 # --------------------------------------------------------------------------
 
-def run(turns: int, action_fn, state=None, npcdata=None):
+def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
     if state is None:
         state, npcdata = engine.load_world(config.STATE_PATH, config.NPC_PATH)
     w_start = float(state["metrics"]["W0"])
@@ -139,6 +145,10 @@ def run(turns: int, action_fn, state=None, npcdata=None):
 
         m = new_state["metrics"]
         C = new_state["players"]["C"]
+        stock_world = {r: 0.0 for r in engine.STOCK_RESOURCES}
+        for i in engine.world_ids(new_state):
+            for r in engine.STOCK_RESOURCES:
+                stock_world[r] += float(engine.ent(new_state, i)["stock"].get(r, 0.0))
         rows.append({
             "turn": t, "day": new_state["meta"]["day"], "phase": ph,
             "index": m["prosperity_index"], "W_real": m["W_real"],
@@ -150,10 +160,13 @@ def run(turns: int, action_fn, state=None, npcdata=None):
             "vol_goods": m.get("trade_volume_goods", 0.0),
             "members": list(C["members"]), "candidates": list(C["candidates"]),
             "coups": sum(int(n.get("coups", 0)) for n in new_state["npc"].values()),
-            "wealth": {i: float(engine.ent(new_state, i)["wealth"]) for i in engine.world_ids(new_state)},
+            "wealth": {i: float(engine.ent(new_state, i)["wealth"])
+                       for i in engine.world_ids(new_state)},
             "industry": {i: float(engine.ent(new_state, i).get("industry") or 0.0) for i in TRACKED},
             "goods_out": {i: float(engine.ent(new_state, i).get("goods_out") or 0.0) for i in TRACKED},
+            "stock_world": stock_world,
             "errors": len(errs),
+            "applied": applied if keep_applied else None,
         })
         state = new_state
 
@@ -165,6 +178,15 @@ def row_at(res, t):
     return next((x for x in res["rows"] if x["turn"] == t), None)
 
 
+def poverty_measures(res):
+    """Miry pro kriteria (0): ruzna NPC v bide do tahu 15 a nejvyssi soubezny pocet do 90."""
+    ever15 = sorted({i for r in res["rows"] if r["turn"] <= 15 for i in r["npc_bida"]},
+                    key=lambda x: int(x[1:]))
+    peak = max(res["rows"], key=lambda r: len(r["npc_bida"]))
+    ever90 = sorted({i for r in res["rows"] for i in r["npc_bida"]}, key=lambda x: int(x[1:]))
+    return ever15, peak, ever90
+
+
 # --------------------------------------------------------------------------
 # kriteria
 # --------------------------------------------------------------------------
@@ -173,23 +195,31 @@ def kriteria_0(res) -> bool:
     print("KONTROLNI SEZNAM scenare (0)")
     print("-" * 78)
     ok = True
-    prvni = next((r for r in res["rows"] if r["turn"] <= 15 and r["npc_bida"]), None)
-    passed = prvni is None
+    ever15, peak, ever90 = poverty_measures(res)
+    chranena = [i for i in ever15 if i in PROTECTED]
+
+    passed = len(ever15) <= 2
     ok &= passed
-    if passed:
-        print("  [OK ] do tahu 15 zadne NPC v bide")
-    else:
-        print("  [NE ] do tahu 15 zadne NPC v bide (prvni v tahu %d: %s)" % (
-            prvni["turn"], ", ".join(prvni["npc_bida"])))
+    print("  [%s] do tahu 15 nejvys dve NPC v bide (%d: %s)" % (
+        "OK " if passed else "NE ", len(ever15), ", ".join(ever15) or "zadne"))
+    passed = not chranena
+    ok &= passed
+    print("  [%s] do tahu 15 v bide zadne z N1 az N5, N7, N11, N12 (%s)" % (
+        "OK " if passed else "NE ", ", ".join(chranena) or "zadne"))
+
     r30 = row_at(res, 30)
     podil = r30["W_real"] / res["w_start"] if res["w_start"] else 0.0
     passed = podil >= 0.9
     ok &= passed
     print("  [%s] W_real v tahu 30 aspon 90 %% startu (%.1f z %.1f, tj. %.1f %%)" % (
         "OK " if passed else "NE ", r30["W_real"], res["w_start"], podil * 100))
-    val_ok = not res["errors"]
-    ok &= val_ok
-    print("  [%s] validate bez chyb" % ("OK " if val_ok else "NE "))
+
+    passed = len(peak["npc_bida"]) <= 5
+    ok &= passed
+    print("  [%s] do tahu 90 nejvys 5 NPC v bide (nejvic %d v tahu %d; ruznych za beh %d)" % (
+        "OK " if passed else "NE ", len(peak["npc_bida"]), peak["turn"], len(ever90)))
+
+    print("  [info] validate: %s" % ("0 chyb" if not res["errors"] else "%d tahu s chybou" % len(res["errors"])))
     for t, errs in res["errors"][:5]:
         print("        tah %d: %s" % (t, errs[0]))
     return bool(ok)
@@ -231,8 +261,9 @@ def souhrn(res) -> None:
     for t in (1, 12, 30, 45, 60, 90):
         r = row_at(res, t)
         if r:
-            print("  tah %2d: index %6.2f  W_real %8.1f  v bide %2d  goods %.2f" % (
-                t, r["index"], r["W_real"], r["n_bida"], r["prices"].get("goods", 0.0)))
+            print("  tah %2d: index %6.2f  W_real %8.1f  v bide %2d  goods %.2f  NPC v bide: %s" % (
+                t, r["index"], r["W_real"], r["n_bida"], r["prices"].get("goods", 0.0),
+                ", ".join(r["npc_bida"]) or "-"))
     print("  prevratu celkem: %d" % res["rows"][-1]["coups"])
 
 

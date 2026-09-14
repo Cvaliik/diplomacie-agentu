@@ -32,7 +32,15 @@
         "grain": 3,
         "metal": 8
       },
-      "pop": 200,
+      "stock": {
+        "grain": 41.4,
+        "oil": 15.6,
+        "metal": 7.98,
+        "goods": 27.6,
+        "orit": 0.0
+      },
+      "pop": 230,
+      "pop_start": 230,
       "active": true,
       "occupied": []
     },
@@ -49,7 +57,15 @@
         "grain": 3,
         "metal": 2
       },
-      "pop": 200,
+      "stock": {
+        "grain": 37.8,
+        "oil": 26.1,
+        "metal": 14.4,
+        "goods": 25.2,
+        "orit": 0.0
+      },
+      "pop": 210,
+      "pop_start": 210,
       "active": true,
       "occupied": []
     },
@@ -70,7 +86,7 @@
   },
   "npc": {
     "N1": {
-      "wealth": 40,
+      "wealth": 45,
       "paper_wealth": 0,
       "power": 8,
       "law": 5,
@@ -81,7 +97,15 @@
         "grain": 9,
         "metal": 1
       },
-      "pop": 100,
+      "stock": {
+        "grain": 45.6,
+        "oil": 15.2,
+        "metal": 7.6,
+        "goods": 30.4,
+        "orit": 0.0
+      },
+      "pop": 190,
+      "pop_start": 190,
       "influence": {
         "A": 0,
         "B": 0
@@ -97,7 +121,7 @@
       "coups": 0
     },
     "N2": {
-      "wealth": 35,
+      "wealth": 40,
       "paper_wealth": 0,
       "power": 6,
       "law": 4,
@@ -108,7 +132,15 @@
         "grain": 8,
         "metal": 0
       },
-      "pop": 100,
+      "stock": {
+        "grain": 38.4,
+        "oil": 12.8,
+        "metal": 6.4,
+        "goods": 25.6,
+        "orit": 0.0
+      },
+      "pop": 160,
+      "pop_start": 160,
       "influence": {
         "A": 0,
         "B": 0
@@ -124,18 +156,26 @@
       "coups": 0
     },
     "N3": {
-      "wealth": 45,
+      "wealth": 60,
       "paper_wealth": 0,
       "power": 10,
       "law": 3,
       "tech": 3,
-      "industry": 3,
+      "industry": 4,
       "prod": {
         "oil": 8,
         "grain": 1,
         "metal": 0
       },
-      "pop": 100,
+      "stock": {
+        "grain": 28.8,
+        "oil": 9.6,
+        "metal": 4.8,
+        "goods": 19.2,
+        "orit": 0.0
+      },
+      "pop": 120,
+      "pop_start": 120,
       "influence": {
         "A": 0,
         "B": 0
@@ -151,18 +191,26 @@
       "coups": 0
     },
     "N4": {
-      "wealth": 42,
+      "wealth": 55,
       "paper_wealth": 0,
       "power": 9,
       "law": 6,
       "tech": 4,
-      "industry": 3,
+      "industry": 4,
       "prod": {
         "oil": 7,
         "grain": 2,
         "metal": 0
       },
-      "pop": 100,
+      "stock": {
+        "grain": 26.4,
+        "oil": 8.8,
+        "metal": 4.4,
+        "goods": 17.6,
+        "orit": 0.0
+      },
+      "pop": 110,
+      "pop_start": 110,
       "influence": {
         "A": 0,
         "B": 0
@@ -178,7 +226,7 @@
       "coups": 0
     },
     "N5": {
-      "wealth": 38,
+      "wealth": 40,
       "paper_wealth": 0,
       "power": 9,
       "law": 6,
@@ -189,7 +237,15 @@
         "grain": 2,
         "metal": 7
       },
+      "stock": {
+        "grain": 24.0,
+        "oil": 8.0,
+        "metal": 4.0,
+        "goods": 16.0,
+        "orit": 0.0
+      },
       "pop": 100,
+      "pop_start": 100,
       "influence": {
         "A": 0,
         "B": 0
@@ -205,7 +261,7 @@
       "coups": 0
     },
     "N6": {
-      "wealth": 20,
+      "wealth": 22,
       "paper_wealth": 0,
       "power": 3,
       "law": 2,
@@ -216,7 +272,15 @@
         "grain": 2,
         "metal": 1
       },
-      "pop": 100,
+      "stock": {
+        "grain": 5.4,
+        "oil": 1.8,
+        "metal": 0.9,
+        "goods": 3.6,
+        "orit": 0.0
+      },
+      "pop": 90,
+      "pop_start": 90,
       "influence": {
         "A": 0,
         "B": 0
@@ -232,7 +296,7 @@
       "coups": 0
     },
     "N7": {
-      "wealth": 36,
+      "wealth": 38,
       "paper_wealth": 0,
       "power": 8,
       "law": 4,
@@ -243,7 +307,15 @@
         "grain": 2,
         "metal": 6
       },
-      "pop": 100,
+      "stock": {
+        "grain": 16.5,
+        "oil": 5.5,
+        "metal": 2.75,
+        "goods": 11.0,
+        "orit": 0.0
+      },
+      "pop": 110,
+      "pop_start": 110,
       "influence": {
         "A": 0,
         "B": 0
@@ -259,7 +331,7 @@
       "coups": 0
     },
     "N8": {
-      "wealth": 20,
+      "wealth": 22,
       "paper_wealth": 0,
       "power": 4,
       "law": 3,
@@ -270,7 +342,15 @@
         "grain": 3,
         "metal": 0
       },
-      "pop": 100,
+      "stock": {
+        "grain": 4.8,
+        "oil": 1.6,
+        "metal": 0.8,
+        "goods": 3.2,
+        "orit": 0.0
+      },
+      "pop": 80,
+      "pop_start": 80,
       "influence": {
         "A": 0,
         "B": 0
@@ -297,7 +377,15 @@
         "grain": 2,
         "metal": 0
       },
-      "pop": 100,
+      "stock": {
+        "grain": 3.6,
+        "oil": 1.2,
+        "metal": 0.6,
+        "goods": 2.4,
+        "orit": 0.0
+      },
+      "pop": 60,
+      "pop_start": 60,
       "influence": {
         "A": 0,
         "B": 0
@@ -313,7 +401,7 @@
       "coups": 0
     },
     "N10": {
-      "wealth": 20,
+      "wealth": 25,
       "paper_wealth": 0,
       "power": 4,
       "law": 4,
@@ -324,7 +412,15 @@
         "grain": 3,
         "metal": 1
       },
-      "pop": 100,
+      "stock": {
+        "grain": 12.75,
+        "oil": 4.25,
+        "metal": 2.12,
+        "goods": 8.5,
+        "orit": 0.0
+      },
+      "pop": 85,
+      "pop_start": 85,
       "influence": {
         "A": 0,
         "B": 0
@@ -347,11 +443,19 @@
       "tech": 8,
       "industry": 7,
       "prod": {
-        "oil": 0,
+        "oil": 1,
         "grain": 2,
         "metal": 1
       },
-      "pop": 60,
+      "stock": {
+        "grain": 18.0,
+        "oil": 16.8,
+        "metal": 9.48,
+        "goods": 12.0,
+        "orit": 0.0
+      },
+      "pop": 50,
+      "pop_start": 50,
       "influence": {
         "A": 0,
         "B": 0
@@ -378,7 +482,15 @@
         "grain": 1,
         "metal": 2
       },
-      "pop": 60,
+      "stock": {
+        "grain": 25.2,
+        "oil": 32.4,
+        "metal": 18.6,
+        "goods": 16.8,
+        "orit": 0.0
+      },
+      "pop": 70,
+      "pop_start": 70,
       "influence": {
         "A": 0,
         "B": 0
@@ -403,7 +515,7 @@
     "A_trade_share": 0,
     "B_resource_share": 0,
     "C_min_member": null,
-    "W0": 666
+    "W0": 717
   },
   "log": []
 }
