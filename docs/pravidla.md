@@ -1,4 +1,9 @@
-# Pravidla světa Ardan (v1.6)
+# Pravidla světa Ardan (v1.7)
+
+Verze v1.7 zapracovává rozhodnutí Adama ze 14. 9. 2026: výroba `goods` podle poptávky a poptávka
+po produktu rostoucí s bohatstvím (4.0), zakladatelé Unie sousedí mezi sebou (7.1), tvrdý práh práva
+u `admit` (7.4, 3.4), rozdělení míst pro nabídky NPC (3.5) a protinávrh půjčky (3.4). Potvrzené výklady
+O1 až O5, O7, O8, O11, O12, O14, O15, O18 a O19 z `docs/OPEN_QUESTIONS.md` jsou nově závazným textem.
 
 Verze v1.6 zapracovává rozhodnutí Adama z 16. 9. 2026: hráči obchodují i spolu (4.1a, 3.2), kalibrace
 ropy (4.0), padlé říše na trhu za tržní cenu (7a, 4.1a), doplňování rezervy od `wealth ≥ 25` (4.1c),
@@ -46,7 +51,7 @@ Pravidla vykonává rozhodčí (`prompts/rozhodci.md`). Hráči je neznají; zna
 - **A, Kalverská federace**: tržní ekonomika, kapitál, banky, export práva a obchodních pravidel.
 - **B, Lidová republika Ostrogard**: plánovaná ekonomika, kontrola zdrojů, export ochrany a stability.
 - **Unie (C)**: vzniká až po fázi Crash z NPC, které krize zasáhla nejvíc. Do té doby neexistuje.
-- **16 NPC**: řízeny pravidly, nemají vlastní volání modelu. Data v `npc.json`. Čtrnáct běžných, dvě padlé říše (`kind: fallen`, viz 7a).
+- **16 NPC**: řízeny pravidly, nemají vlastní volání modelu. Data v `npc.json`. Čtrnáct běžných, dvě padlé říše (`kind: fallen`, viz 7a). Síla nových NPC na startu je N13 8, N14 8, N15 7 a N16 4 (průměr běžných NPC s bohatstvím v rozmezí ±10). Na mapě leží N13 na (250, 520), N14 na (430, 230), N15 na (730, 130) a N16 na (730, 460); N13 se bez křížení vazeb umístit nedá a kříží 2, N16 kříží 1.
 
 Aritmetiku a prahy vykonává `engine.py` (deterministicky). Rozhodčí (model) tahy jen překládá na akce, rozhoduje sporné případy a píše Zprávy světa. Viz `BUILD.md`.
 
@@ -111,9 +116,9 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 | type | parametry | efekt | náklad |
 |---|---|---|---|
-| `trade_offer` | `target`, `res`, `qty`, `price_per_unit` | NPC přijme, pokud má přebytek/deficit a cena je v pásmu 0.7 až 1.5 aktuální tržní ceny podle 4.1b; vzniká trvalý obchod, dokud ho někdo nezruší. Směr určuje bilance NPC u dané suroviny: přebytek znamená, že NPC hráči prodává, deficit, že od něj nakupuje, nulová bilance je odmítnutí. Množství se ořízne na velikost bilance. NPC nabídku vyhodnotí podle 3.4. Cílem může být i druhý hráč (A nebo B) | žádný |
+| `trade_offer` | `target`, `res`, `qty`, `price_per_unit` | NPC přijme, pokud má přebytek/deficit a cena je v pásmu 0.7 až 1.5 aktuální tržní ceny podle 4.1b; vzniká trvalý obchod, dokud ho někdo nezruší. Směr určuje bilance NPC u dané suroviny: přebytek znamená, že NPC hráči prodává, deficit, že od něj nakupuje, nulová bilance je odmítnutí. Množství se ořízne na velikost bilance. NPC nabídku vyhodnotí podle 3.4. Cílem může být i druhý hráč (A nebo B); obchod mezi hráči projde bez vyhodnocení podle 3.4, má-li cíl přebytek nebo deficit a je-li cena v pásmu | žádný |
 | `loan` | `target`, `amount` | hráč převede `amount` bohatství NPC; NPC dluží `amount × 1.2`; splácí 10 % dluhu za tah z bohatství | `amount` wealth |
-| `pressure` | `target`, `demand` | sankce: přeruší obchody hráče s NPC; NPC ztrácí 3 wealth/tah, hráč 1; `influence` protivníka +1. Cílem může být i druhý hráč: sankce pak po dobu trvání přeruší vzájemný automatický obchod obou hráčů a stojí oba 1 wealth/tah | 1 wealth/tah |
+| `pressure` | `target`, `demand` | sankce: přeruší obchody hráče s NPC; NPC ztrácí 3 wealth/tah, hráč 1; `influence` protivníka +1. Cílem může být i druhý hráč: sankce pak po dobu trvání přeruší vzájemný automatický obchod obou hráčů a stojí oba 1 wealth/tah; cílené obchody mezi nimi trvají dál | 1 wealth/tah |
 | `protect` | `target` | vojenský pakt: NPC `power` +2/tah, `influence[hráč]` +2/tah, `law` −0.2/tah; NPC nelze napadnout, dokud pakt trvá (útok = válka s ochráncem, viz 3.3) | 2 power/tah |
 | `invade` | `target` | viz 3.3 | 10 wealth + 5 power za tah |
 | `invest_tech` | (vlastní stát nebo `target` v sphere/union) | `tech` +0.3 | 8 wealth |
@@ -151,13 +156,15 @@ NPC má skrytou vlastnost `openness` (0 až 10) v `npc.json`: N1 5, N2 4, N3 4, 
 - sankce od X vůči NPC v posledních 6 tazích: −25;
 - `law` NPC ≥ 7 a cena mimo pásmo 0.9 až 1.2 tržní: −20.
 
-U `admit` se místo ceny počítá splnění `law_threshold`: splněn +10, nesplněn −30.
+U `admit` je `law ≥ law_threshold` tvrdá podmínka (7.4); hod rozhoduje až po jejím splnění a místo ceny se počítá bonus +10.
 
-**Hod d100** z `random.Random(rng_seed + turn + hash(ID))`:
+Cenový člen se hodnotí z pohledu NPC: když NPC nakupuje, počítá se s opačným znaménkem, takže vyšší cena skóre snižuje.
+
+**Hod d100** z `random.Random(rng_seed + turn + hash(ID))`, kde `hash(ID)` je CRC32 z ID NPC (vestavěný `hash()` Pythonu se mezi běhy mění a běh by nebyl reprodukovatelný); všechny nabídky na totéž NPC v jednom tahu mají stejný hod:
 
 - hod ≤ skóre: přijato;
-- hod ≤ skóre + 20: přijato s podmínkou (objem nebo půjčka −30 %, případně cena o 10 % ve prospěch NPC; engine zvolí, co je pro daný typ akce relevantní);
-- hod ≤ skóre + 35: protinávrh (NPC vrátí parametry jako soukromou zprávu hráči; `trade_offer` se shodnými parametry v dalších 3 tazích projde bez hodu);
+- hod ≤ skóre + 20: přijato s podmínkou (objem nebo půjčka −30 %, případně cena o 10 % ve prospěch NPC; engine zvolí, co je pro daný typ akce relevantní: u `trade_offer` objem −30 %, u `loan` částka −30 %, u `protect` a `admit` přijato beze změny);
+- hod ≤ skóre + 35: protinávrh (NPC vrátí parametry jako soukromou zprávu hráči; `trade_offer` se shodnými parametry v dalších 3 tazích projde bez hodu; stejně projde `loan` s částkou podle protinávrhu na totéž NPC v dalších 3 tazích);
 - jinak odmítnuto.
 
 Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde do soukromého logu hráče a do snímku, do Zpráv světa ne.
@@ -166,11 +173,15 @@ Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde 
 
 Engine každý tah vygeneruje pro každého hráče (A, B, po vzniku Unie i C) nejvýš 2 nabídky od NPC, vybrané podle nejvyššího vlivu daného hráče u NPC:
 
-1. `sell`: NPC s přebytkem statku nad rezervu, který hráč tento tah dovážel; cena = tržní × 0.9 při `wealth` NPC pod 25, × 1.0 jinak, × 1.15 při `openness` ≤ 3;
-2. `loan_request`: NPC v bídě nebo s deficitem oritu, částka 10 až 20 podle deficitu;
+1. `sell`: NPC s přebytkem statku nad rezervu, který hráč tento tah dovážel; cena = tržní × 0.9 při `wealth` NPC pod 25, × 1.0 jinak, × 1.15 při `openness` ≤ 3, přičemž `openness ≤ 3` má přednost před `wealth` pod 25; množství je menší z přebytku nad rezervu a dovozu hráče v tomto tahu;
+2. `loan_request`: NPC v bídě nebo s deficitem oritu, částka 10 + max(0, 15 − `wealth`) + 5 × chybějící orit, nejvýš 20;
 3. `protect_request`: NPC, jehož soused je právě cílem invaze, nebo u kterého vliv soupeřícího hráče vzrostl za poslední 3 tahy aspoň o 4; jen hráči s vyšším vlivem.
 
 Nabídka jde do pohledu hráče s `offer_id` a platí 2 tahy. Akce `accept_offer` (`offer_id`) ji provede bez hodu podle 3.4 a počítá se jako akce. Tři po sobě ignorované nabídky téhož NPC snižují vliv hráče u něj o 1.
+
+**Rozdělení míst:** z dvou míst na hráče a tah je nejvýš jedno `sell`; druhé dostane `loan_request` nebo `protect_request` s nejvyšším vlivem, a jen když žádná není, druhé `sell`.
+
+**Platnost:** nabídku z tahu t lze přijmout v tazích t+1 a t+2; nepřijatá propadne na konci tahu t+2 a počítá se jako ignorovaná. Po třetí ignorované v řadě klesne vliv o 1 a počítadlo se nuluje; Unie vliv nemá. Přijatá nabídka `sell` je jednorázový obchod v tomtéž tahu a jako cílený obchod s hráčem přidá v 4.4 vliv +1.
 
 ## 4. Přepočet světa (každý tah, v tomto pořadí)
 
@@ -184,14 +195,18 @@ Každý stát má vedle surovin i průmysl. Průmysl vyrábí produkt `goods`, k
 
 **Výroba za tah:**
 
-`goods_out = industry × (pop / pop_start) × (1 + tech / 10) × coverage`
+`kapacita = industry × (pop / pop_start) × (1 + tech / 10)`
 
-Na jednotku `goods` jsou potřeba vstupy `oil 0.5` a `metal 0.3`. `coverage` je podíl průmyslových vstupů, které má stát k dispozici (0 až 1): nejmenší z poměrů dostupné ropy k průmyslové potřebě ropy a dostupných kovů k průmyslové potřebě kovů. Chybí-li jeden vstup, továrny stojí, i když druhého je dost. Do dostupných vstupů se počítá i zásoba (4.1c); domácnosti mají na zdroje dál přednost. Domácnosti mají na zdroje přednost (obilí a základní spotřeba), průmysl bere až zbytek. Bez ropy továrny stojí.
+**Výroba podle poptávky:** stát vyrábí jen do výše `plánovaná výroba = min(kapacita, vlastní potřeba goods + 1.2 × goods prodané v minulém tahu + doplnění rezervy goods)`; zbytek kapacity továren stojí.
+
+`goods_out = plánovaná výroba × coverage`
+
+Na jednotku `goods` jsou potřeba vstupy `oil 0.5` a `metal 0.3`. `coverage` je podíl průmyslových vstupů, které má stát k dispozici (0 až 1): nejmenší z poměrů dostupné ropy k průmyslové potřebě ropy a dostupných kovů k průmyslové potřebě kovů. Chybí-li jeden vstup, továrny stojí, i když druhého je dost. Do dostupných vstupů se počítá i zásoba (4.1c); domácnosti mají na zdroje dál přednost. Průmyslové vstupy (ropa, kovy) se nakupují a doplňují jen pro plánovanou výrobu, ne pro plnou kapacitu, a `coverage` se počítá vůči plánované výrobě; z ní vychází i růst průmyslu v 4.2c. Domácnosti mají na zdroje přednost (obilí a základní spotřeba), průmysl bere až zbytek. Bez ropy továrny stojí.
 
 **Potřeby** se nezadávají a nejsou uložené v `npc.json` ani ve `state.json`. Engine je počítá každý tah a zapisuje do snímku:
 
 - `need.grain = 3 × pop / 100`
-- `need.goods = 2 × pop / 100`
+- `need.goods = (pop / 100) × (1 + wealth / 60)`, nejvýš `4 × pop / 100` (stát s `wealth` 20 potřebuje 1.33 na 100 obyvatel, s `wealth` 60 dvě, od `wealth` 180 čtyři)
 - `need.oil = 0.6 × pop / 100 + 0.5 × goods_out` (domácnosti a průmysl)
 - `need.metal = 0.5 × pop / 100 + 0.3 × goods_out`
 - `need.orit = 2` pro hráče a běžná NPC od displacementu (beze změny, část 5)
@@ -232,7 +247,7 @@ Po vyhodnocení obchodů hráčů spáruje engine zbylé přebytky se zbylými d
 - **Tranzitní příjem:** každý tranzitní stát dostane jako `wealth` polovinu přirážky připadající na jeho přejezd. Snímek tahu zapisuje tranzitní příjem podle státu do řádku `transit_income`. Druhá polovina přirážky propadá jako náklad dopravy; prodejce dostane cenu bez přirážky.
 - Pořadí párování: (1) dvojice, které spolu obchodovaly minulý tah, (2) dvojice ve stejné sféře, (3) největší poptávka; při shodě má přednost menší počet přejezdů, pak pořadí ID. Hráč a NPC v jeho sféře (`sphere_A` pro A, `sphere_B` pro B) jsou ve stejné sféře, ať hráč prodává, nebo nakupuje.
 - Prodejce nabízí vše nad rezervu **3 tahů spotřeby**: zásobu plus bilanci tahu minus trojnásobek spotřeby (4.1c).
-- Kupec poptává deficit toku tohoto tahu a doplnění rezervy zpět na 3 tahy spotřeby; doplnění jen u státu s `wealth ≥ 25` (4.1c).
+- Kupec poptává deficit toku tohoto tahu a doplnění rezervy zpět na 3 tahy spotřeby; doplnění jen u státu s `wealth ≥ 25` (4.1c) a platí se jen z bohatství nad 25; deficit toku smí stát pokrýt celým bohatstvím.
 - Obchoduje se `grain`, `oil`, `metal` a `goods`. **Orit se automaticky neobchoduje:** NPC ho získá jen akcí `trade_offer` od hráče A nebo B, nebo vlastním nálezem. Unie orit neprodává. Poptávka NPC po oritu se od `euphoria` projevuje žádostmi o půjčku (část 5).
 - Hráči prodávají i nakupují za tržní cenu. Automatický obchod hráče nedává `influence` a pro 4.4 se nepočítá jako obchod s hráčem. Cíleným obchodem s vlivem a vlastní cenou zůstává `trade_offer`.
 - Padlé říše na automatickém trhu nakupují i prodávají za tržní cenu (7a).
@@ -293,7 +308,7 @@ Každý stát dostane za tah malý neformální příjem `wealth += pop / 60`.
 - Pohledávka hráče: `influence[hráč] += debt/20` jednorázově při půjčce.
 - `influence[X] ≥ 10` a zároveň > influence druhého + 3 → `status = sphere_X`. Zdroje ve sféře počítá rozhodčí do "obchodu přes X" (metrika A) a do "zdrojů pod kontrolou X" (metrika B) polovinou.
 - Vliv klesá o 1/tah, pokud neběží žádný obchod, pakt ani dluh.
-- **Přetížení sfér:** každá sféra, kterou hráč X aktuálně drží, násobí jeho přírůstky `influence` u ostatních NPC koeficientem 0.8 (dvě sféry 0.64 a tak dál).
+- **Přetížení sfér:** každá sféra, kterou hráč X aktuálně drží, násobí jeho přírůstky `influence` u ostatních NPC koeficientem 0.8 (dvě sféry 0.64 a tak dál). Počet držených sfér se bere v okamžiku každého přírůstku.
 
 ### 4.5 Splátky
 - NPC splácí 10 % dluhu za tah, ale nikdy pod `wealth 10`. Co nesplatí, se přičte k dluhu × 1.1 (úrok).
@@ -350,9 +365,9 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Generují se z 
 ## 7. Unie
 
 ### 7.1 Vznik
-V tahu, kdy `phase = crash`, jsou způsobilá všechna nezávislá NPC (ne `sphere_X`, ne `occupied_X`), která ztratila aspoň 20 % předkrizového maxima `wealth` nebo nesplácela. Padlé říše jsou způsobilé za podmínky 7a, tedy pokud je během `boom` až `panic` nikdo nenapadl ani nesankcionoval.
+V tahu, kdy `phase = crash`, jsou způsobilá všechna nezávislá NPC (ne `sphere_X`, ne `occupied_X`), která ztratila aspoň 20 % předkrizového maxima `wealth` nebo nesplácela. Padlé říše jsou způsobilé za stejných podmínek jako ostatní (ztráta aspoň 20 % nebo nesplácení) a navíc za podmínky 7a, tedy pokud je během `boom` až `panic` nikdo nenapadl ani nesankcionoval.
 
-Ze způsobilých států zakládá Unii největší souvislá skupina podle `adjacency`, bez mostů; při shodě velikosti skupina s vyšším průměrným `law`. Má-li skupina víc než 4 členy, zakladateli jsou čtyři s nejvyšším `law` (při shodě vyšší `wealth`) a ostatní ze skupiny se stávají kandidáty do stropu 3. Má-li skupina méně než 3 členy, Unie nevznikne (kronikář to zapíše, hra pokračuje bez ní). `fragility` se pro výběr zakladatelů nepoužívá.
+Ze způsobilých států zakládá Unii největší souvislá skupina podle `adjacency`, bez mostů; při shodě velikosti skupina s vyšším průměrným `law`. Zakladatelé se ze skupiny vybírají hladově: první je stát s nejvyšším `law`, každý další je způsobilý soused některého už vybraného s nejvyšším `law` (při shodě vyšší `wealth`), do počtu 4. Nevybraní ze skupiny jsou kandidáti do stropu 3. Má-li skupina méně než 3 členy, Unie nevznikne (kronikář to zapíše, hra pokračuje bez ní). `fragility` se pro výběr zakladatelů nepoužívá.
 
 ### 7.2 Unie jako hráč (C)
 - Fond (`wealth` C) = 10 % `wealth` každého člena při vstupu (odvedeno členem). Dále každý člen odvádí do fondu každý tah 2 % svého `wealth`.
@@ -366,7 +381,7 @@ Ze způsobilých států zakládá Unii největší souvislá skupina podle `adj
 `law_threshold` = průměr `law` členů − 1, přepočítáno každý tah. Zveřejněno jen slovně (viz 6), číslo hráči nevidí.
 
 ### 7.4 Vstup po založení
-- **Přitažlivost:** nezávislé NPC s `law ≥ law_threshold`, průměrný růst `wealth` členů za poslední 3 tahy vyšší než růst toho NPC, a `influence[A] ≤ 8` i `influence[B] ≤ 8`. Unie musí nabídnout akcí `admit`; NPC nabídku vyhodnotí podle 3.4. Max jeden vstup za den.
+- **Přitažlivost:** nezávislé NPC s `law ≥ law_threshold`, průměrný růst `wealth` členů za poslední 3 tahy vyšší než růst toho NPC, a `influence[A] ≤ 8` i `influence[B] ≤ 8`. Unie musí nabídnout akcí `admit`. Podmínka `law ≥ law_threshold` je tvrdá; teprve po jejím splnění NPC nabídku vyhodnotí podle 3.4. Max jeden vstup za den.
 - **Bolest:** nezávislé NPC v bídě nebo po převratu požádá samo. Má-li `law ≥ law_threshold`, stává se členem; jinak `status = candidate`. Kandidát se stane členem v tahu, kdy práh splní.
 - Okupované NPC po revoltě (3.3) vstupuje jako člen, pokud sousedí s členem, jinak jako kandidát.
 - **Sousednost:** každý vstup po založení, přitažlivostí i bolestí, vyžaduje sousednost aspoň s jedním členem podle `adjacency`. Kdo nesousedí, zůstává mimo.

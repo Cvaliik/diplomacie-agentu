@@ -173,10 +173,16 @@ def clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 
-def household_need(e: dict) -> dict:
-    """4.0: spotreba domacnosti podle obyvatelstva."""
+def household_need(e: dict, wealth=None) -> dict:
+    """4.0: spotreba domacnosti podle obyvatelstva.
+
+    v1.7: need.goods = (pop / 100) x (1 + wealth / 60), nejvys 4 na 100 pop. Pri
+    prepoctu tahu se bere wealth zmrazene na zacatku 4.1 (Q2), jinak aktualni.
+    """
     p = float(e.get("pop") or 0.0) / 100.0
-    return {"grain": 3.0 * p, "goods": 2.0 * p, "oil": 0.6 * p, "metal": 0.5 * p}  # 4.0 (v1.6): ropa 0.6
+    w = float(e.get("wealth") or 0.0) if wealth is None else float(wealth)
+    goods = min(4.0 * p, p * (1.0 + max(0.0, w) / 60.0))
+    return {"grain": 3.0 * p, "goods": goods, "oil": 0.6 * p, "metal": 0.5 * p}
 
 
 def goods_potential(e: dict) -> float:
@@ -197,7 +203,7 @@ def orit_need(state, sid: str) -> float:
 
 def compute_need(state, sid: str, goods_out: float) -> dict:
     """4.0: potreby statu pri dane vyrobe goods (domacnosti plus prumysl)."""
-    hh = household_need(ent(state, sid))
+    hh = household_need(ent(state, sid), state.get("_need_wealth", {}).get(sid))
     return {
         "grain": hh["grain"],
         "goods": hh["goods"],
@@ -205,6 +211,20 @@ def compute_need(state, sid: str, goods_out: float) -> dict:
         "metal": hh["metal"] + GOODS_INPUT["metal"] * goods_out,
         "orit": orit_need(state, sid),
     }
+
+
+def planned_goods(state, sid: str, capacity: float) -> float:
+    """4.0 (v1.7): planovana vyroba goods.
+
+    Stat vyrabi jen do vyse vlastni potreby + 1.2 x prodane goods minuleho tahu
+    + doplneni rezervy goods (3 tahy spotreby minus zasoba), nejvys do kapacity.
+    Doplneni rezervy vlastni vyrobou neni vazane na wealth >= 25 (Q4).
+    """
+    e = ent(state, sid)
+    own = household_need(e, state.get("_need_wealth", {}).get(sid))["goods"]
+    sold = float(e.get("goods_sold_last") or 0.0)
+    refill = max(0.0, RESERVE_TURNS * own - float((e.get("stock") or {}).get("goods", 0.0)))
+    return max(0.0, min(capacity, own + 1.2 * sold + refill))
 
 
 def current_need(state, sid: str) -> dict:
@@ -404,8 +424,8 @@ def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
         f["cena"] = 30.0 * gain
     if atype == "admit":
         thr = state["players"]["C"].get("law_threshold")
-        met = thr is None or float(n["law"]) >= float(thr)
-        f["prah"] = 10.0 if met else -30.0
+        # 7.4 (v1.7): prah je tvrda podminka v _union_admit, zde uz jen bonus +10
+        f["prah"] = 10.0
     f["otevrenost"] = 4.0 * (_openness(npcdata, nid) - 5.0)
     if atype == "loan":
         if state["phase"] in ("boom", "euphoria"):
@@ -450,7 +470,11 @@ def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
             text = "Obchod s %s přijmeme za cenu %.4f při množství %.3f." % (
                 params["res"], counter["price"], counter["qty"])
         elif atype == "loan":
-            counter = {"type": "loan", "amount": round(float(params["amount"]) * 0.7, 2)}
+            # 3.4 (v1.7): loan s castkou z protinavrhu projde v dalsich 3 tazich bez hodu
+            counter = {"type": "loan", "player": pid, "npc": nid,
+                       "amount": round(float(params["amount"]) * 0.7, 2),
+                       "expires": turn + COUNTER_VALID_TURNS}
+            state.setdefault("counter_offers", []).append(counter)
             text = "Půjčku přijmeme ve výši %.2f." % counter["amount"]
         elif atype == "protect":
             text = "O paktu můžeme jednat později."
@@ -483,6 +507,17 @@ def _counter_match(state, pid, nid, res, qty, price) -> bool:
         if (c["type"] == "trade_offer" and c["player"] == pid and c["npc"] == nid
                 and c["res"] == res and abs(float(c["qty"]) - qty) < 1e-6
                 and abs(float(c["price"]) - price) < 1e-6 and turn <= int(c["expires"])):
+            state["counter_offers"].remove(c)
+            return True
+    return False
+
+
+def _loan_counter_match(state, pid, nid, amount) -> bool:
+    """3.4 (v1.7): loan s castkou podle protinavrhu na totez NPC projde bez hodu."""
+    turn = int(state["meta"]["turn"])
+    for c in list(state.get("counter_offers", [])):
+        if (c.get("type") == "loan" and c.get("player") == pid and c.get("npc") == nid
+                and abs(float(c["amount"]) - amount) < 1e-6 and turn <= int(c["expires"])):
             state["counter_offers"].remove(c)
             return True
     return False
@@ -667,8 +702,13 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "nedostatek wealth"})
                 continue
-            outcome = _npc_decide(state, npcdata, pid, target, "loan", {"amount": amount},
-                                  events=events, trace=trace)
+            if _loan_counter_match(state, pid, target, amount):
+                outcome = "prijato"
+                trace.add("3.4 protinavrh pujcky prijat", {"player": pid, "npc": target},
+                          {"amount": amount})
+            else:
+                outcome = _npc_decide(state, npcdata, pid, target, "loan", {"amount": amount},
+                                      events=events, trace=trace)
             if outcome == "podminka":
                 amount = amount * 0.7  # 3.4: pujcka -30 %
             elif outcome in ("protinavrh", "odmitnuto"):
@@ -1132,6 +1172,8 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 vol_npc += pay
             if res == GOODS:
                 goods_volume += pay
+                sold_map = state.setdefault("_goods_sold", {})
+                sold_map[seller] = sold_map.get(seller, 0.0) + qty
             pair = sorted((seller, buyer))
             if pair not in new_pairs:
                 new_pairs.append(pair)
@@ -1210,12 +1252,17 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         trade_mult = 0.5
 
     state["_transit_income"] = {}
+    state["_goods_sold"] = {}
+    # 4.0 (v1.7): poptavka po goods z bohatstvi na zacatku prepoctu zdroju (Q2)
+    state["_need_wealth"] = {i: float(ent(state, i)["wealth"]) for i in ids}
     state["_ab_volume"] = 0.0
     state["_ab_auto"] = 0.0
 
     # 1. predbezne potreby
     potential = {i: goods_potential(ent(state, i)) for i in ids}
-    needs = {i: compute_need(state, i, potential[i]) for i in ids}
+    # 4.0 (v1.7): vstupy se nakupuji jen pro planovanou vyrobu, ne pro plny potencial
+    planned = {i: planned_goods(state, i, potential[i]) for i in ids}
+    needs = {i: compute_need(state, i, planned[i]) for i in ids}
 
     # 2a. cilene obchody hracu (mnozstvi ze smlouvy)
     for d in state["deals"]:
@@ -1241,6 +1288,8 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
             imports[buyer][res] += qty
         se["wealth"] = float(se["wealth"]) + value
         be["wealth"] = float(be["wealth"]) - value
+        if res == GOODS and seller in imports:
+            state["_goods_sold"][seller] = state["_goods_sold"].get(seller, 0.0) + qty
         weight = 2.0 if res == "orit" else 1.0
         trade_volume += value
         trade_volume_weighted += value * weight
@@ -1259,28 +1308,32 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
     v_in, pv_in, g_in, pairs_in = _auto_market(state, npcdata, INPUT_GOODS, needs,
                                                imports, exports, trace)
 
-    # 3. vyroba goods
+    # 3. vyroba goods (v1.7: podle planu, coverage vuci planovane vyrobe)
     for i in ids:
         e = ent(state, i)
-        hh = household_need(e)
+        hh = household_need(e, state["_need_wealth"].get(i))
         pot = potential[i]
-        if pot <= 0:
-            coverage = 0.0
+        plan = planned[i]
+        if plan <= 0:
+            coverage = 0.0  # nic se neplanuje, tovarny stoji (Q1)
         else:
             ratios = []
             for res, per_unit in GOODS_INPUT.items():
                 avail = (supply_of(state, i, res) + imports[i][res] - exports[i][res]
                          + float(e["stock"].get(res, 0.0)) - hh[res])
-                ratios.append(max(0.0, avail) / (per_unit * pot))
+                ratios.append(max(0.0, avail) / (per_unit * plan))
             coverage = clamp(min(ratios), 0.0, 1.0)
-        out = pot * coverage
+        out = plan * coverage
+        e["goods_capacity"] = round(pot, 4)
+        e["goods_planned"] = round(plan, 4)
         e["goods_out"] = round(out, 4)
         e["coverage"] = round(coverage, 4)
         # 4. konecne potreby podle skutecne vyroby
         needs[i] = compute_need(state, i, out)
         e["need"] = {k: round(v, 4) for k, v in needs[i].items()}
         trace.add("4.0 vyroba goods",
-                  {"stat": i, "industry": e.get("industry"), "potencial": round(pot, 3)},
+                  {"stat": i, "industry": e.get("industry"), "kapacita": round(pot, 3),
+                   "planovano": round(plan, 3)},
                   {"coverage": e["coverage"], "goods_out": e["goods_out"]})
 
     # 4b. goods: vnitrni trh Unie, pak automaticky trh
@@ -1356,6 +1409,9 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
                    "stock": {k: round(float(v), 3) for k, v in stock.items()},
                    "wealth": round(float(e["wealth"]), 3)})
 
+    # 4.0 (v1.7): prodane goods tohoto tahu jsou "minuly tah" pro plan pristiho tahu (Q3)
+    for i in ids:
+        ent(state, i)["goods_sold_last"] = round(state["_goods_sold"].get(i, 0.0), 4)
     state["_player_imports"] = {pid: {r: round(imports[pid][r], 4) for r in TRADEABLES}
                                 for pid in ("A", "B")}
     state["_trade"] = {"volume": trade_volume, "weighted": trade_volume_weighted,
@@ -2024,8 +2080,9 @@ def _pick_founders(state, npcdata, eligible: list[str], trace: Trace):
     """7.1 (v1.6): nejvetsi souvisla skupina zpusobilych statu, bez mostu.
 
     Pri shode velikosti vyhrava skupina s vyssim prumernym law, pak nizsi ID (N-otazka).
-    Ma-li skupina vic nez 4 cleny, zakladateli jsou ctyri s nejvyssim law (pri shode
-    vyssi wealth), dalsi ze skupiny ve stejnem poradi se stavaji kandidaty do stropu 3.
+    v1.7: zakladatele se vybiraji hladove. Prvni je stat s nejvyssim law, kazdy dalsi
+    je zpusobily soused nektereho uz vybraneho s nejvyssim law (pri shode vyssi wealth,
+    pak nizsi ID), do poctu 4. Nevybrani ze skupiny jsou kandidati do stropu 3.
     Ma-li mene nez 3, Unie nevznikne (volajici). fragility se nepouziva.
 
     Vraci (zakladatele nebo cela mala skupina, kandidati).
@@ -2044,8 +2101,15 @@ def _pick_founders(state, npcdata, eligible: list[str], trace: Trace):
     if len(group) < 3:
         founders, candidates = ranked, []
     else:
-        founders = ranked[:UNION_MAX_FOUNDERS]
-        candidates = ranked[UNION_MAX_FOUNDERS:UNION_MAX_FOUNDERS + UNION_MAX_CANDIDATES]
+        founders = [ranked[0]]
+        while len(founders) < UNION_MAX_FOUNDERS:
+            nbs = [x for x in ranked if x not in founders
+                   and any(x in neighbours(npcdata, fo) for fo in founders)]
+            if not nbs:
+                break
+            founders.append(nbs[0])  # ranked je serazene podle law, wealth, ID
+        rest = [x for x in ranked if x not in founders]
+        candidates = rest[:UNION_MAX_CANDIDATES]
     trace.add("7.1 vyber zakladatelu",
               {"zpusobili": eligible, "skupiny": [len(g) for g in skupiny],
                "nejvetsi_skupina": group},
@@ -2076,11 +2140,9 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
             # 7.1 (v1.6): nezavisla NPC (ne sphere_X, ne occupied_X)
             if n["status"] != "independent":
                 continue
-            if n.get("kind") == "fallen":
-                # 7a: padla rise, kterou behem boom az panic nikdo netlacil
-                if i not in m["fallen_touched"]:
-                    eligible.append(i)
-                continue
+            if n.get("kind") == "fallen" and i in m["fallen_touched"]:
+                continue  # 7a: padla rise, kterou behem boom az panic nekdo tlacil, zpusobila neni
+            # 7.1 (v1.7): padle rise jen za stejnych podminek jako ostatni (ztrata nebo nesplaceni)
             defaulted = any(d["npc"] == i for d in m["defaults"])
             peak = float(n.get("wealth_peak", n["wealth"]))
             lost = peak > 0 and float(n["wealth"]) <= (1.0 - UNION_FOUNDER_LOSS) * peak
@@ -2227,7 +2289,11 @@ def _union_admit(state, npcdata, target, events, trace) -> None:
     if float(n["influence"]["A"]) > 8 or float(n["influence"]["B"]) > 8:
         events.append({"kind": "union_rejected", "npc": target, "reason": "vliv velmoci"})
         return
-    # 3.4 (v1.6): NPC nabidku vyhodnoti; prah prava je faktor skore (+10 / -30)
+    # 7.4 (v1.7): law >= law_threshold je tvrda podminka pritazlivosti
+    if C["law_threshold"] is not None and float(n["law"]) < float(C["law_threshold"]):
+        events.append({"kind": "union_rejected", "npc": target, "reason": "law pod prahem"})
+        return
+    # 3.4: NPC nabidku vyhodnoti az po splneni prahu
     outcome = _npc_decide(state, npcdata, "C", target, "admit", {}, events=events, trace=trace)
     if outcome in ("protinavrh", "odmitnuto"):
         events.append({"kind": "union_rejected", "npc": target, "reason": "NPC nabidku neprijalo (3.4)"})
@@ -2280,13 +2346,13 @@ def step_offers(state, npcdata, trace: Trace, events: list) -> None:
     new = []
     for pid in players:
         active_npcs = {o["npc"] for o in kept if o["player"] == pid}
-        cands = []
+        sells, others = [], []
         for nid in sorted(state["npc"], key=_npc_key):
             if nid in active_npcs:
                 continue
             nn = state["npc"][nid]
             need = nn.get("need") or {}
-            offer = None
+            infl = float(nn["influence"].get(pid, 0.0)) if pid in ("A", "B") else 0.0
             # (1) sell: prebytek nad rezervu u statku, ktery hrac tento tah dovazel
             if pid in ("A", "B"):
                 for res in ("grain", "oil", "metal", "goods"):
@@ -2298,11 +2364,13 @@ def step_offers(state, npcdata, trace: Trace, events: list) -> None:
                         continue
                     op = _openness(npcdata, nid)
                     factor = 1.15 if op <= 3 else (0.9 if float(nn["wealth"]) < 25 else 1.0)
-                    offer = {"type": "sell", "res": res, "qty": round(min(surplus, imp), 3),
-                             "price": round(market_price(state, res) * factor, 4)}
+                    sells.append((-infl, _npc_key(nid), nid,
+                                  {"type": "sell", "res": res, "qty": round(min(surplus, imp), 3),
+                                   "price": round(market_price(state, res) * factor, 4)}))
                     break
+            other = None
             # (2) loan_request: NPC v bide nebo s deficitem oritu
-            if offer is None and nn.get("kind") != "fallen":
+            if nn.get("kind") != "fallen":
                 orit_short = 0.0
                 if orit_on:
                     orit_short = max(0.0, float(need.get("orit", 0.0)) - eff_prod(nn, "orit")
@@ -2310,9 +2378,9 @@ def step_offers(state, npcdata, trace: Trace, events: list) -> None:
                 if (nid in poor or orit_short > 0) and not (
                         pid == "C" and nn["status"] not in ("independent", "candidate")):
                     gap = max(0.0, 15.0 - float(nn["wealth"])) + 5.0 * orit_short
-                    offer = {"type": "loan_request", "amount": round(clamp(10.0 + gap, 10.0, 20.0), 2)}
+                    other = {"type": "loan_request", "amount": round(clamp(10.0 + gap, 10.0, 20.0), 2)}
             # (3) protect_request: ohrozeny soused nebo rostouci vliv soupere, jen hraci s vyssim vlivem
-            if offer is None and pid in ("A", "B") and nn.get("kind") != "fallen":
+            if other is None and pid in ("A", "B") and nn.get("kind") != "fallen":
                 rival = "B" if pid == "A" else "A"
                 inf_p = float(nn["influence"].get(pid, 0.0))
                 inf_r = float(nn["influence"].get(rival, 0.0))
@@ -2320,12 +2388,29 @@ def step_offers(state, npcdata, trace: Trace, events: list) -> None:
                 rise = inf_r - float(hist[0].get(rival, 0.0)) if len(hist) >= 3 else 0.0
                 threatened = any(nb in invaded for nb in neighbours(npcdata, nid))
                 if inf_p > inf_r and (threatened or rise >= 4.0) and not _active_deal(state, pid, nid, "protect"):
-                    offer = {"type": "protect_request"}
-            if offer is not None:
-                infl = float(nn["influence"].get(pid, 0.0)) if pid in ("A", "B") else 0.0
-                cands.append((-infl, _npc_key(nid), nid, offer))
-        cands.sort()
-        for _, _, nid, offer in cands[:2]:
+                    other = {"type": "protect_request"}
+            if other is not None:
+                others.append((-infl, _npc_key(nid), nid, other))
+        sells.sort()
+        others.sort()
+        # 3.5 (v1.7): nejvys jedno sell; druhe misto loan_request nebo protect_request
+        # s nejvyssim vlivem, a jen kdyz zadna neni, druhe sell. Bez sell dve jine (Q6).
+        chosen, used = [], set()
+
+        def take(lst):
+            for c in lst:
+                if c[2] not in used:
+                    used.add(c[2])
+                    chosen.append(c)
+                    return True
+            return False
+
+        take(sells)
+        if not take(others):
+            take(sells)
+        if len(chosen) < 2:
+            take(others)
+        for _, _, nid, offer in chosen[:2]:
             oid = "o%d" % int(m.get("next_offer_id", 1))
             m["next_offer_id"] = int(m.get("next_offer_id", 1)) + 1
             o = dict(offer)
@@ -2557,6 +2642,8 @@ def apply_turn(state, npcdata, actions):
     st.pop("_npc_trade_volume", None)
     st.pop("_goods_trade_volume", None)
     st.pop("_player_imports", None)
+    st.pop("_goods_sold", None)
+    st.pop("_need_wealth", None)
     st.pop("_ab_volume", None)
     st.pop("_ab_auto", None)
     st["players"]["C"]["fund"] = st["players"]["C"]["wealth"]

@@ -147,6 +147,16 @@ def _balance(state, applied):
         pen = sum(float(a["outputs"]["pokuta_podle_statku"].get(res, 0.0))
                   for a in applied if a["rule"].startswith("4.1 zdroje"))
         out[res] = {"vyroba": prod, "domacnosti": hh, "prumysl": ind, "pokuty": pen}
+    # v1.7: svetova bilance goods (kapacita, plan, vyroba, spotreba, prodano, cena)
+    ids = engine.world_ids(state)
+    out["goods"] = {
+        "kapacita": sum(float(engine.ent(state, i).get("goods_capacity") or 0.0) for i in ids),
+        "planovano": sum(float(engine.ent(state, i).get("goods_planned") or 0.0) for i in ids),
+        "vyroba": sum(float(engine.ent(state, i).get("goods_out") or 0.0) for i in ids),
+        "spotreba": sum(float((engine.ent(state, i).get("need") or {}).get("goods", 0.0)) for i in ids),
+        "prodano": sum(float(engine.ent(state, i).get("goods_sold_last") or 0.0) for i in ids),
+        "cena": float((state.get("prices") or {}).get("goods", 0.0)),
+    }
     return out
 
 

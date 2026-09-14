@@ -40,6 +40,10 @@ Stav ke dni: 11. 9. 2026, před prvním ostrým tahem.
 > a zapsané do pravidel. M1 ruší obchod hráčů mezi sebou, M5 nahrazuje práh rezervy 25, M6 ruší nový
 > výběr zakladatelů bez mostu, M8 řeší příspěvky do fondu a M10 obchod padlých říší za tržní cenu.
 > Testy v1.6 jsou v části N, nově otevřené otázky z implementace v1.6 v části O.
+>
+> **Vyřešeno rozhodnutím Adama ze 14. 9. 2026 (pravidla v1.7).** O1 až O5, O7, O8, O11, O12, O14, O15,
+> O18 a O19 jsou potvrzené a zapsané do pravidel. O6 (u půjčky), O9, O13, O16 a O17 řeší změny v1.7.
+> Testy v1.7 jsou v části P, nově otevřené otázky z implementace v1.7 v části Q.
 
 ## Co naopak sedí (ověřeno skriptem)
 
@@ -2901,12 +2905,16 @@ NPC) a O16 (padlé říše jako zakladatelé).
 
 ### O17. Továrny vyrábějí i to, co se neprodá
 
+> **Vyřešeno v1.7 (4.0): výroba podle poptávky.**
+
 Průmysl nakupuje vstupy a doplňuje rezervy pro plnou výrobu podle `coverage`, bez ohledu na to, zda se
 `goods` prodá. Cena `goods` je v testech trvale na dolní mezi 1.05, trh je přesycený, a průmyslová NPC bez
 ropy (N11, N12, N13) na nákupu vstupů zkrachují. **Otázka:** má výroba reagovat na poptávku (například
 vyrábět jen do výše domácí potřeby plus prodaného množství minulého tahu)?
 
 ### O16. Zakladatelé podle `law`
+
+> **Vyřešeno v1.7 (7.1): hladový výběr sousedících zakladatelů, padlé říše jen se ztrátou nebo nesplácením.**
 
 Výběr čtyř s nejvyšším `law` dává do zakladatelů vždy N11 a N12, i když jsou v krizi bez peněz.
 Zakladatelé navíc nemusí sousedit mezi sebou, stačí, že patří do téže souvislé skupiny; N11 a N12 leží
@@ -2915,15 +2923,21 @@ způsobilé jen podle 7a, bez ztráty bohatství a nesplácení (**výklad engin
 
 ### O1. `hash(ID)` není reprodukovatelný
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.4).**
+
 Vestavěná funkce `hash()` řetězců dává v Pythonu při každém spuštění jiný výsledek. **Výklad enginu:**
 místo ní stabilní CRC32 z ID NPC. Všechny nabídky na totéž NPC v jednom tahu tak dostanou stejný hod.
 
 ### O2. Síla nových NPC
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (1).**
+
 Tabulka nových NPC `power` neuvádí. **Výklad enginu:** průměr síly běžných NPC s bohatstvím v rozmezí ±10:
 N13 8, N14 8, N15 7, N16 4.
 
 ### O3. Mapa nových NPC
+
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (1).**
 
 N13 má sousedit s A, N1, N8 a N11, které jsou už navzájem propojené; bez křížení vazeb to na rovině nejde.
 **Výklad:** pozice s nejmenším počtem křížení. N13 (250, 520) kříží 2 vazby, N14 (430, 230) 0, N15 (730, 130) 0,
@@ -2931,15 +2945,21 @@ N16 (730, 460) 1.
 
 ### O4. Cena ve skóre 3.4, když NPC kupuje
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.4).**
+
 Člen `30 × (nabízená cena / tržní cena − 1)` zvýhodňuje vyšší cenu. **Výklad enginu:** počítá se z pohledu NPC;
 když NPC nakupuje, vyšší cena skóre snižuje.
 
 ### O5. Co je „podmínka“ u jednotlivých akcí
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.4).**
+
 **Výklad enginu:** `trade_offer` objem −30 %, `loan` částka −30 %. U `protect` a `admit` nic relevantního není,
 přijetí s podmínkou je tedy přijetí beze změny.
 
 ### O6. Protinávrhy
+
+> **Částečně vyřešeno v1.7 (3.4): půjčka s částkou z protinávrhu projde bez hodu. Parametry protinávrhu u `trade_offer` zůstávají výkladem enginu, viz Q7.**
 
 **Výklad enginu:** u `trade_offer` cena o 10 % ve prospěch NPC při stejném objemu, a ten projde v dalších 3 tazích
 bez hodu. U `loan` NPC navrhne částku −30 % jen zprávou, automatické přijetí pravidlo neurčuje. U `protect`
@@ -2947,45 +2967,677 @@ a `admit` jen zpráva.
 
 ### O7. `trade_offer` mezi hráči
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.2).**
+
 Vůli podle 3.4 mají jen NPC. **Výklad enginu:** `trade_offer` na druhého hráče projde, má-li cíl přebytek nebo
 deficit a je-li cena v pásmu, bez hodu.
 
 ### O8. Sankce mezi hráči a cílené obchody
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.2).**
+
 **Výklad enginu:** sankce mezi hráči přeruší jen jejich automatický obchod; cílené obchody mezi nimi trvají.
 
 ### O9. 3.4 u Unie a práh práva
+
+> **Vyřešeno v1.7 (7.4): práh práva je u `admit` tvrdá podmínka.**
 
 **Výklad enginu:** vůli NPC podléhají i půjčky Unie; člen vlivu je u Unie 0. U `admit` je splnění `law_threshold`
 jen faktor skóre (+10 / −30), ne tvrdá podmínka, přestože 7.4 ho u přitažlivosti dál uvádí jako podmínku.
 
 ### O11. Nabídka `sell`
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.5).**
+
 **Výklad enginu:** množství = menší z přebytku NPC nad rezervu a dovozu hráče v tomto tahu. Při `openness ≤ 3`
 platí cena 1.15× i tehdy, když má NPC `wealth` pod 25.
 
 ### O12. Výše `loan_request`
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.5).**
+
 „10 až 20 podle deficitu“. **Výklad enginu:** 10 + max(0, 15 − `wealth`) + 5 × chybějící orit, se stropem 20.
 
 ### O13. Výběr a pořadí nabídek
+
+> **Vyřešeno v1.7 (3.5): nejvýš jedno `sell` na hráče a tah.**
 
 **Výklad enginu:** jedno NPC dá hráči nejvýš jednu nabídku, typy se zkoušejí v pořadí `sell`, `loan_request`,
 `protect_request`. Unie dostává jen `loan_request`, a to od nezávislých NPC a kandidátů.
 
 ### O14. Platnost a ignorování nabídek
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.5).**
+
 **Výklad enginu:** nabídka z tahu t jde přijmout v tazích t+1 a t+2. Neprijatá propadne na konci tahu t+2 a počítá
 se jako ignorovaná; po třetí v řadě od téhož NPC klesne vliv o 1 a počítadlo se nuluje. Unie vliv nemá.
 
 ### O15. Přijatá nabídka `sell`
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (3.5).**
+
 **Výklad enginu:** jednorázový obchod v tomtéž tahu; jako cílený obchod s hráčem přidá v 4.4 vliv +1.
 
 ### O18. Z čeho se doplňuje rezerva
+
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (4.1a).**
 
 **Výklad enginu:** doplnění se platí jen z bohatství nad 25, deficit toku smí stát pokrýt celým bohatstvím.
 
 ### O19. Kdy se počítají držené sféry
 
+> **Potvrzeno 14. 9. 2026, zapsáno do pravidel v1.7 (4.4).**
+
 **Výklad enginu:** přetížení sfér se počítá z počtu sfér v okamžiku každého přírůstku vlivu.
+
+---
+
+## P. Testy pravidel v1.7 (14. 9. 2026)
+
+### Souhrn
+
+| scénář | kritérium | výsledek |
+|---|---|---|
+| (0) nikdo netáhne | do tahu 15 nejvýš dvě NPC v bídě | prošlo, 0 NPC: žádné |
+| (0) | do tahu 15 v bídě žádné z N1 až N5, N7, N11 až N14 | prošlo, žádné |
+| (0) | `W_real` v tahu 30 aspoň 90 % startu | prošlo, 141.3 % z 864 |
+| (0) | do tahu 90 nejvýš 6 NPC v bídě z 16 | prošlo, nejvíc 0 najednou, různých za běh 0 |
+| (a) scénář ze zadání | crash mezi dnem 7 a 11 | prošlo, tah 33, den 11 |
+| (a) | Unie s aspoň 3 zakladateli | prošlo, N4, N7, N16, N3 (tah 33) |
+| (a) | validate 0 chyb | prošlo |
+| (b) realistické půjčování | crash mezi dnem 7 a 11 | prošlo, tah 25, den 9 |
+| (b) | Unie s aspoň 3 zakladateli | prošlo, N1, N13, N8, N2 (tah 25) |
+| (b) | validate 0 chyb | prošlo |
+
+**Všechny tři scénáře poprvé splnily všechna kritéria.** Validace hlásí 0 chyb ve všech 90 tazích.
+Výchozí zásoby jsem podle potvrzeného I4 přepočítal s novou potřebou `goods` (Q5); kalibraci jsem nedělal.
+
+### P1. Scénář (0): rozpis N11, N13, N8 a N16
+
+Žádné NPC do bídy nepadlo, rozpis je proto průměr za tah přes celých 90 tahů. „Ostatní“ je všude nulové,
+účty se uzavírají.
+
+| NPC | v bídě od | tahů v bídě | období rozpisu | prodej (dostal) | nákup (zaplatil) | z toho doplnění | z toho přirážka | pokuty | příjem 4.2b | investice | průzkum | solidarita | příspěvek Unii | ostatní | **čistě** | kapacita / plán / výroba goods | `wealth` na konci období |
+|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|---|
+| N8 | nepadlo | 0 | tahy 1 až 90 | +1.09 | -1.39 | +0.00 | -0.07 | +0.00 | +1.33 | +0.00 | -1.07 | +0.00 | +0.00 | +0.00 | **-0.03** | 2.00 / 1.04 / 1.04 | 19.1 |
+| N11 | nepadlo | 0 | tahy 1 až 90 | +0.29 | -0.00 | -0.00 | -0.00 | +0.00 | +0.83 | +0.00 | +0.00 | +0.00 | +0.00 | +0.00 | **+1.12** | 20.00 / 2.00 / 2.00 | 191.1 |
+| N13 | nepadlo | 0 | tahy 1 až 90 | +0.00 | -1.26 | +0.00 | -0.16 | +0.00 | +2.00 | -0.11 | -0.98 | +0.00 | +0.00 | -0.00 | **-0.35** | 20.00 / 1.56 / 1.56 | 18.9 |
+| N16 | nepadlo | 0 | tahy 1 až 90 | +0.11 | -1.60 | +0.00 | -0.08 | +0.00 | +1.50 | +0.00 | -0.07 | +0.00 | +0.00 | -0.00 | **-0.05** | 1.96 / 1.16 / 1.16 | 17.4 |
+
+Co z rozpisu plyne:
+
+1. **N11 už nekrachuje na nákupu vstupů.** Kapacita jeho továren je 20, plánuje ale vyrábět jen 2 pro vlastní
+   potřebu, takže vstupy skoro nekupuje (nákup 0.00 za tah) a čistě vydělává 1.12 za tah.
+2. **N13, N8 a N16 jsou těsně pod nulou.** Čistý tok je −0.35, −0.03 a −0.05 za tah a jejich bohatství v tahu 90
+   je 18.9, 19.1 a 17.4, tedy blízko hranice bídy 15 (Q11). V devadesátitahové hře do bídy nepadnou.
+3. **U N13 je rozdíl proti v1.6 největší.** Místo nákupu vstupů za 6.44 za tah dnes utratí 1.26 a továrny s kapacitou
+   20 plánují jen 1.56.
+
+### P2. Co z běhů plyne
+
+1. **Výroba teď sleduje poptávku a trh s `goods` se vyrovnal.** Ve (0) je v tahu 90 kapacita 178.8,
+   plán 44.8 a spotřeba 44.8; 75 % kapacity stojí. Cena `goods` se z dolní meze 1.05
+   zvedla na 1.50. Prodává se ale skoro nic (0.0 v tahu 90), každý stát si vyrobí sám, co spotřebuje.
+2. **Ropa spadla na dolní mez.** Od tahu 2 (0), 2 (a) a 2 (b) stojí ropa 0.70, protože
+   průmysl už nekupuje vstupy pro plnou kapacitu (Q9).
+3. **Bída a převraty výrazně ubyly.** Převratů je 0 (0), 34 (a) a 26 (b), ve v1.6 97, 64 a 75.
+   Index v tahu 90 je 95.92 (0), 91.89 (a) a 84.54 (b).
+4. **Bohatství se hromadí u hráčů.** Ve (0) mají A a B v tahu 90 737 a 553,
+   nejbohatší aktér drží 36 % světového bohatství a `W_real` je 2.36násobek startu,
+   takže index drží strop 1.5 (Q10).
+5. **Zakladatelé Unie spolu sousedí a padlé říše mezi nimi nejsou.** Ve všech třech scénářích má každý zakladatel
+   souseda mezi ostatními zakladateli a žádná padlá říše nebyla způsobilá.
+6. **Fond Unie se hromadí.** V tahu 90 má fond 48.18 (0), 106.37 (a) a 184.38 (b); solidarita posílá jen členům
+   v bídě, a ti skoro nejsou (Q12).
+7. **Nabídky se rozdělily.** Hráči A a B teď dostávají i `loan_request` (ve (b) 83 a
+   83 za běh) vedle `sell` (97 a 97).
+8. **Vůle NPC u půjček ve (b):** přijato 16, s podmínkou 11, protinávrh 5,
+   odmítnuto 6. Okno krachu to nerozbilo.
+
+### P.0 Scénář (0): nikdo netáhne
+
+Hráči mlčí, žádné akce.
+
+#### Fáze
+
+| fáze | tah | den | spouštěč |
+|---|---|---|---|
+| `pre` | 1 | 1 | start |
+| `displacement` | 7 | 3 | tah 7 |
+| `boom` | 45 | 15 | tah 45 bez pujcky, vynuceny boom |
+| `euphoria` | 50 | 17 | cena oritu >= 20 |
+| `overtrading` | 58 | 20 | pojistka cyklu: 8 tahu bez splneni prahu |
+| `distress` | 66 | 22 | pojistka cyklu: 8 tahu bez splneni prahu |
+| `panic` | 68 | 23 | druhe nesplaceni nebo 2 tahy distress |
+| `crash` | 69 | 23 | po jednom tahu paniky |
+| `depression` | 75 | 25 | 6 tahu po crash |
+| `recovery` | 81 | 27 | 12 tahu po crash |
+
+Pojistka cyklu: do `overtrading` v tahu 58, do `distress` v tahu 66. Zaniklých paktů: 0.
+
+#### Index a ceny
+
+| tah | index | W_real | v bídě | grain | oil | metal | goods | orit |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 89.26 | 898.2 | 0 | 0.75 | 1.09 | 0.90 | 1.05 | - |
+| 12 | 95.78 | 1036.9 | 0 | 0.72 | 0.70 | 0.84 | 1.50 | 8.05 |
+| 30 | 102.25 | 1221.0 | 0 | 0.64 | 0.70 | 0.84 | 1.50 | 7.00 |
+| 45 | 103.45 | 1441.5 | 0 | 0.61 | 0.70 | 0.84 | 1.50 | 7.00 |
+| 60 | 99.47 | 1656.1 | 0 | 0.59 | 0.70 | 0.84 | 1.49 | 73.25 |
+| 90 | 95.92 | 2043.1 | 0 | 0.58 | 0.70 | 0.84 | 1.50 | 3.50 |
+
+#### NPC v bídě
+
+| tah | počet | NPC v bídě |
+|---|---|---|
+| 15 | 0 | - |
+| 30 | 0 | - |
+| 90 | 0 | - |
+
+#### Unie: zakladatelé, členové, fond a solidarita
+
+Způsobilých států: 9, souvislé skupiny o velikostech 5, 2, 2.
+
+| zakladatel / kandidát při vzniku | role | `law` | `wealth` |
+|---|---|---|---|
+| N4 | zakladatel | 6.0 | 32.83 |
+| N7 | zakladatel | 4.0 | 18.94 |
+| N2 | zakladatel | 4.0 | 18.25 |
+| N10 | zakladatel | 4.0 | 19.51 |
+| N15 | kandidát | 3.0 | 19.51 |
+
+| tah | vztah k založení | členů | kdo | kandidátů | kdo | fond | solidarita v tahu | solidarita od vzniku |
+|---|---|---|---|---|---|---|---|---|
+| 60 | tah 60 | 0 | - | 0 | - | - | 0.00 | - |
+| 69 | vznik | 4 | N4, N7, N2, N10 | 1 | N15 | 8.95 | 0.00 | 0.00 |
+| 75 | +6 tahů | 4 | N4, N7, N2, N10 | 1 | N15 | 19.62 | 0.00 | 0.00 |
+| 87 | +18 tahů | 4 | N4, N7, N2, N10 | 1 | N15 | 42.27 | 0.00 | 0.00 |
+| 90 | tah 90 | 4 | N4, N7, N2, N10 | 1 | N15 | 48.18 | 0.00 | 0.00 |
+
+#### Sféry před krachem a po něm
+
+| hráč | tah 68 (před krachem) | tah 69 (krach) |
+|---|---|---|
+| A | 0 | 0 |
+| B | 0 | 0 |
+
+#### Světová bilance goods
+
+| tah | kapacita továren | plánovaná výroba | skutečná výroba | spotřeba | prodáno | cena |
+|---|---|---|---|---|---|---|
+| 1 | 89.0 | 37.6 | 37.6 | 38.6 | 1.3 | 1.05 |
+| 30 | 148.6 | 43.4 | 43.4 | 43.4 | 0.1 | 1.50 |
+| 60 | 172.4 | 44.2 | 44.2 | 44.0 | 0.0 | 1.49 |
+| 90 | 178.8 | 44.8 | 44.8 | 44.8 | 0.0 | 1.50 |
+
+#### Světová bilance ropy a obilí
+
+| tah | ropa výroba | ropa domácnosti | ropa průmysl | ropa pokuty | obilí výroba | obilí domácnosti | obilí pokuty |
+|---|---|---|---|---|---|---|---|
+| 1 | 52.4 | 12.3 | 18.8 | 0.00 | 65.6 | 61.6 | 0.00 |
+| 30 | 60.2 | 12.3 | 21.7 | 0.00 | 77.8 | 61.6 | 0.00 |
+| 60 | 63.0 | 12.3 | 22.1 | 0.00 | 83.0 | 61.6 | 0.00 |
+| 90 | 63.0 | 12.3 | 22.4 | 0.00 | 84.5 | 61.6 | 0.00 |
+
+#### Obchod
+
+| tah | NPC s NPC | hráči (cílené i automatický obchod) | z toho goods (všichni) | A s B |
+|---|---|---|---|---|
+| 6 | 12.70 | 17.52 | 1.98 | 2.66 |
+| 30 | 10.34 | 13.74 | 0.13 | 2.06 |
+| 60 | 9.63 | 13.45 | 0.00 | 2.02 |
+| 90 | 7.27 | 9.86 | 0.00 | 2.02 |
+
+Obchod A s B v tazích 6, 30 a 60: 2.66, 2.06 a 2.02. Za celý běh proběhl v 90 tazích v objemu 197.96.
+
+#### Obchody podle počtu přejezdů
+
+| tah | 0 přejezdů | 1 přejezd | 2 přejezdy | 3 přejezdy |
+|---|---|---|---|---|
+| 6 | 36 | 3 | 2 | 0 |
+| 30 | 29 | 6 | 4 | 0 |
+
+#### Tranzitní příjem podle státu
+
+| stát | tahy 1 až 30 | tahy 1 až 90 |
+|---|---|---|
+| N6 | 3.29 | 11.48 |
+| N7 | 2.67 | 8.01 |
+| N1 | 0.99 | 3.57 |
+| N2 | 1.06 | 2.52 |
+| N4 | 0.46 | 1.64 |
+
+#### Rozhodování NPC podle 3.4
+
+Žádná cílená akce, žádné vyhodnocení.
+
+#### Nabídky NPC podle 3.5
+
+| hráč | typ | vygenerováno | přijato skriptem |
+|---|---|---|---|
+| A | `loan_request` | 24 | 0 |
+| A | `sell` | 156 | 0 |
+| B | `loan_request` | 24 | 0 |
+| B | `sell` | 156 | 0 |
+
+#### Zásoby světa (součet 18 států)
+
+| tah | grain | oil | metal | goods | orit |
+|---|---|---|---|---|---|
+| 1 | 401.4 | 154.7 | 121.5 | 258.2 | 0.0 |
+| 30 | 377.8 | 167.7 | 142.9 | 264.2 | 257.8 |
+| 60 | 384.0 | 179.7 | 162.1 | 265.5 | 263.2 |
+| 90 | 393.0 | 210.0 | 163.5 | 265.8 | 280.0 |
+
+#### Převraty, padlé říše a hráči
+
+Převratů celkem za 90 tahů: **0**. Bohatství:
+
+| tah | N11 Aurelie | N12 Ysmar | A | B |
+|---|---|---|---|---|
+| 30 | 129.5 | 113.0 | 337.6 | 268.1 |
+| 60 | 161.5 | 134.9 | 557.9 | 424.7 |
+| 90 | 191.1 | 157.2 | 736.6 | 553.1 |
+
+#### Průmysl
+
+| tah | A industry / goods_out | B industry / goods_out | N1 industry / goods_out | N6 industry / goods_out | N11 industry / goods_out |
+|---|---|---|---|---|---|
+| 1 | 8.1 / 6.13 | 6.0 / 4.90 | 2.0 / 2.60 | 1.0 / 1.10 | 7.1 / 1.25 |
+| 30 | 10.0 / 9.30 | 6.0 / 8.40 | 3.5 / 3.28 | 1.0 / 1.19 | 10.0 / 1.57 |
+| 60 | 10.0 / 9.20 | 6.0 / 8.40 | 5.0 / 3.22 | 1.0 / 1.19 | 10.0 / 1.84 |
+| 90 | 10.0 / 9.20 | 6.0 / 8.40 | 5.9 / 3.10 | 1.0 / 1.19 | 10.0 / 2.00 |
+
+### P.a Varianta (a): scénář ze zadání
+
+A půjčuje N6 od tahu 8, B chrání N7, oba obchodují obilím. Skript přijímá `sell`, které kryjí deficit hráče, a `loan_request` v boom a euphoria.
+
+#### Fáze
+
+| fáze | tah | den | spouštěč |
+|---|---|---|---|
+| `pre` | 1 | 1 | start |
+| `displacement` | 7 | 3 | tah 7 |
+| `boom` | 9 | 3 | prvni loan po displacementu |
+| `euphoria` | 14 | 5 | cena oritu >= 20 |
+| `overtrading` | 22 | 8 | pojistka cyklu: 8 tahu bez splneni prahu |
+| `distress` | 30 | 10 | pojistka cyklu: 8 tahu bez splneni prahu |
+| `panic` | 32 | 11 | druhe nesplaceni nebo 2 tahy distress |
+| `crash` | 33 | 11 | po jednom tahu paniky |
+| `depression` | 39 | 13 | 6 tahu po crash |
+| `recovery` | 45 | 15 | 12 tahu po crash |
+
+Pojistka cyklu: do `overtrading` v tahu 22, do `distress` v tahu 30. Zaniklých paktů: 0.
+
+#### Index a ceny
+
+| tah | index | W_real | v bídě | grain | oil | metal | goods | orit |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 89.26 | 898.2 | 0 | 0.75 | 1.09 | 0.90 | 1.05 | - |
+| 12 | 97.42 | 1011.6 | 0 | 0.93 | 0.70 | 0.84 | 1.42 | 17.35 |
+| 30 | 86.04 | 1205.0 | 4 | 0.92 | 0.70 | 0.84 | 1.48 | 129.77 |
+| 45 | 61.78 | 926.7 | 5 | 0.56 | 0.70 | 0.84 | 1.48 | 3.50 |
+| 60 | 91.92 | 1156.4 | 2 | 0.56 | 0.70 | 0.84 | 1.51 | 3.50 |
+| 90 | 91.89 | 1504.8 | 2 | 0.56 | 0.70 | 0.84 | 1.51 | 3.50 |
+
+#### NPC v bídě
+
+| tah | počet | NPC v bídě |
+|---|---|---|
+| 15 | 2 | N1, N16 |
+| 30 | 4 | N1, N5, N10, N14 |
+| 90 | 2 | N8, N10 |
+
+#### Unie: zakladatelé, členové, fond a solidarita
+
+Způsobilých států: 12, souvislé skupiny o velikostech 12.
+
+| zakladatel / kandidát při vzniku | role | `law` | `wealth` |
+|---|---|---|---|
+| N4 | zakladatel | 6.0 | 30.05 |
+| N7 | zakladatel | 4.0 | 19.66 |
+| N16 | zakladatel | 4.0 | 19.40 |
+| N3 | zakladatel | 3.0 | 62.43 |
+| N13 | kandidát | 6.0 | 19.86 |
+| N1 | kandidát | 5.1 | 3.81 |
+| N14 | kandidát | 5.0 | 1.28 |
+
+| tah | vztah k založení | členů | kdo | kandidátů | kdo | fond | solidarita v tahu | solidarita od vzniku |
+|---|---|---|---|---|---|---|---|---|
+| 33 | vznik | 4 | N4, N7, N16, N3 | 3 | N13, N1, N14 | 13.15 | 0.00 | 0.00 |
+| 39 | +6 tahů | 7 | N4, N7, N16, N3, N5, N13, N1 | 3 | N14, N10, N15 | 14.51 | 3.00 | 18.00 |
+| 51 | +18 tahů | 7 | N4, N7, N16, N5, N13, N1, N14 | 2 | N10, N15 | 21.28 | 3.00 | 51.00 |
+| 60 | tah 60 | 7 | N4, N7, N16, N5, N13, N1, N14 | 3 | N10, N15, N8 | 34.09 | 0.00 | 60.00 |
+| 90 | tah 90 | 7 | N4, N7, N16, N5, N13, N1, N14 | 3 | N10, N15, N8 | 106.37 | 0.00 | 72.00 |
+
+#### Sféry před krachem a po něm
+
+| hráč | tah 32 (před krachem) | tah 33 (krach) |
+|---|---|---|
+| A | 1 | 0 |
+| B | 0 | 0 |
+
+#### Světová bilance goods
+
+| tah | kapacita továren | plánovaná výroba | skutečná výroba | spotřeba | prodáno | cena |
+|---|---|---|---|---|---|---|
+| 1 | 89.0 | 37.6 | 37.6 | 38.6 | 1.3 | 1.05 |
+| 30 | 142.5 | 45.2 | 45.2 | 44.8 | 1.6 | 1.48 |
+| 60 | 133.5 | 36.2 | 36.2 | 36.4 | 1.8 | 1.51 |
+| 90 | 133.6 | 35.6 | 35.6 | 35.8 | 2.0 | 1.51 |
+
+#### Světová bilance ropy a obilí
+
+| tah | ropa výroba | ropa domácnosti | ropa průmysl | ropa pokuty | obilí výroba | obilí domácnosti | obilí pokuty |
+|---|---|---|---|---|---|---|---|
+| 1 | 52.4 | 12.3 | 18.8 | 0.00 | 65.6 | 61.6 | 0.00 |
+| 30 | 64.3 | 11.5 | 22.6 | 0.00 | 50.9 | 57.4 | 0.00 |
+| 60 | 56.8 | 9.4 | 18.1 | 0.00 | 117.4 | 47.1 | 0.00 |
+| 90 | 56.9 | 9.3 | 17.8 | 0.00 | 125.4 | 46.7 | 0.00 |
+
+#### Obchod
+
+| tah | NPC s NPC | hráči (cílené i automatický obchod) | z toho goods (všichni) | A s B |
+|---|---|---|---|---|
+| 6 | 8.99 | 141.15 | 2.19 | 2.69 |
+| 30 | 18.19 | 20.35 | 2.40 | 2.48 |
+| 60 | 3.69 | 13.20 | 2.74 | 0.00 |
+| 90 | 3.50 | 13.26 | 3.06 | 0.00 |
+
+Obchod A s B v tazích 6, 30 a 60: 2.69, 2.48 a 0.00. Za celý běh proběhl v 32 tazích v objemu 77.41.
+
+#### Obchody podle počtu přejezdů
+
+| tah | 0 přejezdů | 1 přejezd | 2 přejezdy | 3 přejezdy |
+|---|---|---|---|---|
+| 6 | 35 | 3 | 2 | 0 |
+| 30 | 31 | 3 | 4 | 0 |
+
+#### Tranzitní příjem podle státu
+
+| stát | tahy 1 až 30 | tahy 1 až 90 |
+|---|---|---|
+| N6 | 7.62 | 11.53 |
+| N7 | 4.94 | 7.32 |
+| N4 | 1.05 | 2.95 |
+| N1 | 2.34 | 2.58 |
+| N2 | 1.78 | 1.94 |
+| N8 | 0.59 | 0.71 |
+| N3 | 0.30 | 0.30 |
+
+#### Rozhodování NPC podle 3.4
+
+| akce | přijato | s podmínkou | protinávrh | odmítnuto |
+|---|---|---|---|---|
+| `trade_offer` | 0 | 0 | 2 | 0 |
+| `loan` | 70 | 11 | 1 | 1 |
+| `protect` | 0 | 0 | 0 | 1 |
+
+#### Nabídky NPC podle 3.5
+
+| hráč | typ | vygenerováno | přijato skriptem |
+|---|---|---|---|
+| A | `loan_request` | 83 | 0 |
+| A | `sell` | 97 | 95 |
+| B | `loan_request` | 84 | 13 |
+| B | `sell` | 96 | 93 |
+| C | `loan_request` | 73 | 0 |
+
+#### Zásoby světa (součet 18 států)
+
+| tah | grain | oil | metal | goods | orit |
+|---|---|---|---|---|---|
+| 1 | 401.4 | 154.7 | 121.5 | 258.2 | 0.0 |
+| 30 | 167.4 | 179.1 | 157.9 | 272.8 | 213.9 |
+| 60 | 309.3 | 214.8 | 171.1 | 275.9 | 227.6 |
+| 90 | 291.1 | 219.9 | 172.3 | 271.0 | 235.4 |
+
+#### Převraty, padlé říše a hráči
+
+Převratů celkem za 90 tahů: **34**. Bohatství:
+
+| tah | N11 Aurelie | N12 Ysmar | A | B |
+|---|---|---|---|---|
+| 30 | 170.5 | 118.1 | 249.1 | 212.0 |
+| 60 | 200.1 | 155.4 | 262.9 | 257.9 |
+| 90 | 225.1 | 178.3 | 467.7 | 376.7 |
+
+#### Průmysl
+
+| tah | A industry / goods_out | B industry / goods_out | N1 industry / goods_out | N6 industry / goods_out | N11 industry / goods_out |
+|---|---|---|---|---|---|
+| 1 | 8.1 / 6.13 | 6.0 / 4.90 | 2.0 / 2.60 | 1.0 / 1.10 | 7.1 / 1.25 |
+| 30 | 10.0 / 10.52 | 6.0 / 8.40 | 1.5 / 1.22 | 1.0 / 1.98 | 10.0 / 1.90 |
+| 60 | 10.0 / 10.71 | 5.8 / 7.72 | 0.5 / 0.58 | 1.0 / 1.22 | 10.0 / 2.00 |
+| 90 | 10.0 / 11.06 | 5.8 / 7.72 | 0.5 / 0.64 | 1.0 / 1.20 | 10.0 / 2.00 |
+
+### P.b Varianta (b): realistické půjčování
+
+Hráč půjčí jen v tahu, kdy NPC žádá půjčku nebo má deficit oritu, nejvýš jedna půjčka na hráče a tah. Nabídky přijímá stejně jako (a).
+
+#### Fáze
+
+| fáze | tah | den | spouštěč |
+|---|---|---|---|
+| `pre` | 1 | 1 | start |
+| `displacement` | 7 | 3 | tah 7 |
+| `boom` | 9 | 3 | prvni loan po displacementu |
+| `euphoria` | 14 | 5 | cena oritu >= 20 |
+| `overtrading` | 22 | 8 | pojistka cyklu: 8 tahu bez splneni prahu |
+| `distress` | 23 | 8 | prvni nesplaceni |
+| `panic` | 24 | 8 | druhe nesplaceni nebo 2 tahy distress |
+| `crash` | 25 | 9 | po jednom tahu paniky |
+| `depression` | 31 | 11 | 6 tahu po crash |
+| `recovery` | 37 | 13 | 12 tahu po crash |
+
+Pojistka cyklu: do `overtrading` v tahu 22. Zaniklých paktů: 0.
+
+#### Index a ceny
+
+| tah | index | W_real | v bídě | grain | oil | metal | goods | orit |
+|---|---|---|---|---|---|---|---|---|
+| 1 | 89.26 | 898.2 | 0 | 0.75 | 1.09 | 0.90 | 1.05 | - |
+| 12 | 93.46 | 996.9 | 0 | 0.95 | 0.70 | 0.84 | 1.49 | 17.91 |
+| 30 | 85.47 | 1025.2 | 1 | 0.56 | 0.70 | 0.84 | 1.49 | 2.10 |
+| 45 | 89.11 | 1182.7 | 2 | 0.56 | 0.70 | 0.84 | 1.50 | 3.50 |
+| 60 | 96.47 | 1335.0 | 2 | 0.56 | 0.70 | 0.84 | 1.50 | 3.50 |
+| 90 | 84.54 | 1666.3 | 3 | 0.56 | 0.70 | 0.84 | 1.50 | 3.50 |
+
+#### NPC v bídě
+
+| tah | počet | NPC v bídě |
+|---|---|---|
+| 15 | 1 | N10 |
+| 30 | 1 | N16 |
+| 90 | 3 | N3, N10, N16 |
+
+#### Unie: zakladatelé, členové, fond a solidarita
+
+Způsobilých států: 14, souvislé skupiny o velikostech 14.
+
+| zakladatel / kandidát při vzniku | role | `law` | `wealth` |
+|---|---|---|---|
+| N1 | zakladatel | 6.6 | 70.18 |
+| N13 | zakladatel | 5.2 | 1.59 |
+| N8 | zakladatel | 2.6 | 34.45 |
+| N2 | zakladatel | 5.4 | 38.61 |
+| N4 | kandidát | 5.1 | 15.36 |
+| N5 | kandidát | 5.0 | 5.19 |
+| N14 | kandidát | 5.0 | 16.18 |
+
+| tah | vztah k založení | členů | kdo | kandidátů | kdo | fond | solidarita v tahu | solidarita od vzniku |
+|---|---|---|---|---|---|---|---|---|
+| 25 | vznik | 4 | N1, N13, N8, N2 | 3 | N4, N5, N14 | 14.48 | 0.00 | 0.00 |
+| 31 | +6 tahů | 7 | N1, N13, N8, N2, N4, N5, N14 | 2 | N10, N16 | 24.33 | 0.00 | 12.00 |
+| 43 | +18 tahů | 6 | N13, N8, N2, N4, N5, N14 | 2 | N10, N16 | 58.18 | 0.00 | 12.00 |
+| 60 | tah 60 | 6 | N13, N8, N2, N4, N5, N14 | 2 | N10, N16 | 103.62 | 0.00 | 12.00 |
+| 90 | tah 90 | 6 | N13, N8, N2, N4, N5, N14 | 3 | N10, N16, N3 | 184.38 | 0.00 | 12.00 |
+
+#### Sféry před krachem a po něm
+
+| hráč | tah 24 (před krachem) | tah 25 (krach) |
+|---|---|---|
+| A | 1 | 0 |
+| B | 1 | 0 |
+
+#### Světová bilance goods
+
+| tah | kapacita továren | plánovaná výroba | skutečná výroba | spotřeba | prodáno | cena |
+|---|---|---|---|---|---|---|
+| 1 | 89.0 | 37.6 | 37.6 | 38.6 | 1.3 | 1.05 |
+| 30 | 130.6 | 41.5 | 41.5 | 41.3 | 0.6 | 1.49 |
+| 60 | 147.4 | 39.8 | 39.8 | 39.8 | 0.0 | 1.50 |
+| 90 | 147.3 | 39.7 | 39.7 | 39.7 | 0.0 | 1.50 |
+
+#### Světová bilance ropy a obilí
+
+| tah | ropa výroba | ropa domácnosti | ropa průmysl | ropa pokuty | obilí výroba | obilí domácnosti | obilí pokuty |
+|---|---|---|---|---|---|---|---|
+| 1 | 52.4 | 12.3 | 18.8 | 0.00 | 65.6 | 61.6 | 0.00 |
+| 30 | 60.4 | 11.5 | 20.7 | 0.00 | 148.3 | 57.4 | 0.00 |
+| 60 | 62.9 | 10.9 | 19.9 | 0.00 | 133.5 | 54.5 | 0.00 |
+| 90 | 60.9 | 10.8 | 19.9 | 0.00 | 133.4 | 54.1 | 0.00 |
+
+#### Obchod
+
+| tah | NPC s NPC | hráči (cílené i automatický obchod) | z toho goods (všichni) | A s B |
+|---|---|---|---|---|
+| 6 | 8.99 | 141.15 | 2.19 | 2.69 |
+| 30 | 4.42 | 8.20 | 0.93 | 2.25 |
+| 60 | 2.57 | 9.45 | 0.00 | 2.02 |
+| 90 | 2.42 | 9.30 | 0.00 | 2.02 |
+
+Obchod A s B v tazích 6, 30 a 60: 2.69, 2.25 a 2.02. Za celý běh proběhl v 90 tazích v objemu 184.58.
+
+#### Obchody podle počtu přejezdů
+
+| tah | 0 přejezdů | 1 přejezd | 2 přejezdy | 3 přejezdy |
+|---|---|---|---|---|
+| 6 | 35 | 3 | 2 | 0 |
+| 30 | 24 | 0 | 1 | 0 |
+
+#### Tranzitní příjem podle státu
+
+| stát | tahy 1 až 30 | tahy 1 až 90 |
+|---|---|---|
+| N6 | 4.92 | 4.92 |
+| N7 | 4.18 | 4.31 |
+| N1 | 2.20 | 2.20 |
+| N2 | 1.39 | 1.52 |
+| N4 | 0.89 | 0.89 |
+
+#### Rozhodování NPC podle 3.4
+
+| akce | přijato | s podmínkou | protinávrh | odmítnuto |
+|---|---|---|---|---|
+| `trade_offer` | 0 | 0 | 2 | 0 |
+| `loan` | 16 | 11 | 5 | 6 |
+| `protect` | 0 | 0 | 0 | 1 |
+
+#### Nabídky NPC podle 3.5
+
+| hráč | typ | vygenerováno | přijato skriptem |
+|---|---|---|---|
+| A | `loan_request` | 83 | 1 |
+| A | `sell` | 97 | 96 |
+| B | `loan_request` | 83 | 0 |
+| B | `sell` | 97 | 96 |
+| C | `loan_request` | 70 | 0 |
+
+#### Zásoby světa (součet 18 států)
+
+| tah | grain | oil | metal | goods | orit |
+|---|---|---|---|---|---|
+| 1 | 401.4 | 154.7 | 121.5 | 258.2 | 0.0 |
+| 30 | 384.0 | 207.8 | 170.6 | 268.9 | 170.7 |
+| 60 | 410.1 | 214.7 | 172.9 | 270.7 | 220.0 |
+| 90 | 419.1 | 211.8 | 173.8 | 270.7 | 220.6 |
+
+#### Převraty, padlé říše a hráči
+
+Převratů celkem za 90 tahů: **26**. Bohatství:
+
+| tah | N11 Aurelie | N12 Ysmar | A | B |
+|---|---|---|---|---|
+| 30 | 152.8 | 126.0 | 243.3 | 177.2 |
+| 60 | 177.8 | 150.9 | 369.1 | 367.6 |
+| 90 | 202.8 | 175.9 | 469.2 | 539.3 |
+
+#### Průmysl
+
+| tah | A industry / goods_out | B industry / goods_out | N1 industry / goods_out | N6 industry / goods_out | N11 industry / goods_out |
+|---|---|---|---|---|---|
+| 1 | 8.1 / 6.13 | 6.0 / 4.90 | 2.0 / 2.60 | 1.0 / 1.10 | 7.1 / 1.25 |
+| 30 | 10.0 / 9.59 | 6.0 / 8.08 | 5.0 / 3.84 | 1.0 / 1.13 | 10.0 / 1.76 |
+| 60 | 10.0 / 9.20 | 6.0 / 8.40 | 9.9 / 3.21 | 1.0 / 1.19 | 10.0 / 1.97 |
+| 90 | 10.0 / 9.20 | 6.0 / 8.40 | 10.0 / 3.09 | 1.0 / 1.17 | 10.0 / 2.00 |
+
+---
+
+## Q. Nově otevřené otázky z implementace v1.7
+
+Neopravuji je, engine u každé používá uvedený výklad. Nejdůležitější jsou Q9 a Q10, protože ukazují,
+kam se po vyrovnání trhu s produktem přesunula nerovnováha.
+
+### Q9. Ropa na dolní mezi ceny
+
+S výrobou podle poptávky kupuje průmysl ropu jen pro plánovanou výrobu. Světová poptávka po ropě tím spadla
+a cena ropy je ve všech scénářích od tahu 2 trvale na dolní mezi 0.70. Jen v tahu 1 stojí 1.09, protože ceny
+prvního tahu počítají s předběžným odhadem při plném využití továren (4.1b). Kalibrace ropy z v1.6 počítala
+s průmyslem, který kupuje vstupy pro plnou kapacitu. **Otázka:** vrátit se ke kalibraci ropy, nebo je levná
+ropa v klidném světě záměr?
+
+### Q10. Bohatství se hromadí u hráčů
+
+Ve (0), kde hráči netáhnou, mají A a B v tahu 90 dohromady přes polovinu světového bohatství a `W_real` je víc
+než dvojnásobek startu; index tak drží strop 1.5. **Otázka:** má bohatství hráčů, kteří nic nedělají, takto
+růst, nebo potřebují hráči výdaje (například údržbu armády)?
+
+### Q11. Pomalu chudnoucí NPC
+
+N13, N8 a N16 mají ve (0) záporný čistý tok a v tahu 90 bohatství 17 až 19. V hře delší než 90 tahů by padly
+do bídy. Pro devadesátitahovou hru to nevadí; uvádím pro případné prodloužení.
+
+### Q12. Fond Unie se nepoužívá
+
+Solidarita posílá jen členům v bídě, a těch je teď málo; fond v tahu 90 dosahuje desítek až 184. Příspěvky 2 %
+se z něj nevracejí. **Otázka:** má mít fond i jiné automatické využití, nebo je to rezerva pro Unii jako hráče?
+
+### Q1. Plánovaná výroba nula
+
+**Výklad enginu:** když stát nic neplánuje vyrábět, je `coverage` 0, a v 4.2c mu tedy průmysl neroste.
+
+### Q2. Z jakého bohatství se počítá potřeba `goods`
+
+**Výklad enginu:** z `wealth` na začátku přepočtu zdrojů; hodnota se na celý tah zmrazí, aby se potřeba neměnila
+uprostřed obchodu. Ceny na začátku tahu (4.1b) berou potřebu z minulého tahu.
+
+### Q3. Co je „prodané množství v minulém tahu“
+
+**Výklad enginu:** `goods` prodané na automatickém trhu a cílenými obchody; bezplatné převody vnitřního trhu Unie
+se nepočítají.
+
+### Q4. Doplnění rezervy `goods` v plánu výroby
+
+**Výklad enginu:** 3 tahy spotřeby minus zásoba `goods`. Doplňuje se vlastní výrobou, proto na něj neplatí práh
+`wealth ≥ 25`, který se týká nákupu.
+
+### Q5. Přepočet výchozích zásob
+
+Podle potvrzeného I4 jsem výchozí zásoby přepočítal s novou potřebou `goods`. **Výklad:** výroba bez obchodu je
+`min(kapacita, vlastní potřeba goods)`. Změnily se zásoby `goods` všech států kromě N3 a u N11, N12, N14 a N15
+i zásoby ropy a kovů, protože jejich továrny už nepotřebují vstupy pro plnou kapacitu.
+
+### Q6. Nabídky bez `sell`
+
+Pravidlo 3.5 neříká, co s druhým místem, když žádná `sell` není. **Výklad enginu:** obě místa dostanou `loan_request`
+nebo `protect_request` s nejvyšším vlivem. Jedno NPC dá hráči nejvýš jednu nabídku daného druhu a u jednoho NPC
+má `loan_request` přednost před `protect_request`.
+
+### Q7. Parametry protinávrhu u `trade_offer`
+
+O6 nebylo u obchodu potvrzeno. **Výklad enginu:** protinávrh posune cenu o 10 % ve prospěch NPC při stejném objemu.
+
+### Q8. Shoda při hladovém výběru zakladatelů
+
+**Výklad enginu:** při shodě `law` i `wealth` rozhoduje nižší ID.
