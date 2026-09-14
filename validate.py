@@ -38,7 +38,7 @@ def validate(prev_state, new_state, applied_rules, actions=None, views=None) -> 
             v = float(e.get(field) or 0.0)
             if v < 0:
                 errors.append(f"{i}.{field} je zaporne: {v}")
-        for field in ("law", "tech"):
+        for field in ("law", "tech", "industry"):
             v = e.get(field)
             if v is None:
                 continue

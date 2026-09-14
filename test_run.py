@@ -1,20 +1,21 @@
 """test_run.py
 
-Suchy beh bez volani modelu (BUILD.md cast 8, okno 45 tahu). Nic nezapisuje
-do state.json ani do history/, jen pocita a tiskne.
+Suchy beh bez volani modelu (BUILD.md cast 8). Nic nezapisuje do state.json
+ani do history/, jen pocita a tiskne.
 
-Dve varianty podle rozhodnuti z 11. 9. 2026:
+Scenare podle rozhodnuti ze 14. 9. 2026 (pravidla v1.2):
 
-  (a) scenar ze zadani: A pujcuje N6 od tahu 8, B chrani N7, oba obchoduji obilim
+  (0) nikdo netahne: hraci mlci, zadne akce. Kalibracni scenar.
+      Kriteria: do tahu 15 zadne NPC v bide, W_real v tahu 30 aspon 90 % startu.
+  (a) scenar ze zadani: A pujcuje N6 od tahu 8, B chrani N7, oba obchoduji obilim.
   (b) realisticke pujcovani: hrac pujci jen v tahu, kdy nejake NPC zada pujcku
-      (euforie) nebo ma deficit oritu; nejvys jedna pujcka na hrace a tah
-
-Kriteria se vyhodnocuji v oknu 45 tahu. Pro tabulky do OPEN_QUESTIONS oddilu E
-beh pokracuje do tahu 90.
+      (euforie) nebo ma deficit oritu; nejvys jedna pujcka na hrace a tah.
+      Kriteria pro (a) i (b): crash mezi dnem 7 a 11, Unie s aspon 3 zakladateli,
+      validate 0 chyb.
 
 Spusteni:
     python test_run.py
-    python test_run.py --do 90
+    python test_run.py --scenar 0
 """
 
 from __future__ import annotations
@@ -26,17 +27,21 @@ import config
 import engine
 from validate import validate
 
-TEST_WINDOW = 45
-PHASES_REQUIRED = ("displacement", "boom", "euphoria", "overtrading",
-                   "distress", "panic", "crash")
+TURNS = 90
+TRACKED = ("A", "B", "N1", "N6", "N11")
 
 
 # --------------------------------------------------------------------------
 # scenare
 # --------------------------------------------------------------------------
 
+def scenario_0(turn: int, state) -> list[dict]:
+    """(0) Nikdo netahne."""
+    return []
+
+
 def _base_actions(turn: int, state) -> list[dict]:
-    """Spolecny zaklad obou variant: obchod obilim a pakt B nad N7."""
+    """Spolecny zaklad (a) a (b): obchod obilim a pakt B nad N7."""
     acts: list[dict] = []
     if turn == 1:
         acts.append({"player": "A", "type": "trade_offer", "target": "N1",
@@ -57,12 +62,8 @@ def scenario_a(turn: int, state) -> list[dict]:
 
 
 def _loan_seekers(state) -> list[str]:
-    """Kdo by podle Zprav zadal o pujcku.
-
-    Dve situace z pravidel: ve fazi euphoria zadaji o pujcku NPC v boomu
-    (drzitele oritu), a kdykoli od displacementu ma NPC deficit oritu, tedy
-    potrebuje ho a nema vlastni tezbu.
-    """
+    """Kdo by podle Zprav zadal o pujcku: v euforii drzitele oritu, od
+    displacementu kazde NPC, ktere orit potrebuje a nema vlastni tezbu."""
     out = []
     phase = state["phase"]
     for i, n in sorted(state["npc"].items()):
@@ -71,7 +72,7 @@ def _loan_seekers(state) -> list[str]:
         if n["status"] not in ("independent", "sphere_A", "sphere_B"):
             continue
         orit_prod = float(n["prod"].get("orit", 0.0))
-        orit_need = float(n.get("need", {}).get("orit", 0.0))
+        orit_need = float(engine.current_need(state, i).get("orit", 0.0))
         zada = (phase == "euphoria" and orit_prod > 0) or \
                (phase in engine.ORIT_PHASES and orit_need > orit_prod)
         if zada:
@@ -86,22 +87,30 @@ def scenario_b(turn: int, state) -> list[dict]:
     if not seekers:
         return acts
     for idx, pid in enumerate(("A", "B")):
-        if len(acts) and sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
+        if sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
             continue
         if float(state["players"][pid]["wealth"]) < 12:
             continue
-        # kazdy hrac si bere jineho zadatele, poradi se stridá podle tahu
         cil = seekers[(turn + idx) % len(seekers)]
         acts.append({"player": pid, "type": "loan", "target": cil, "amount": 10})
     return acts
+
+
+SCENARE = {
+    "0": (scenario_0, "nikdo netahne"),
+    "a": (scenario_a, "scenar ze zadani (A pujcuje N6 od tahu 8, B chrani N7)"),
+    "b": (scenario_b, "realisticke pujcovani (jen kdyz NPC zada, max 1 na hrace a tah)"),
+}
 
 
 # --------------------------------------------------------------------------
 # beh
 # --------------------------------------------------------------------------
 
-def run(turns: int, action_fn):
-    state, npcdata = engine.load_world(config.STATE_PATH, config.NPC_PATH)
+def run(turns: int, action_fn, state=None, npcdata=None):
+    if state is None:
+        state, npcdata = engine.load_world(config.STATE_PATH, config.NPC_PATH)
+    w_start = float(state["metrics"]["W0"])
     rows = []
     all_errors = []
     phase_first: dict[str, dict] = {}
@@ -134,142 +143,118 @@ def run(turns: int, action_fn):
             "turn": t, "day": new_state["meta"]["day"], "phase": ph,
             "index": m["prosperity_index"], "W_real": m["W_real"],
             "n_bida": m["n_bida"],
+            "npc_bida": [i for i in m.get("poverty_ids", []) if engine.is_npc(i)],
             "prices": dict(new_state.get("prices") or {}),
             "vol_npc": m.get("trade_volume_npc", 0.0),
             "vol_players": m.get("trade_volume_players", 0.0),
+            "vol_goods": m.get("trade_volume_goods", 0.0),
             "members": list(C["members"]), "candidates": list(C["candidates"]),
+            "coups": sum(int(n.get("coups", 0)) for n in new_state["npc"].values()),
+            "wealth": {i: float(engine.ent(new_state, i)["wealth"]) for i in engine.world_ids(new_state)},
+            "industry": {i: float(engine.ent(new_state, i).get("industry") or 0.0) for i in TRACKED},
+            "goods_out": {i: float(engine.ent(new_state, i).get("goods_out") or 0.0) for i in TRACKED},
             "errors": len(errs),
         })
         state = new_state
 
     return {"state": state, "rows": rows, "errors": all_errors,
-            "phases": phase_first, "union": founders}
+            "phases": phase_first, "union": founders, "w_start": w_start}
+
+
+def row_at(res, t):
+    return next((x for x in res["rows"] if x["turn"] == t), None)
 
 
 # --------------------------------------------------------------------------
-# vystup
+# kriteria
 # --------------------------------------------------------------------------
 
-def kriteria(res, window: int) -> bool:
-    print("KONTROLNI SEZNAM (BUILD.md cast 8, okno %d tahu)" % window)
+def kriteria_0(res) -> bool:
+    print("KONTROLNI SEZNAM scenare (0)")
     print("-" * 78)
     ok = True
-    ph = res["phases"]
-
-    d = ph.get("displacement")
-    passed = d is not None and d["turn"] == 7
+    prvni = next((r for r in res["rows"] if r["turn"] <= 15 and r["npc_bida"]), None)
+    passed = prvni is None
     ok &= passed
-    print("  [%s] displacement v tahu 7%s" % (
-        "OK " if passed else "NE ",
-        "" if passed else " (nastal: %s)" % (d["turn"] if d else "nikdy")))
-
-    for name in PHASES_REQUIRED[1:]:
-        rec = ph.get(name)
-        passed = rec is not None and rec["turn"] <= window
-        ok &= passed
-        print("  [%s] faze %s%s" % (
-            "OK " if passed else "NE ", name,
-            " v tahu %d" % rec["turn"] if rec else " nenastala do tahu %d" % window))
-
-    u = res["union"]
-    passed = u is not None and not u.get("failed") and len(u["members"]) >= 3 \
-        and u["turn"] <= window
-    ok &= passed
-    if u is None:
-        print("  [NE ] vznik Unie s aspon 3 cleny (Unie nevznikla)")
-    elif u.get("failed"):
-        print("  [NE ] vznik Unie (zpusobilych jen %d)" % len(u["members"]))
+    if passed:
+        print("  [OK ] do tahu 15 zadne NPC v bide")
     else:
-        print("  [OK ] vznik Unie v tahu %d, zakladatelu %d: %s" % (
-            u["turn"], len(u["members"]), ", ".join(u["members"])))
-
-    idx_ok = all(r["index"] is not None for r in res["rows"][:window])
-    ok &= idx_ok
-    print("  [%s] index prosperity spocitan kazdy tah" % ("OK " if idx_ok else "NE "))
-
-    val_errors = [(t, e) for t, e in res["errors"] if t <= window]
-    val_ok = not val_errors
+        print("  [NE ] do tahu 15 zadne NPC v bide (prvni v tahu %d: %s)" % (
+            prvni["turn"], ", ".join(prvni["npc_bida"])))
+    r30 = row_at(res, 30)
+    podil = r30["W_real"] / res["w_start"] if res["w_start"] else 0.0
+    passed = podil >= 0.9
+    ok &= passed
+    print("  [%s] W_real v tahu 30 aspon 90 %% startu (%.1f z %.1f, tj. %.1f %%)" % (
+        "OK " if passed else "NE ", r30["W_real"], res["w_start"], podil * 100))
+    val_ok = not res["errors"]
     ok &= val_ok
     print("  [%s] validate bez chyb" % ("OK " if val_ok else "NE "))
-    for t, errs in val_errors[:10]:
-        for e in errs:
-            print("        tah %d: %s" % (t, e))
+    for t, errs in res["errors"][:5]:
+        print("        tah %d: %s" % (t, errs[0]))
     return bool(ok)
 
 
-def tabulky(res, label: str) -> None:
-    rows = res["rows"]
-    print()
-    print("E.%s.1 faze" % label)
-    print("  %-14s %5s %5s   %s" % ("faze", "tah", "den", "spoustec"))
-    for name in engine.PHASE_ORDER:
-        rec = res["phases"].get(name)
-        if rec:
-            print("  %-14s %5d %5d   %s" % (name, rec["turn"], rec["day"], rec["trigger"]))
-        else:
-            print("  %-14s %5s %5s   nenastala" % (name, "-", "-"))
-
-    print()
-    print("E.%s.2 index a ceny" % label)
-    print("  %5s %8s %9s %6s   %s" % ("tah", "index", "W_real", "bida", "ceny zdroju"))
-    for t in (1, 12, 30, 45, 60, 90):
-        r = next((x for x in rows if x["turn"] == t), None)
-        if not r:
-            continue
-        ceny = " ".join("%s %.2f" % (k, v) for k, v in sorted(r["prices"].items()))
-        print("  %5d %8.2f %9.1f %6d   %s" % (
-            r["turn"], r["index"], r["W_real"], r["n_bida"], ceny))
-
-    print()
-    print("E.%s.3 Unie" % label)
-    u = res["union"]
-    if u is None:
-        print("  Unie nevznikla")
-    elif u.get("failed"):
-        print("  Unie nevznikla, zpusobilych %d" % len(u["members"]))
+def kriteria_ab(res) -> bool:
+    print("KONTROLNI SEZNAM (crash mezi dnem 7 a 11, Unie, validate)")
+    print("-" * 78)
+    ok = True
+    crash = res["phases"].get("crash")
+    passed = crash is not None and 7 <= crash["day"] <= 11
+    ok &= passed
+    if crash is None:
+        print("  [NE ] crash mezi dnem 7 a 11 (crash nenastal)")
     else:
-        print("  zakladatele (tah %d): %s" % (u["turn"], ", ".join(u["members"])))
-        for t in (u["turn"], 60, 90):
-            r = next((x for x in rows if x["turn"] == t), None)
-            if r:
-                print("  tah %2d: clenu %d (%s), kandidatu %d (%s)" % (
-                    t, len(r["members"]), ", ".join(r["members"]) or "-",
-                    len(r["candidates"]), ", ".join(r["candidates"]) or "-"))
+        print("  [%s] crash mezi dnem 7 a 11 (tah %d, den %d)" % (
+            "OK " if passed else "NE ", crash["turn"], crash["day"]))
+    u = res["union"]
+    passed = u is not None and not u.get("failed") and len(u["members"]) >= 3
+    ok &= passed
+    if u is None:
+        print("  [NE ] Unie s aspon 3 zakladateli (Unie nevznikla)")
+    elif u.get("failed"):
+        print("  [NE ] Unie s aspon 3 zakladateli (zpusobilych jen %d)" % len(u["members"]))
+    else:
+        print("  [OK ] Unie s aspon 3 zakladateli (tah %d: %s)" % (
+            u["turn"], ", ".join(u["members"])))
+    val_ok = not res["errors"]
+    ok &= val_ok
+    print("  [%s] validate bez chyb" % ("OK " if val_ok else "NE "))
+    for t, errs in res["errors"][:5]:
+        print("        tah %d: %s" % (t, errs[0]))
+    return bool(ok)
 
+
+def souhrn(res) -> None:
     print()
-    print("E.%s.4 obchod" % label)
-    print("  %5s %14s %14s %8s" % ("tah", "NPC s NPC", "hraci", "podil NPC"))
-    for t in (6, 30, 60, 90):
-        r = next((x for x in rows if x["turn"] == t), None)
-        if not r:
-            continue
-        total = r["vol_npc"] + r["vol_players"]
-        podil = (r["vol_npc"] / total * 100.0) if total > 0 else 0.0
-        print("  %5d %14.2f %14.2f %7.1f%%" % (t, r["vol_npc"], r["vol_players"], podil))
+    print("  faze: " + ", ".join("%s t%d" % (k, v["turn"]) for k, v in res["phases"].items()))
+    for t in (1, 12, 30, 45, 60, 90):
+        r = row_at(res, t)
+        if r:
+            print("  tah %2d: index %6.2f  W_real %8.1f  v bide %2d  goods %.2f" % (
+                t, r["index"], r["W_real"], r["n_bida"], r["prices"].get("goods", 0.0)))
+    print("  prevratu celkem: %d" % res["rows"][-1]["coups"])
 
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--do", type=int, default=90,
-                    help="do ktereho tahu dopocitat tabulky (kriteria se meri v oknu 45)")
+    ap.add_argument("--scenar", choices=["0", "a", "b", "vse"], default="vse")
     args = ap.parse_args()
+    klice = ["0", "a", "b"] if args.scenar == "vse" else [args.scenar]
 
     vysledek = True
-    for label, fn, popis in (
-            ("a", scenario_a, "scenar ze zadani (A pujcuje N6 od tahu 8, B chrani N7)"),
-            ("b", scenario_b, "realisticke pujcovani (jen kdyz NPC zada, max 1 na hrace a tah)")):
+    for k in klice:
+        fn, popis = SCENARE[k]
         print("=" * 78)
-        print("VARIANTA %s: %s" % (label.upper(), popis))
+        print("SCENAR (%s): %s" % (k, popis))
         print("=" * 78)
-        res = run(args.do, fn)
-        ok = kriteria(res, TEST_WINDOW)
+        res = run(TURNS, fn)
+        ok = kriteria_0(res) if k == "0" else kriteria_ab(res)
+        souhrn(res)
         print()
-        print("VYSLEDEK varianty %s: %s" % (
-            label.upper(), "vse proslo" if ok else "cast kriterii neprosla"))
-        tabulky(res, label)
+        print("VYSLEDEK (%s): %s" % (k, "vse proslo" if ok else "cast kriterii neprosla"))
         print()
         vysledek &= ok
-
     return 0 if vysledek else 1
 
 

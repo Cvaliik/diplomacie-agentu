@@ -4,9 +4,11 @@ Deterministicka cast sveta Ardan. Vykonava docs/pravidla.md 1:1.
 Model sem nevstupuje: veskera aritmetika je tady, rozhodci jen preklada
 tahy na akce a pise Zpravy (pravidla cast 9).
 
-Poradi prepoctu podle BUILD.md cast 2:
-    akce hracu -> 4.1 zdroje a obchod -> 4.2 rust -> 4.3 bida -> 4.5 splatky
-    -> 3.3 invaze -> 4.4 vliv a sfery -> 5 Minsky -> 7 Unie -> 8 metriky
+Poradi prepoctu (pravidla v1.2):
+    4.1b ceny -> akce hracu -> 4.0 a 4.1 potreby, vyroba goods, obchod, deficit
+    -> 4.2 tech a pravo -> 4.2a automatika NPC -> 4.2b neformalni prijem
+    -> 4.2c rust prumyslu -> 4.3 bida a prevrat -> 4.5 splatky -> 3.3 invaze
+    -> 4.4 vliv a sfery -> 5 Minsky -> 7 Unie -> 8 metriky
 
 Kazdy krok zapisuje do snapshot.applied_rules zaznam {rule, inputs, outputs}.
 Nahoda vyhradne z random.Random(rng_seed + turn).
@@ -34,9 +36,17 @@ import json
 import random
 from copy import deepcopy
 
-RESOURCES = ("oil", "grain", "metal", "orit")
+RESOURCES = ("oil", "grain", "metal", "orit")     # suroviny; do metriky B jde jen tohle
 BASE_RESOURCES = ("oil", "grain", "metal")
-BASE_PRICE = {"oil": 1.0, "grain": 0.8, "metal": 1.2}
+GOODS = "goods"
+# Poradi obchodu v tahu: nejdriv vstupy pro prumysl, pak produkt (4.0).
+INPUT_GOODS = ("grain", "oil", "metal", "orit")
+TRADEABLES = INPUT_GOODS + (GOODS,)
+BASE_PRICE = {"oil": 1.0, "grain": 0.8, "metal": 1.2, "goods": 1.5}
+GOODS_INPUT = {"oil": 0.5, "metal": 0.3}   # vstupy na jednotku goods (4.0)
+ORIT_PRICE_CAP = 200.0                      # strop ceny oritu (5, v1.2)
+CYCLE_GUARD_TURNS = 15                      # pojistka cyklu (5, v1.2)
+COUP_IMMUNITY_TURNS = 6                     # imunita po prevratu (4.3, v1.2)
 
 # Faze, ve kterych orit uz existuje (displacement a dal).
 ORIT_PHASES = ("displacement", "boom", "euphoria", "overtrading",
@@ -102,25 +112,30 @@ def market_price(state, res: str) -> float:
 def step_prices(state, trace: "Trace") -> None:
     """4.1b: cena = zaklad x clamp(svetova poptavka / svetova nabidka, 0.7, 1.5).
 
-    U oritu je zakladem uz vysledek Minskyho pohybu z minuleho tahu, takze se
-    dynamika k fazovemu nasobku pricita, jak zada pravidlo.
+    Poptavka se bere z potreb spocitanych v minulem tahu (4.0); v prvnim tahu,
+    kdy jeste nejsou, z predbezneho odhadu pri plnem vyuziti tovaren. Nabidkou
+    goods je vyroba z minuleho tahu. U oritu je zakladem Minskyho cena, dynamika
+    se k ni pricita a vysledek je zastropovany na 200 (5, v1.2).
     """
     prices = {}
     detail = {}
-    for res in RESOURCES:
-        if res == "orit" and state["phase"] not in ORIT_PHASES:
+    orit_on = state["phase"] in ORIT_PHASES
+    for res in TRADEABLES:
+        if res == "orit" and not orit_on:
             continue
         demand = 0.0
         supply = 0.0
         for i in world_ids(state):
-            e = ent(state, i)
             if res == "orit" and is_fallen(state, i):
                 continue  # 7a: padle rise orit nepotrebuji ani netezi
-            demand += float(e.get("need", {}).get(res, 0.0))
-            supply += eff_prod(e, res)
+            demand += float(current_need(state, i).get(res, 0.0))
+            supply += supply_of(state, i, res)
         ratio = (demand / supply) if supply > 0 else 1.5
         ratio = clamp(ratio, 0.7, 1.5)
-        prices[res] = round(base_price(state, res) * ratio, 4)
+        price = base_price(state, res) * ratio
+        if res == "orit":
+            price = min(ORIT_PRICE_CAP, price)
+        prices[res] = round(price, 4)
         detail[res] = {"poptavka": round(demand, 2), "nabidka": round(supply, 2),
                        "pomer": round(ratio, 3), "cena": prices[res]}
     state["prices"] = prices
@@ -139,6 +154,58 @@ def clamp(v: float, lo: float, hi: float) -> float:
     return max(lo, min(hi, v))
 
 
+def household_need(e: dict) -> dict:
+    """4.0: spotreba domacnosti podle obyvatelstva."""
+    p = float(e.get("pop") or 0.0) / 100.0
+    return {"grain": 3.0 * p, "goods": 2.0 * p, "oil": 1.0 * p, "metal": 0.5 * p}
+
+
+def goods_potential(e: dict) -> float:
+    """4.0: vyroba goods pri plnem pokryti vstupu (coverage = 1)."""
+    industry = float(e.get("industry") or 0.0)
+    pop = float(e.get("pop") or 0.0)
+    tech = float(e.get("tech") or 0.0)
+    return industry * (pop / 100.0) * (1.0 + tech / 10.0)
+
+
+def orit_need(state, sid: str) -> float:
+    """need.orit = 2 pro hrace a bezna NPC od displacementu (5)."""
+    if state["phase"] not in ORIT_PHASES or is_fallen(state, sid):
+        return 0.0
+    return 2.0
+
+
+def compute_need(state, sid: str, goods_out: float) -> dict:
+    """4.0: potreby statu pri dane vyrobe goods (domacnosti plus prumysl)."""
+    hh = household_need(ent(state, sid))
+    return {
+        "grain": hh["grain"],
+        "goods": hh["goods"],
+        "oil": hh["oil"] + GOODS_INPUT["oil"] * goods_out,
+        "metal": hh["metal"] + GOODS_INPUT["metal"] * goods_out,
+        "orit": orit_need(state, sid),
+    }
+
+
+def current_need(state, sid: str) -> dict:
+    """Potreby z posledniho prepoctu; bez nej predbezne pri plnem vyuziti tovaren."""
+    e = ent(state, sid)
+    need = e.get("need")
+    if isinstance(need, dict) and GOODS in need:
+        return need
+    return compute_need(state, sid, goods_potential(e))
+
+
+def supply_of(state, sid: str, res: str) -> float:
+    """Vlastni nabidka statku: efektivni produkce, u goods vyroba (posledni znama)."""
+    e = ent(state, sid)
+    if res == GOODS:
+        if e.get("goods_out") is not None:
+            return float(e["goods_out"])
+        return goods_potential(e)
+    return eff_prod(e, res)
+
+
 def normalize(state) -> None:
     """Doplni pole, ktera pravidla predpokladaji, ale state.json je nema.
 
@@ -151,10 +218,15 @@ def normalize(state) -> None:
         p.setdefault("coups", 0)
         p.setdefault("occupied", [])
         p.setdefault("paper_wealth", 0.0)
+        p.setdefault("industry", 0.0)
+        p.setdefault("last_coup_turn", None)
     for i, n in state["npc"].items():
         n.setdefault("poverty_streak", 0)
         n.setdefault("coups", 0)
         n.setdefault("paper_wealth", 0.0)
+        n.setdefault("industry", 0.0)
+        # Tah posledniho prevratu pro imunitu 4.3 (v1.2).
+        n.setdefault("last_coup_turn", None)
         # Predkrizove maximum wealth pro pravidlo 7.1 (ztrata >= 30 %).
         n.setdefault("wealth_peak", float(n["wealth"]))
     state.setdefault("deals", [])
@@ -220,6 +292,7 @@ COST = {
     "loan": None,          # promenna, plati se amount
     "invest_tech": 8.0,
     "invest_law": 6.0,
+    "invest_industry": 10.0,
     "explore": 5.0,
     "arm": 8.0,
 }
@@ -245,9 +318,8 @@ def _active_deal(state, owner, target, dtype):
 
 
 def _npc_balance_for_trade(state, nid: str, res: str) -> float:
-    """Bilance NPC u suroviny pred obchodem. Urcuje smer obchodu (C3)."""
-    e = state["npc"][nid]
-    return eff_prod(e, res) - float(e.get("need", {}).get(res, 0.0))
+    """Bilance NPC u statku pred obchodem. Urcuje smer obchodu (3.2)."""
+    return supply_of(state, nid, res) - float(current_need(state, nid).get(res, 0.0))
 
 
 def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
@@ -277,7 +349,7 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
             res = act.get("res")
             qty = float(act.get("qty", 0))
             price = float(act.get("price_per_unit", 0))
-            if target not in state["npc"] or res not in RESOURCES or qty <= 0:
+            if target not in state["npc"] or res not in TRADEABLES or qty <= 0:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "neznamy cil nebo surovina"})
                 continue
@@ -382,26 +454,33 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
         elif atype == "invade":
             _register_invasion(state, npcdata, pid, target, events, trace)
 
-        # --- invest_tech / invest_law ----------------------------------------
-        elif atype in ("invest_tech", "invest_law"):
-            field = "tech" if atype == "invest_tech" else "law"
+        # --- invest_tech / invest_law / invest_industry ------------------------
+        elif atype in ("invest_tech", "invest_law", "invest_industry"):
+            field = {"invest_tech": "tech", "invest_law": "law",
+                     "invest_industry": "industry"}[atype]
             cost = COST[atype]
             tgt = target or pid
             if tgt == pid:
+                if pid == "C":
+                    continue  # Unie nema vlastni law, tech ani industry
                 e = player
             elif tgt in state["npc"]:
                 e = state["npc"][tgt]
                 st = e.get("status")
-                allowed_sphere = st in (f"sphere_{pid}", "union") if pid in ("A", "B") else True
+                allowed = st in (f"sphere_{pid}", "union") if pid in ("A", "B") else True
                 if pid == "C":
-                    allowed_sphere = tgt in state["players"]["C"]["members"] or \
-                                     tgt in state["players"]["C"]["candidates"]
+                    allowed = tgt in state["players"]["C"]["members"] or \
+                              tgt in state["players"]["C"]["candidates"]
                     cost = cost / 2.0  # pravidlo 7.2: polovicni cena
-                if not allowed_sphere:
+                if not allowed:
                     events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                    "reason": "cil mimo sferu nebo Unii"})
                     continue
             else:
+                continue
+            if atype == "invest_industry" and float(e.get("law") or 0.0) < 4.0:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "law cile pod 4"})
                 continue
             if float(player["wealth"]) < cost:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
@@ -409,7 +488,11 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 continue
             player["wealth"] = float(player["wealth"]) - cost
             before = float(e.get(field) or 0.0)
-            e[field] = clamp(before + 0.3, 0.0, 10.0)
+            if atype == "invest_industry":
+                gain = 0.3 * (float(e["law"]) / 5.0)   # 3.2 (v1.2)
+            else:
+                gain = 0.3
+            e[field] = clamp(before + gain, 0.0, 10.0)
             events.append({"kind": f"{atype}_done", "player": pid, "target": tgt,
                            field: e[field]})
             trace.add(f"3.2 {atype}", {"player": pid, "target": tgt, "cost": cost},
@@ -594,30 +677,31 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
 # 4.1 zdroje a obchod
 # --------------------------------------------------------------------------
 
-def _npc_to_npc_trade(state, npcdata, imports, exports, trace: Trace) -> float:
+def _npc_to_npc_trade(state, npcdata, resources, needs, imports, exports, trace: Trace):
     """4.1a: sparuje zbyle prebytky se zbylymi deficity mezi sousednimi NPC.
 
     Deterministicky. Poradi parovani: dvojice, ktere spolu obchodovaly minuly
     tah, pak dvojice ve stejne sfere, pak nejvetsi deficit, pri shode podle ID.
     Kazde NPC proda nejvys 70 % sveho prebytku. Padle rise jen prodavaji,
-    a to za 1.3x aktualni ceny (7a). Vraci objem obchodu.
+    a to za 1.3x aktualni ceny (7a). Kupec nakoupi jen za to, co ma.
+
+    Vraci (objem, objem goods, dvojice, ktere tento tah obchodovaly).
     """
     last_pairs = {tuple(sorted(p)) for p in state["minsky"].get("npc_trade_last", [])}
     new_pairs: list[list[str]] = []
     volume = 0.0
+    goods_volume = 0.0
     ids = npc_ids(state)
 
-    for res in RESOURCES:
+    for res in resources:
         if res == "orit" and state["phase"] not in ORIT_PHASES:
             continue
         bal = {}
         for i in ids:
-            e = state["npc"][i]
             if res == "orit" and is_fallen(state, i):
                 continue
-            bal[i] = eff_prod(e, res) - float(e.get("need", {}).get(res, 0.0)) \
+            bal[i] = supply_of(state, i, res) - float(needs[i].get(res, 0.0)) \
                 + imports[i][res] - exports[i][res]
-        # strop 70 % puvodniho prebytku
         allowance = {i: max(0.0, b) * 0.7 for i, b in bal.items()}
         deficit = {i: max(0.0, -b) for i, b in bal.items()}
 
@@ -627,8 +711,6 @@ def _npc_to_npc_trade(state, npcdata, imports, exports, trace: Trace) -> float:
                 continue
             for buyer in neighbours(npcdata, seller):
                 if buyer not in bal or deficit.get(buyer, 0.0) <= 0:
-                    continue
-                if is_fallen(state, buyer) and is_fallen(state, seller):
                     continue
                 if is_fallen(state, buyer):
                     continue  # padla rise jen prodava, nenakupuje od NPC
@@ -649,8 +731,6 @@ def _npc_to_npc_trade(state, npcdata, imports, exports, trace: Trace) -> float:
             price = market_price(state, res)
             if is_fallen(state, seller):
                 price *= 1.3
-            # Kupec nakoupi jen tolik, na kolik ma. Bez tohoto stropu by se
-            # pri orezani zaporneho bohatstvi na nulu tvorily penize z niceho.
             if price > 0:
                 qty = min(qty, float(state["npc"][buyer]["wealth"]) / price)
             if qty <= 1e-9:
@@ -663,6 +743,8 @@ def _npc_to_npc_trade(state, npcdata, imports, exports, trace: Trace) -> float:
             allowance[seller] -= qty
             deficit[buyer] -= qty
             volume += value
+            if res == GOODS:
+                goods_volume += value
             pair = sorted((seller, buyer))
             if pair not in new_pairs:
                 new_pairs.append(pair)
@@ -671,19 +753,62 @@ def _npc_to_npc_trade(state, npcdata, imports, exports, trace: Trace) -> float:
                       {"qty": round(qty, 3), "cena": round(price, 3),
                        "objem": round(value, 3)})
 
-    state["minsky"]["npc_trade_last"] = new_pairs
-    state["_npc_trade_volume"] = volume
-    return volume
+    return volume, goods_volume, new_pairs
+
+
+def _union_market(state, resources, needs, imports, exports, trace: Trace) -> None:
+    """7.2 vnitrni trh Unie: prebytek clena kryje deficit jineho clena zdarma.
+
+    Probiha pred placenym parovanim 4.1a (C12, v1.2).
+    """
+    C = state["players"]["C"]
+    if not (C["active"] and C["members"]):
+        return
+    for res in resources:
+        surplus, deficit = [], []
+        for m in C["members"]:
+            bal = supply_of(state, m, res) - float(needs[m].get(res, 0.0)) \
+                  + imports[m][res] - exports[m][res]
+            if bal > 0:
+                surplus.append([m, bal])
+            elif bal < 0:
+                deficit.append([m, -bal])
+        for dm, dneed in deficit:
+            for sm in surplus:
+                if dneed <= 0:
+                    break
+                take = min(sm[1], dneed)
+                if take <= 0:
+                    continue
+                imports[dm][res] += take
+                exports[sm[0]][res] += take
+                sm[1] -= take
+                dneed -= take
+        trace.add("7.2 vnitrni trh Unie", {"res": res, "members": list(C["members"])},
+                  {"pokryto": True})
 
 
 def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
-    """Bilance, obchod, deficit. Vraci mapu deficitu obili pro pravidlo 4.3."""
+    """4.0 a 4.1: potreby, vyroba goods, obchod a deficit.
+
+    Postup v tahu:
+      1. predbezne potreby: tovarny si rezervuji vstupy pro plnou vyrobu,
+      2. obchody hracu, vnitrni trh Unie a 4.1a pro vstupy (obili, ropa, kovy, orit),
+      3. vyroba goods: domacnosti maji na ropu a kovy prednost, prumysl bere zbytek,
+         coverage je nejmensi pomer dostupneho vstupu k potrebe; bez ropy tovarny stoji,
+      4. konecne potreby podle skutecne vyroby, pak vnitrni trh Unie a 4.1a pro goods,
+      5. deficit: kazda nepokryta jednotka krome oritu stoji wealth -1.
+
+    Nevyuzity vstup prumyslu nic nestoji, protoze prumyslova cast potreby se
+    pocita ze skutecne vyroby. Vraci mapu deficitu obili pro pravidlo 4.3.
+    """
     turn = state["meta"]["turn"]
     ids = world_ids(state)
-    imports = {i: {r: 0.0 for r in RESOURCES} for i in ids}
-    exports = {i: {r: 0.0 for r in RESOURCES} for i in ids}
+    imports = {i: {r: 0.0 for r in TRADEABLES} for i in ids}
+    exports = {i: {r: 0.0 for r in TRADEABLES} for i in ids}
     trade_volume = 0.0
     trade_volume_weighted = 0.0   # metrika A, orit 2x (pravidlo 10.5)
+    goods_volume = 0.0
     volume_by_player = {"A": 0.0, "B": 0.0, "C": 0.0}
     volume_by_npc = {i: 0.0 for i in npc_ids(state)}
 
@@ -693,91 +818,106 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
     if crash_turn is not None and state["phase"] in ("crash",) and turn - crash_turn < 6:
         trade_mult = 0.5
 
+    # 1. predbezne potreby
+    potential = {i: goods_potential(ent(state, i)) for i in ids}
+    needs = {i: compute_need(state, i, potential[i]) for i in ids}
+
+    # 2a. obchody hracu (mnozstvi ze smlouvy)
     for d in state["deals"]:
         if d["type"] != "trade":
             continue
         owner, tgt, res = d["owner"], d["target"], d["res"]
         qty = float(d["qty"]) * trade_mult
         price = float(d["price"])
-        if tgt not in state["npc"]:
+        if tgt not in state["npc"] or res not in TRADEABLES:
             continue
         if d["direction"] == "npc_sells":
             seller, buyer = tgt, owner
         else:
             seller, buyer = owner, tgt
-        if seller in imports:
-            exports[seller][res] += qty
-        if buyer in imports:
-            imports[buyer][res] += qty
         se = ent(state, seller)
         be = ent(state, buyer)
         # Kupec zaplati nejvys to, co ma; zbytek obchodu se neuskutecni.
         value = min(qty * price, float(be["wealth"]))
         if value < qty * price and price > 0:
             qty = value / price
+        if seller in imports:
+            exports[seller][res] += qty
+        if buyer in imports:
+            imports[buyer][res] += qty
         se["wealth"] = float(se["wealth"]) + value
         be["wealth"] = float(be["wealth"]) - value
+        weight = 2.0 if res == "orit" else 1.0
         trade_volume += value
-        trade_volume_weighted += value * (2.0 if res == "orit" else 1.0)
+        trade_volume_weighted += value * weight
+        if res == GOODS:
+            goods_volume += value
         if owner in volume_by_player:
-            volume_by_player[owner] += value * (2.0 if res == "orit" else 1.0)
+            volume_by_player[owner] += value * weight
         if tgt in volume_by_npc:
-            volume_by_npc[tgt] += value * (2.0 if res == "orit" else 1.0)
+            volume_by_npc[tgt] += value * weight
 
-    # 7.2 vnitrni trh Unie: prebytek clena kryje deficit jineho clena zdarma
-    C = state["players"]["C"]
-    if C["active"] and C["members"]:
-        for res in RESOURCES:
-            surplus, deficit = [], []
-            for m in C["members"]:
-                e = state["npc"][m]
-                bal = eff_prod(e, res) - float(e.get("need", {}).get(res, 0.0)) \
-                      + imports[m][res] - exports[m][res]
-                if bal > 0:
-                    surplus.append([m, bal])
-                elif bal < 0:
-                    deficit.append([m, -bal])
-            for dm, dneed in deficit:
-                for sm in surplus:
-                    if dneed <= 0:
-                        break
-                    take = min(sm[1], dneed)
-                    if take <= 0:
-                        continue
-                    imports[dm][res] += take
-                    exports[sm[0]][res] += take
-                    sm[1] -= take
-                    dneed -= take
-            trace.add("7.2 vnitrni trh Unie", {"res": res, "members": list(C["members"])},
-                      {"pokryto": True})
+    # 2b. vstupy: vnitrni trh Unie, pak 4.1a (C12)
+    _union_market(state, INPUT_GOODS, needs, imports, exports, trace)
+    v_in, g_in, pairs_in = _npc_to_npc_trade(state, npcdata, INPUT_GOODS, needs,
+                                             imports, exports, trace)
 
-    # 4.1a obchod NPC mezi sebou, na tom, co zbylo po hracich a po vnitrnim trhu Unie
-    npc_volume = _npc_to_npc_trade(state, npcdata, imports, exports, trace)
+    # 3. vyroba goods
+    for i in ids:
+        e = ent(state, i)
+        hh = household_need(e)
+        pot = potential[i]
+        if pot <= 0:
+            coverage = 0.0
+        else:
+            ratios = []
+            for res, per_unit in GOODS_INPUT.items():
+                avail = supply_of(state, i, res) + imports[i][res] - exports[i][res] - hh[res]
+                ratios.append(max(0.0, avail) / (per_unit * pot))
+            coverage = clamp(min(ratios), 0.0, 1.0)
+        out = pot * coverage
+        e["goods_out"] = round(out, 4)
+        e["coverage"] = round(coverage, 4)
+        # 4. konecne potreby podle skutecne vyroby
+        needs[i] = compute_need(state, i, out)
+        e["need"] = {k: round(v, 4) for k, v in needs[i].items()}
+        trace.add("4.0 vyroba goods",
+                  {"stat": i, "industry": e.get("industry"), "potencial": round(pot, 3)},
+                  {"coverage": e["coverage"], "goods_out": e["goods_out"]})
+
+    # 4b. goods: vnitrni trh Unie, pak 4.1a
+    _union_market(state, (GOODS,), needs, imports, exports, trace)
+    v_g, g_g, pairs_g = _npc_to_npc_trade(state, npcdata, (GOODS,), needs,
+                                          imports, exports, trace)
+    npc_volume = v_in + v_g
+    goods_volume += g_in + g_g
+    pairs = list(pairs_in)
+    for p in pairs_g:
+        if p not in pairs:
+            pairs.append(p)
+    state["minsky"]["npc_trade_last"] = pairs
     trade_volume += npc_volume
     trade_volume_weighted += npc_volume
 
+    # 5. deficit
     grain_deficit = {}
     for i in ids:
         e = ent(state, i)
         total_deficit = 0.0
-        for res in RESOURCES:
-            if res == "orit" and state["phase"] not in ORIT_PHASES:
+        for res in TRADEABLES:
+            if res == "orit" and (state["phase"] not in ORIT_PHASES or is_fallen(state, i)):
                 continue
-            if res == "orit" and is_fallen(state, i):
-                continue  # pravidlo 7a: padle rise orit nepotrebuji
-            bal = eff_prod(e, res) - float(e.get("need", {}).get(res, 0.0)) \
+            bal = supply_of(state, i, res) - float(needs[i].get(res, 0.0)) \
                   + imports[i][res] - exports[i][res]
             if res == "grain":
                 grain_deficit[i] = max(0.0, -bal)
             if bal < 0 and res != "orit":
-                # 4.1 (v1.1): nepokryty orit nestoji nic, stat jen prijde o bonus
+                # 4.1: nepokryty orit nestoji nic, stat jen prijde o bonus
                 total_deficit += -bal
             if res == "orit":
-                # spotrebovany orit: tech +0.1 a power +1 za jednotku (pravidlo 5).
-                # Spotrebuje se tolik, kolik je potreba a zaroven k dispozici,
-                # tedy i kdyz je bilance zaporna a stat pokryje jen cast.
-                available = eff_prod(e, "orit") + imports[i]["orit"] - exports[i]["orit"]
-                used = max(0.0, min(float(e.get("need", {}).get("orit", 0.0)), available))
+                # spotrebovany orit: tech +0.1 a power +1 za jednotku (pravidlo 5)
+                available = supply_of(state, i, "orit") + imports[i]["orit"] - exports[i]["orit"]
+                used = max(0.0, min(float(needs[i].get("orit", 0.0)), available))
                 if used > 0:
                     e["tech"] = clamp(float(e["tech"]) + 0.1 * used, 0.0, 10.0)
                     e["power"] = float(e["power"]) + 1.0 * used
@@ -789,6 +929,8 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
 
     state["_trade"] = {"volume": trade_volume, "weighted": trade_volume_weighted,
                        "by_player": volume_by_player, "by_npc": volume_by_npc}
+    state["_npc_trade_volume"] = npc_volume
+    state["_goods_trade_volume"] = goods_volume
     return grain_deficit
 
 
@@ -802,14 +944,13 @@ def in_poverty(state, sid: str, grain_deficit: dict) -> bool:
 
 
 def step_growth(state, grain_deficit, trace: Trace) -> None:
+    """4.2 (v1.2): autonomni rust bohatstvi je zruseny. Zustava drift tech
+    a uverova eroze prava."""
     for i in world_ids(state):
         e = ent(state, i)
         poor = in_poverty(state, i, grain_deficit)
         law = float(e["law"] or 0.0)
         tech = float(e["tech"] or 0.0)
-        w0 = float(e["wealth"])
-        growth = round(0.01 * w0 * (law / 5.0) * (1.0 + tech / 10.0))
-        e["wealth"] = w0 + growth
         if poor:
             e["tech"] = clamp(tech - 0.15, 0.0, 10.0)
         elif law >= 5.0:
@@ -818,41 +959,85 @@ def step_growth(state, grain_deficit, trace: Trace) -> None:
             total_debt = sum(float(v) for v in e["debt"].values())
             if total_debt > 0.5 * max(1.0, float(e["wealth"])):
                 e["law"] = clamp(float(e["law"]) - 0.1, 0.0, 10.0)
-        if is_npc(i):
             # predkrizove maximum pro pravidlo 7.1 (ztrata >= 30 % => zakladatel Unie)
             e["wealth_peak"] = max(float(e.get("wealth_peak", 0.0)), float(e["wealth"]))
-        trace.add("4.2 rust", {"stat": i, "law": law, "tech": tech, "wealth_before": w0},
-                  {"growth": growth, "wealth": e["wealth"], "tech_after": e["tech"]})
+        trace.add("4.2 tech a pravo", {"stat": i, "law": law, "tech": tech},
+                  {"tech_after": e["tech"], "law_after": e["law"]})
 
 
 def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
-    """4.2a: bezne NPC s wealth > 40 a law >= 5 investuje kazdy treti tah do tech."""
-    if state["meta"]["turn"] % 3 != 0:
+    """4.2a (v1.2): bezne NPC s wealth > 40 a law >= 5 investuje kazdy treti tah,
+    stridave do tech (tahy 3, 9, 15 ...) a do industry (tahy 6, 12, 18 ...)."""
+    turn = state["meta"]["turn"]
+    if turn % 3 != 0:
         return
+    do_tech = (turn % 6 == 3)
     for i, n in sorted(state["npc"].items()):
         if n.get("kind") == "fallen":
             continue
-        if float(n["wealth"]) > 40.0 and float(n["law"]) >= 5.0:
-            n["wealth"] = float(n["wealth"]) - 8.0
+        if not (float(n["wealth"]) > 40.0 and float(n["law"]) >= 5.0):
+            continue
+        if do_tech:
+            n["wealth"] = float(n["wealth"]) - COST["invest_tech"]
             before = float(n["tech"])
             n["tech"] = clamp(before + 0.3, 0.0, 10.0)
             events.append({"kind": "npc_invest_tech", "npc": i, "tech": n["tech"]})
-            trace.add("4.2a automatika NPC", {"npc": i, "cost": 8.0},
+            trace.add("4.2a automatika NPC: invest_tech", {"npc": i, "cost": COST["invest_tech"]},
                       {"tech": n["tech"], "from": before})
+        else:
+            n["wealth"] = float(n["wealth"]) - COST["invest_industry"]
+            before = float(n.get("industry") or 0.0)
+            n["industry"] = clamp(before + 0.3 * (float(n["law"]) / 5.0), 0.0, 10.0)
+            events.append({"kind": "npc_invest_industry", "npc": i, "industry": n["industry"]})
+            trace.add("4.2a automatika NPC: invest_industry",
+                      {"npc": i, "cost": COST["invest_industry"]},
+                      {"industry": n["industry"], "from": before})
+
+
+def step_income(state, trace: Trace) -> None:
+    """4.2b: maly neformalni prijem wealth += pop / 100 za tah."""
+    for i in world_ids(state):
+        e = ent(state, i)
+        gain = float(e.get("pop") or 0.0) / 100.0
+        e["wealth"] = float(e["wealth"]) + gain
+        trace.add("4.2b neformalni prijem", {"stat": i}, {"prijem": round(gain, 3)})
+
+
+def step_industry(state, grain_deficit, trace: Trace) -> None:
+    """4.2c: industry +0.1 pri law >= 6, tech >= 5 a coverage >= 0.8; v bide -0.1."""
+    for i in world_ids(state):
+        e = ent(state, i)
+        before = float(e.get("industry") or 0.0)
+        if in_poverty(state, i, grain_deficit):
+            after = before - 0.1
+        elif (float(e["law"] or 0.0) >= 6.0 and float(e["tech"] or 0.0) >= 5.0
+              and float(e.get("coverage") or 0.0) >= 0.8):
+            after = before + 0.1
+        else:
+            continue
+        e["industry"] = clamp(after, 0.0, 10.0)
+        trace.add("4.2c rust prumyslu", {"stat": i, "coverage": e.get("coverage")},
+                  {"industry": round(e["industry"], 3), "from": before})
 
 
 def step_poverty(state, npcdata, grain_deficit, trace: Trace, events: list) -> None:
-    # Seznam statu v bide podle 4.3. Cte ho metrika n_bida (pravidlo 8),
-    # aby index pouzival tutez definici jako efekty bidy, vcetne deficitu obili.
+    """4.3 (v1.2): bida a prevrat.
+
+    Tah s wealth = 0 je tahem bidy jako kazdy jiny (wealth < 15), okamzity pad
+    vlady uz neexistuje. Prevrat nastane po trech tazich bidy v rade; po nem ma
+    stat sest tahu imunitu. Prevrat rusi pakty, sankce a vliv, obchody a dluhy
+    zustavaji, clenstvi v Unii i kandidatura zanikaji (C10). Jen u NPC (A1).
+    """
+    turn = state["meta"]["turn"]
+    # Seznam statu v bide podle 4.3. Cte ho metrika n_bida (pravidlo 8).
     poverty_set = []
     for i in world_ids(state):
         e = ent(state, i)
         poor = in_poverty(state, i, grain_deficit)
-        if poor:
-            poverty_set.append(i)
         if not poor:
             e["poverty_streak"] = 0
             continue
+        poverty_set.append(i)
         e["poverty_streak"] = int(e.get("poverty_streak", 0)) + 1
         pop_before = float(e["pop"])
         e["pop"] = max(0.0, pop_before - 3.0)
@@ -862,23 +1047,31 @@ def step_poverty(state, npcdata, grain_deficit, trace: Trace, events: list) -> N
         trace.add("4.3 bida", {"stat": i, "streak": e["poverty_streak"]},
                   {"pop": e["pop"], "power": e["power"],
                    "pop_delta": e["pop"] - pop_before})
-        # pad vlady: jen u NPC (viz OPEN_QUESTIONS A1)
-        if is_npc(i) and (e["poverty_streak"] >= 3 or float(e["wealth"]) <= 0.0):
-            state["deals"] = [d for d in state["deals"] if d["target"] != i]
-            e["influence"]["A"] = 0.0
-            e["influence"]["B"] = 0.0
-            e["coups"] = int(e.get("coups", 0)) + 1
-            e["status"] = "independent"
-            e["poverty_streak"] = 0
-            C = state["players"]["C"]
-            if i in C["members"]:
-                C["members"] = [x for x in C["members"] if x != i]
-                events.append({"kind": "union_exit", "npc": i, "to": "prevrat"})
-            if i in C["candidates"]:
-                C["candidates"] = [x for x in C["candidates"] if x != i]
-            events.append({"kind": "coup", "stat": i, "coups": e["coups"]})
-            trace.add("4.3 pad vlady", {"stat": i}, {"coups": e["coups"],
-                                                     "status": "independent"})
+        if not is_npc(i) or e["poverty_streak"] < 3:
+            continue
+        last = e.get("last_coup_turn")
+        if last is not None and turn - int(last) <= COUP_IMMUNITY_TURNS:
+            trace.add("4.3 imunita po prevratu", {"stat": i, "posledni_prevrat": last},
+                      {"streak": e["poverty_streak"]})
+            continue
+        cancelled = [d["id"] for d in state["deals"]
+                     if d["target"] == i and d["type"] in ("protect", "pressure")]
+        state["deals"] = [d for d in state["deals"] if d["id"] not in cancelled]
+        e["influence"]["A"] = 0.0
+        e["influence"]["B"] = 0.0
+        e["coups"] = int(e.get("coups", 0)) + 1
+        e["status"] = "independent"
+        e["poverty_streak"] = 0
+        e["last_coup_turn"] = turn
+        C = state["players"]["C"]
+        if i in C["members"]:
+            C["members"] = [x for x in C["members"] if x != i]
+            events.append({"kind": "union_exit", "npc": i, "to": "prevrat"})
+        if i in C["candidates"]:
+            C["candidates"] = [x for x in C["candidates"] if x != i]
+        events.append({"kind": "coup", "stat": i, "coups": e["coups"]})
+        trace.add("4.3 pad vlady", {"stat": i},
+                  {"coups": e["coups"], "status": "independent", "zruseno": cancelled})
     state["_poverty"] = poverty_set
 
 
@@ -1078,9 +1271,21 @@ def _default_turns(state) -> int:
     return len({d["turn"] for d in state["minsky"]["defaults"] if d["turn"] >= start})
 
 
+GUARDED_PHASES = ("boom", "euphoria", "overtrading", "distress", "panic", "crash")
+
+
+def _phase_entry_turn(state, phase):
+    """Tah posledniho vstupu do dane faze."""
+    for rec in reversed(state["minsky"].get("phase_log", [])):
+        if rec.get("to") == phase:
+            return rec.get("turn")
+    return None
+
+
 def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
     turn = state["meta"]["turn"]
     phase = state["phase"]
+    phase_at_start = phase
     m = state["minsky"]
 
     # --- prechody -----------------------------------------------------------
@@ -1091,11 +1296,10 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
             if nid in state["npc"]:
                 state["npc"][nid]["prod"]["orit"] = amount
         for i in world_ids(state):
-            e = ent(state, i)
             if is_fallen(state, i):
                 continue  # 7a: padle rise orit ignoruji
-            e.setdefault("need", {})["orit"] = 2.0
-            e.setdefault("prod", {}).setdefault("orit", 0.0)
+            # need.orit se od v1.2 pocita v 4.0 kazdy tah, tady jen pole produkce
+            ent(state, i).setdefault("prod", {}).setdefault("orit", 0.0)
         trace.add("5 displacement", {"turn": turn},
                   {"orit_price": m["orit_price"], "loziska": ["N6", "N3", "N8", "N9"]})
         phase = state["phase"]
@@ -1107,7 +1311,7 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
                        trace, events)
             m["boom_started_turn"] = turn
         elif turn >= 45:
-            # bublina musi prijit (pravidlo 5, posledni odstavec)
+            # bublina musi prijit (pravidlo 5)
             _set_phase(state, "boom", "tah 45 bez pujcky, vynuceny boom", turn, trace, events)
             m["boom_started_turn"] = turn
             events.append({"kind": "forced_boom", "npc": "N6"})
@@ -1132,11 +1336,7 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
         phase = state["phase"]
 
     elif phase == "distress":
-        started = None
-        for rec in reversed(m["phase_log"]):
-            if rec["to"] == "distress":
-                started = rec["turn"]
-                break
+        started = _phase_entry_turn(state, "distress")
         if _default_turns(state) >= 2 or (started is not None and turn - started >= 2):
             _set_phase(state, "panic", "druhe nesplaceni nebo 2 tahy distress",
                        _default_turns(state), trace, events)
@@ -1155,15 +1355,37 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
         _set_phase(state, "recovery", "12 tahu po crash", turn, trace, events)
         phase = state["phase"]
 
+    # --- pojistka cyklu (5, v1.2) -----------------------------------------------
+    # Faze od boom dal, ktera trva dele nez 15 tahu bez splneni prahu, se posune
+    # o krok. Netyka se depression a recovery.
+    if state["phase"] == phase_at_start and phase_at_start in GUARDED_PHASES:
+        entry = _phase_entry_turn(state, phase_at_start)
+        if entry is not None and turn - entry >= CYCLE_GUARD_TURNS:
+            nxt = PHASE_ORDER[PHASE_ORDER.index(phase_at_start) + 1]
+            normal = [(i, float(nn["prod"].get("orit", 0.0)))
+                      for i, nn in sorted(state["npc"].items()) if nn.get("kind") != "fallen"]
+            top = sorted(normal, key=lambda x: (-x[1], x[0]))[0][0] if normal else None
+            _set_phase(state, nxt,
+                       "pojistka cyklu: %d tahu bez splneni prahu" % CYCLE_GUARD_TURNS,
+                       turn - entry, trace, events)
+            events.append({"kind": "cycle_guard", "npc": top, "from": phase_at_start,
+                           "to": nxt, "duvod": "soukrome banky v NPC s nejvyssim prod.orit "
+                                               "pujcuji na spekulaci"})
+            if nxt == "crash":
+                m["crash_turn"] = turn
+            if nxt == "boom":
+                m["boom_started_turn"] = turn
+            phase = nxt
+
     # --- efekty faze ---------------------------------------------------------
     price_before = m.get("orit_price")
     if phase == "boom":
         m["orit_price"] = float(m["orit_price"]) * 1.15
     elif phase == "euphoria":
         m["orit_price"] = float(m["orit_price"]) * 1.2
-        for i, n in state["npc"].items():
-            if sum(float(v) for v in n["debt"].values()) > 30:
-                n["law"] = clamp(float(n["law"]) - 0.15, 0.0, 10.0)
+        for i, nn in state["npc"].items():
+            if sum(float(v) for v in nn["debt"].values()) > 30:
+                nn["law"] = clamp(float(nn["law"]) - 0.15, 0.0, 10.0)
     elif phase == "overtrading":
         m["orit_price"] = float(m["orit_price"]) * 1.1
     elif phase == "distress":
@@ -1179,35 +1401,39 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
         for pid in ("A", "B", "C"):
             p = state["players"][pid]
             written_off = 0.0
-            for n in state["npc"].values():
-                owed = float(n["debt"].get(pid, 0.0))
+            for nn in state["npc"].values():
+                owed = float(nn["debt"].get(pid, 0.0))
                 if owed > 0:
                     written_off += owed * 0.6
-                    n["debt"][pid] = owed * 0.4
+                    nn["debt"][pid] = owed * 0.4
             if written_off > 0:
                 p["wealth"] = max(0.0, float(p["wealth"]) - written_off)
                 trace.add("5 panic odpis pohledavek", {"creditor": pid},
                           {"odepsano": round(written_off, 3)})
-        for i, n in state["npc"].items():
-            if sum(float(v) for v in n["debt"].values()) > 0:
-                n["wealth"] = float(n["wealth"]) * 0.8
+        for i, nn in state["npc"].items():
+            if sum(float(v) for v in nn["debt"].values()) > 0:
+                nn["wealth"] = float(nn["wealth"]) * 0.8
     elif phase == "crash":
         if m.get("crash_turn") == turn:
             m["orit_price"] = 3.0
             _migration_back(state, trace)
-        # uvolneni sfer: NPC ve sphere_X, ktere X nesplacelo, zpet na independent
-        if m.get("crash_turn") == turn:
-            for i, n in state["npc"].items():
+            # uvolneni sfer: NPC ve sphere_X, ktere X nesplacelo, zpet na independent
+            for i, nn in state["npc"].items():
                 for pid in ("A", "B"):
-                    if n["status"] == f"sphere_{pid}" and any(
+                    if nn["status"] == f"sphere_{pid}" and any(
                             d["npc"] == i and d["creditor"] == pid for d in m["defaults"]):
-                        n["status"] = "independent"
-                        n["influence"][pid] = float(n["influence"][pid]) / 2.0
+                        nn["status"] = "independent"
+                        nn["influence"][pid] = float(nn["influence"][pid]) / 2.0
                         events.append({"kind": "sphere_released", "npc": i, "from": pid})
     elif phase == "depression":
         m["orit_price"] = 5.0
     elif phase == "recovery":
         m["orit_price"] = 5.0
+
+    # strop ceny oritu (5, v1.2)
+    if m.get("orit_price") is not None and float(m["orit_price"]) > ORIT_PRICE_CAP:
+        m["orit_price"] = ORIT_PRICE_CAP
+        trace.add("5 strop ceny oritu", {"strop": ORIT_PRICE_CAP}, {"cena": ORIT_PRICE_CAP})
 
     if price_before != m.get("orit_price"):
         trace.add("5 cena oritu", {"faze": phase, "pred": price_before},
@@ -1216,38 +1442,38 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
     # papirove bohatstvi (pravidla 5 a 10.3)
     if phase in ("boom", "euphoria", "overtrading"):
         price = float(m["orit_price"])
-        for i, n in state["npc"].items():
-            if float(n["prod"].get("orit", 0.0)) > 0:
-                n["paper_wealth"] = float(n["prod"]["orit"]) * price
+        for i, nn in state["npc"].items():
+            if float(nn["prod"].get("orit", 0.0)) > 0:
+                nn["paper_wealth"] = float(nn["prod"]["orit"]) * price
         for pid in ("A", "B"):
             total = 0.0
-            for n in state["npc"].values():
-                if float(n["prod"].get("orit", 0.0)) > 0:
-                    total += float(n["debt"].get(pid, 0.0))
+            for nn in state["npc"].values():
+                if float(nn["prod"].get("orit", 0.0)) > 0:
+                    total += float(nn["debt"].get(pid, 0.0))
             state["players"][pid]["paper_wealth"] = total * (price / 10.0)
         trace.add("5 / 10.3 papirove bohatstvi", {"cena": price},
                   {"A": state["players"]["A"]["paper_wealth"],
                    "B": state["players"]["B"]["paper_wealth"]})
 
-    # migrace v boomu (OPEN_QUESTIONS C1)
+    # migrace v boomu
     if phase in ("boom", "euphoria", "overtrading"):
         _migration(state, rng, trace, events)
 
-    # automaticky explore NPC od displacementu (pravidlo 5, OPEN_QUESTIONS C4)
+    # automaticky explore NPC od displacementu
     if phase in ORIT_PHASES:
-        for i, n in sorted(state["npc"].items()):
-            if n.get("kind") == "fallen":
+        for i, nn in sorted(state["npc"].items()):
+            if nn.get("kind") == "fallen":
                 continue
-            if float(n["wealth"]) >= 20.0:
-                n["wealth"] = float(n["wealth"]) - 2.0
+            if float(nn["wealth"]) >= 20.0:
+                nn["wealth"] = float(nn["wealth"]) - 2.0
                 if rng.random() < 0.15:
-                    n["prod"]["orit"] = float(n["prod"].get("orit", 0.0)) + 2.0
+                    nn["prod"]["orit"] = float(nn["prod"].get("orit", 0.0)) + 2.0
                     events.append({"kind": "orit_found", "npc": i})
-                    trace.add("5 explore NPC", {"npc": i}, {"prod_orit": n["prod"]["orit"]})
+                    trace.add("5 explore NPC", {"npc": i}, {"prod_orit": nn["prod"]["orit"]})
 
     # fragilita
-    debts = sum(sum(float(v) for v in n["debt"].values()) for n in state["npc"].values())
-    wealth = sum(float(n["wealth"]) for n in state["npc"].values())
+    debts = sum(sum(float(v) for v in nn["debt"].values()) for nn in state["npc"].values())
+    wealth = sum(float(nn["wealth"]) for nn in state["npc"].values())
     m["fragility"] = round(debts / wealth, 4) if wealth > 0 else 0.0
 
 
@@ -1257,10 +1483,12 @@ def _migration(state, rng, trace, events) -> None:
                  if float(n["prod"].get("orit", 0.0)) >= 2.0]
     donors_pool = [i for i, n in sorted(state["npc"].items())
                    if float(n["prod"].get("orit", 0.0)) == 0.0
-                   and n.get("kind") != "fallen" and float(n["pop"]) > 1.0]
+                   and n.get("kind") != "fallen"]
     for r in receivers:
         chosen = []
-        pool = list(donors_pool)
+        # Pop darce se kontroluje az pri vyberu: pri vice prijemcich v jednom tahu
+        # muze byt tentyz darce vybran opakovane a nesmi klesnout pod nulu.
+        pool = [d for d in donors_pool if float(state["npc"][d]["pop"]) > 1.0]
         for _ in range(2):
             if not pool:
                 break
@@ -1418,7 +1646,9 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
         if len(founders) >= 3:
             C["active"] = True
             C["founded_turn"] = turn
-            C["members"] = founders
+            # Kopie: seznam clenu se v tomtez tahu rozsiruje o vstupy podle 7.4
+            # a nesmi prepsat zaznam o zakladatelich v udalosti a v trace.
+            C["members"] = list(founders)
             C["name"] = C.get("name") or "Unie"
             fund = 0.0
             for f in founders:
@@ -1591,6 +1821,8 @@ def step_metrics(state, trace: Trace) -> None:
         "trade_volume_npc": round(state.get("_npc_trade_volume", 0.0), 3),
         "trade_volume_players": round(
             max(0.0, tr["weighted"] - state.get("_npc_trade_volume", 0.0)), 3),
+        "trade_volume_goods": round(state.get("_goods_trade_volume", 0.0), 3),
+        "poverty_ids": sorted(state.get("_poverty", [])),
     })
     trace.add("8 metriky", {"W_real": round(w_real, 2), "W0": w0, "n_bida": n_bida},
               {"prosperity_index": state["metrics"]["prosperity_index"],
@@ -1603,35 +1835,46 @@ def step_metrics(state, trace: Trace) -> None:
 # --------------------------------------------------------------------------
 
 HIDDEN_FIELDS = ("law", "tech", "prosperity_index", "law_threshold",
-                 "poverty_streak", "wealth_peak")
+                 "poverty_streak", "wealth_peak", "last_coup_turn", "coverage")
+
+
+def _goods_view(e: dict) -> dict:
+    """Verejny prehled goods: vyroba, potreba a jejich rozdil (v1.2)."""
+    out = float(e.get("goods_out") or 0.0)
+    need = float((e.get("need") or {}).get(GOODS, 0.0))
+    return {"vyroba": round(out, 3), "potreba": round(need, 3),
+            "bilance": round(out - need, 3)}
 
 
 def build_views(state, npcdata) -> dict:
     views = {}
     C = state["players"]["C"]
+    orit_on = state["phase"] in ORIT_PHASES
     for pid in ("A", "B", "C"):
         if pid == "C" and not C["active"]:
             continue
         npc_view = {}
-        for i, n in state["npc"].items():
+        for i, nn in state["npc"].items():
             item = {
-                "wealth": round(float(n["wealth"]) + float(n.get("paper_wealth", 0.0)), 2),
-                "power": round(float(n["power"]), 2),
-                "prod": {k: round(float(v), 3) for k, v in n["prod"].items()},
-                "need": {k: round(float(v), 3) for k, v in n.get("need", {}).items()},
-                "status": n["status"],
-                "pop": round(float(n["pop"]), 2),
-                "coups": int(n.get("coups", 0)),
-                "kind": n.get("kind", "normal"),
+                "wealth": round(float(nn["wealth"]) + float(nn.get("paper_wealth", 0.0)), 2),
+                "power": round(float(nn["power"]), 2),
+                "prod": {k: round(float(v), 3) for k, v in nn["prod"].items()},
+                "need": {k: round(float(v), 3) for k, v in (nn.get("need") or {}).items()},
+                "industry": round(float(nn.get("industry") or 0.0), 3),
+                "goods": _goods_view(nn),
+                "status": nn["status"],
+                "pop": round(float(nn["pop"]), 2),
+                "coups": int(nn.get("coups", 0)),
+                "kind": nn.get("kind", "normal"),
             }
             if pid in ("A", "B"):
-                item["influence_moje"] = round(float(n["influence"].get(pid, 0.0)), 3)
-                item["dluzi_mne"] = round(float(n["debt"].get(pid, 0.0)), 3)
+                item["influence_moje"] = round(float(nn["influence"].get(pid, 0.0)), 3)
+                item["dluzi_mne"] = round(float(nn["debt"].get(pid, 0.0)), 3)
             else:
-                item["dluzi_mne"] = round(float(n["debt"].get("C", 0.0)), 3)
+                item["dluzi_mne"] = round(float(nn["debt"].get("C", 0.0)), 3)
                 if i in C["members"] or i in C["candidates"]:
-                    item["law"] = round(float(n["law"]), 3)
-                    item["tech"] = round(float(n["tech"]), 3)
+                    item["law"] = round(float(nn["law"]), 3)
+                    item["tech"] = round(float(nn["tech"]), 3)
             npc_view[i] = item
         me = state["players"][pid]
         mine = {
@@ -1641,7 +1884,9 @@ def build_views(state, npcdata) -> dict:
         }
         if pid in ("A", "B"):
             mine["prod"] = {k: round(float(v), 3) for k, v in me["prod"].items()}
-            mine["need"] = {k: round(float(v), 3) for k, v in me.get("need", {}).items()}
+            mine["need"] = {k: round(float(v), 3) for k, v in (me.get("need") or {}).items()}
+            mine["industry"] = round(float(me.get("industry") or 0.0), 3)
+            mine["goods"] = _goods_view(me)
             mine["pop"] = round(float(me["pop"]), 2)
             mine["law"] = round(float(me["law"]), 3)
             mine["tech"] = round(float(me["tech"]), 3)
@@ -1655,9 +1900,8 @@ def build_views(state, npcdata) -> dict:
             "slot": state["meta"]["slot"],
             "ja": mine,
             "npc": npc_view,
-            "ceny": {r: market_price(state, r) for r in
-                     (BASE_RESOURCES + ("orit",) if state["phase"] in ORIT_PHASES
-                      else BASE_RESOURCES)},
+            "ceny": {r: market_price(state, r) for r in TRADEABLES
+                     if r != "orit" or orit_on},
             "deals": [d for d in state["deals"] if d["owner"] == pid],
             "news": list(state.get("news", [])),
         }
@@ -1690,6 +1934,8 @@ def apply_turn(state, npcdata, actions):
     grain_deficit = step_resources(st, npcdata, trace, events)
     step_growth(st, grain_deficit, trace)
     step_npc_auto_invest(st, trace, events)
+    step_income(st, trace)
+    step_industry(st, grain_deficit, trace)
     step_poverty(st, npcdata, grain_deficit, trace, events)
     step_repayments(st, trace, events)
     step_invasions(st, npcdata, trace, events)
@@ -1705,6 +1951,7 @@ def apply_turn(state, npcdata, actions):
     st.pop("_trade", None)
     st.pop("_poverty", None)
     st.pop("_npc_trade_volume", None)
+    st.pop("_goods_trade_volume", None)
     st["players"]["C"]["fund"] = st["players"]["C"]["wealth"]
     st["log"] = (st.get("log", []) + [{"turn": turn, "events": events}])[-9:]
     return st, events, trace.items

@@ -26,17 +26,13 @@
       "power": 80,
       "law": 7,
       "tech": 6,
+      "industry": 8,
       "prod": {
         "oil": 2,
         "grain": 3,
         "metal": 8
       },
-      "need": {
-        "oil": 6,
-        "grain": 6,
-        "metal": 4
-      },
-      "pop": 100,
+      "pop": 200,
       "active": true,
       "occupied": []
     },
@@ -47,17 +43,13 @@
       "power": 100,
       "law": 3,
       "tech": 4,
+      "industry": 6,
       "prod": {
         "oil": 8,
         "grain": 3,
         "metal": 2
       },
-      "need": {
-        "oil": 4,
-        "grain": 6,
-        "metal": 6
-      },
-      "pop": 100,
+      "pop": 200,
       "active": true,
       "occupied": []
     },
@@ -83,14 +75,10 @@
       "power": 8,
       "law": 5,
       "tech": 3,
+      "industry": 2,
       "prod": {
         "oil": 0,
         "grain": 9,
-        "metal": 1
-      },
-      "need": {
-        "oil": 2,
-        "grain": 3,
         "metal": 1
       },
       "pop": 100,
@@ -114,15 +102,11 @@
       "power": 6,
       "law": 4,
       "tech": 2,
+      "industry": 2,
       "prod": {
         "oil": 0,
         "grain": 8,
         "metal": 0
-      },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -145,15 +129,11 @@
       "power": 10,
       "law": 3,
       "tech": 3,
+      "industry": 3,
       "prod": {
         "oil": 8,
         "grain": 1,
         "metal": 0
-      },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -176,15 +156,11 @@
       "power": 9,
       "law": 6,
       "tech": 4,
+      "industry": 3,
       "prod": {
         "oil": 7,
         "grain": 2,
         "metal": 0
-      },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -207,15 +183,11 @@
       "power": 9,
       "law": 6,
       "tech": 4,
+      "industry": 3,
       "prod": {
         "oil": 0,
         "grain": 2,
         "metal": 7
-      },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -238,14 +210,10 @@
       "power": 3,
       "law": 2,
       "tech": 1,
+      "industry": 1,
       "prod": {
         "oil": 0,
         "grain": 2,
-        "metal": 1
-      },
-      "need": {
-        "oil": 1,
-        "grain": 3,
         "metal": 1
       },
       "pop": 100,
@@ -269,15 +237,11 @@
       "power": 8,
       "law": 4,
       "tech": 3,
+      "industry": 3,
       "prod": {
         "oil": 0,
         "grain": 2,
         "metal": 6
-      },
-      "need": {
-        "oil": 2,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -300,15 +264,11 @@
       "power": 4,
       "law": 3,
       "tech": 1,
+      "industry": 1,
       "prod": {
         "oil": 0,
         "grain": 3,
         "metal": 0
-      },
-      "need": {
-        "oil": 1,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -331,15 +291,11 @@
       "power": 5,
       "law": 2,
       "tech": 1,
+      "industry": 1,
       "prod": {
         "oil": 1,
         "grain": 2,
         "metal": 0
-      },
-      "need": {
-        "oil": 1,
-        "grain": 3,
-        "metal": 1
       },
       "pop": 100,
       "influence": {
@@ -362,13 +318,9 @@
       "power": 4,
       "law": 4,
       "tech": 2,
+      "industry": 1,
       "prod": {
         "oil": 0,
-        "grain": 3,
-        "metal": 1
-      },
-      "need": {
-        "oil": 1,
         "grain": 3,
         "metal": 1
       },
@@ -393,13 +345,9 @@
       "power": 6,
       "law": 9,
       "tech": 8,
+      "industry": 7,
       "prod": {
         "oil": 0,
-        "grain": 2,
-        "metal": 1
-      },
-      "need": {
-        "oil": 1,
         "grain": 2,
         "metal": 1
       },
@@ -424,15 +372,11 @@
       "power": 7,
       "law": 8,
       "tech": 7,
+      "industry": 7,
       "prod": {
         "oil": 2,
         "grain": 1,
         "metal": 2
-      },
-      "need": {
-        "oil": 1,
-        "grain": 2,
-        "metal": 1
       },
       "pop": 60,
       "influence": {

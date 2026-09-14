@@ -29,6 +29,7 @@ Právo drží inovace a inovace drží bohatství. Stát s pevnými institucemi 
 
 ## Co víš o světě
 - Vidíš bohatství, sílu, produkci a spotřebu států a jejich status. U svých členů vidíš i právo a technologii (jsi jejich vláda). U ostatních ne.
+- Vidíš také míru industrializace států a jejich výrobu a spotřebu produktu (goods); továrny potřebují ropu a kovy, bez nich stojí.
 - Zprávy světa jsou fakta.
 
 ## Formát tahu

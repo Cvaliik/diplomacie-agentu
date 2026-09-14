@@ -47,6 +47,7 @@
       "power": 8,
       "law": 5,
       "tech": 3,
+      "industry": 2,
       "prod": {
         "oil": 0,
         "grain": 9,
@@ -70,6 +71,7 @@
       "power": 6,
       "law": 4,
       "tech": 2,
+      "industry": 2,
       "prod": {
         "oil": 0,
         "grain": 8,
@@ -93,6 +95,7 @@
       "power": 10,
       "law": 3,
       "tech": 3,
+      "industry": 3,
       "prod": {
         "oil": 8,
         "grain": 1,
@@ -116,6 +119,7 @@
       "power": 9,
       "law": 6,
       "tech": 4,
+      "industry": 3,
       "prod": {
         "oil": 7,
         "grain": 2,
@@ -139,6 +143,7 @@
       "power": 9,
       "law": 6,
       "tech": 4,
+      "industry": 3,
       "prod": {
         "oil": 0,
         "grain": 2,
@@ -162,6 +167,7 @@
       "power": 3,
       "law": 2,
       "tech": 1,
+      "industry": 1,
       "prod": {
         "oil": 0,
         "grain": 2,
@@ -185,6 +191,7 @@
       "power": 8,
       "law": 4,
       "tech": 3,
+      "industry": 3,
       "prod": {
         "oil": 0,
         "grain": 2,
@@ -208,6 +215,7 @@
       "power": 4,
       "law": 3,
       "tech": 1,
+      "industry": 1,
       "prod": {
         "oil": 0,
         "grain": 3,
@@ -231,6 +239,7 @@
       "power": 5,
       "law": 2,
       "tech": 1,
+      "industry": 1,
       "prod": {
         "oil": 1,
         "grain": 2,
@@ -254,6 +263,7 @@
       "power": 4,
       "law": 4,
       "tech": 2,
+      "industry": 1,
       "prod": {
         "oil": 0,
         "grain": 3,
@@ -278,6 +288,7 @@
       "power": 6,
       "law": 9,
       "tech": 8,
+      "industry": 7,
       "prod": {
         "oil": 0,
         "grain": 2,
@@ -301,6 +312,7 @@
       "power": 7,
       "law": 8,
       "tech": 7,
+      "industry": 7,
       "prod": {
         "oil": 2,
         "grain": 1,

@@ -22,6 +22,7 @@ Lid slouží plánu. Strádání je přijatelná cena za nezávislost; dějiny u
 
 ## Co víš o světě
 - Vidíš bohatství, sílu, produkci a spotřebu států a jejich status. Vidíš svůj vliv a své pohledávky, ne cizí.
+- Vidíš také míru industrializace států a jejich výrobu a spotřebu produktu (goods); továrny potřebují ropu a kovy, bez nich stojí.
 - Nevíš, jak pevné mají státy instituce ani jak jsou technologicky vyspělé; můžeš to jen odhadovat z toho, jak bohatnou, a ze Zpráv světa.
 - Zprávy světa jsou fakta. Nikdo ti neřekne, co znamenají.
 
