@@ -53,7 +53,12 @@ ORIT_STOCK_CAP = 20.0                       # strop zasoby oritu v jednotkach
 RESERVE_TURNS = 3                           # 4.1a prodava prebytek nad 3 tahy spotreby
 INDUSTRY_FLOOR = 0.5                        # dno prumyslu vsech statu (4.2c, v1.4)
 INCOME_POP_DIVISOR = 60.0                   # neformalni prijem pop / 60 (4.2b, v1.4)
-REFILL_MIN_WEALTH = 10.0                    # rezerva se doplnuje jen pri wealth > 10 (4.1c, v1.4)
+REFILL_MIN_WEALTH = 15.0                    # rezervu doplnuje jen stat mimo bidu s wealth >= 15 (4.1c, v1.5)
+MAX_CROSSINGS = 3                           # nejvys 3 prejezdy na trhu (4.1a, v1.5)
+TRANSIT_SURCHARGE = 0.1                     # prirazka za prejezd (4.1a, v1.5)
+SOLIDARITY_MAX = 3.0                        # automaticka solidarita Unie za tah (7.2, v1.5)
+SOLIDARITY_FUND_FLOOR = 5.0                 # ve fondu musi zustat aspon 5 (7.2, v1.5)
+COUP_LAW_PENALTY = 1.0                      # clenovi Unie po prevratu klesne law (4.3, v1.5)
 
 # Faze, ve kterych orit uz existuje (displacement a dal).
 ORIT_PHASES = ("displacement", "boom", "euphoria", "overtrading",
@@ -716,15 +721,54 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
 # 4.1 zdroje a obchod
 # --------------------------------------------------------------------------
 
-def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trace):
-    """4.1a (v1.4): automaticky trh obema smery.
+def _npc_key(sid: str):
+    return int(sid[1:]) if is_npc(sid) else -1
 
-    Prodavaji i nakupuji NPC a hraci A a B. Hraci jsou pro trh sousedy vsech
-    NPC, navzajem ne (K1). Prodejce nabizi vse nad rezervu 3 tahu spotreby,
-    tedy stock + bilance - 3 x need (I2). Kupec poptava deficit toku tohoto tahu
-    a doplneni rezervy zpet na 3 tahy spotreby; doplneni jen pri wealth > 10
-    a jen z bohatstvi nad 10 (K2). Padla rise prodava za 1.3x, nakupuje za trzni
-    cenu. Orit se automaticky neobchoduje.
+
+def _crossings_table(state, npcdata) -> dict:
+    """4.1a (v1.5): nejkratsi cesta mezi dvema NPC po adjacency (BFS).
+
+    Cesta vede jen pres NPC, pres uzemi A a B tranzit nevede. Sousede se prochazeji
+    v poradi ID, takze pri vice nejkratsich cestach vyhraje prvni nalezena (M4).
+    Vraci {(prodejce, kupec): (pocet prejezdu, [tranzitni staty])}.
+    """
+    npcs = npc_ids(state)
+    table = {}
+    for src in npcs:
+        prev = {src: None}
+        queue = [src]
+        while queue:
+            cur = queue.pop(0)
+            for nb in sorted(neighbours(npcdata, cur), key=_npc_key):
+                if nb in prev or nb not in state["npc"]:
+                    continue
+                prev[nb] = cur
+                queue.append(nb)
+        for dst in npcs:
+            if dst == src or dst not in prev:
+                continue
+            path = []
+            x = prev[dst]
+            while x is not None and x != src:
+                path.append(x)
+                x = prev[x]
+            path.reverse()
+            table[(src, dst)] = (len(path), path)
+    return table
+
+
+def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trace):
+    """4.1a (v1.5): globalni automaticky trh s tranzitem.
+
+    Paruje kohokoli s kymkoli. Mezi dvema NPC plati kupec trzni cenu x (1 + 0.1 x
+    pocet prejezdu), prejezd je cizi stat na nejkratsi ceste; vic nez 3 prejezdy
+    se neparuji. Kazdy tranzitni stat dostane polovinu prirazky za svuj prejezd,
+    druha polovina propada jako naklad dopravy a prodejce dostane zakladni cenu (M2).
+    Hraci A a B obchoduji se vsemi NPC bez prirazky, navzajem ne (K1).
+    Prodejce nabizi vse nad rezervu 3 tahu spotreby (I2). Kupec poptava deficit
+    toku a doplneni rezervy; doplnuje jen stat mimo bidu s wealth >= 15 a jen
+    z bohatstvi nad 15 (4.1c, M5). Padla rise prodava za 1.3x, prirazka se
+    pocita z teto ceny (M3). Orit se automaticky neobchoduje.
 
     Vraci (objem NPC s NPC, objem hracu {A, B}, objem goods, dvojice).
     """
@@ -735,6 +779,8 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
     goods_volume = 0.0
     npcs = npc_ids(state)
     traders = npcs + ["A", "B"]
+    routes = _crossings_table(state, npcdata)
+    transit = state.setdefault("_transit_income", {})
 
     for res in resources:
         if res == "orit":
@@ -748,23 +794,29 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
             reserve = RESERVE_TURNS * need
             offer[i] = max(0.0, stock + bal - reserve)
             d_flow[i] = max(0.0, -bal)
-            d_refill[i] = (max(0.0, reserve - stock)
-                           if float(e["wealth"]) > REFILL_MIN_WEALTH else 0.0)
+            can_refill = (float(e["wealth"]) >= REFILL_MIN_WEALTH
+                          and int(e.get("poverty_streak", 0)) == 0)
+            d_refill[i] = max(0.0, reserve - stock) if can_refill else 0.0
 
         pairs = []
         for seller in traders:
             if offer[seller] <= 0:
                 continue
-            if seller in ("A", "B"):
-                buyers = list(npcs)
-            else:
-                buyers = [b for b in neighbours(npcdata, seller) if b in state["npc"]] + ["A", "B"]
-            for buyer in buyers:
+            for buyer in traders:
                 if buyer == seller:
                     continue
+                if seller in ("A", "B") and buyer in ("A", "B"):
+                    continue  # K1
                 dem = d_flow[buyer] + d_refill[buyer]
                 if dem <= 0:
                     continue
+                if seller in ("A", "B") or buyer in ("A", "B"):
+                    k, path = 0, []
+                else:
+                    route = routes.get((seller, buyer))
+                    if route is None or route[0] > MAX_CROSSINGS:
+                        continue
+                    k, path = route
                 key = tuple(sorted((seller, buyer)))
                 if seller in ("A", "B"):
                     same_sphere = state["npc"][buyer]["status"] == "sphere_%s" % seller
@@ -778,50 +830,59 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                     0 if key in last_pairs else 1,
                     0 if same_sphere else 1,
                     -dem,
-                    seller, buyer,
+                    k,                      # pri shode mene prejezdu (v1.5)
+                    _npc_key(seller), _npc_key(buyer),
+                    seller, buyer, tuple(path),
                 ))
         pairs.sort()
 
-        for _, _, _, seller, buyer in pairs:
-            price = market_price(state, res)
+        for _, _, _, k, _, _, seller, buyer, path in pairs:
+            base = market_price(state, res)
             if is_npc(seller) and is_fallen(state, seller):
-                price *= 1.3  # 7a: padla rise prodava za 1.3x
+                base *= 1.3  # 7a: padla rise prodava za 1.3x
+            price = base * (1.0 + TRANSIT_SURCHARGE * k)
             if price <= 0 or offer[seller] <= 1e-9:
                 continue
             be = ent(state, buyer)
-            q_flow = min(offer[seller], d_flow[buyer], max(0.0, float(be["wealth"])) / price)
-            q_flow = max(0.0, q_flow)
+            q_flow = max(0.0, min(offer[seller], d_flow[buyer], max(0.0, float(be["wealth"])) / price))
             wealth_after = float(be["wealth"]) - q_flow * price
-            q_ref = min(offer[seller] - q_flow, d_refill[buyer],
-                        max(0.0, wealth_after - REFILL_MIN_WEALTH) / price)
-            q_ref = max(0.0, q_ref)
+            q_ref = max(0.0, min(offer[seller] - q_flow, d_refill[buyer],
+                                 max(0.0, wealth_after - REFILL_MIN_WEALTH) / price))
             qty = q_flow + q_ref
             if qty <= 1e-9:
                 continue
-            value = qty * price
+            pay = qty * price
+            to_seller = qty * base
+            per_transit = 0.5 * TRANSIT_SURCHARGE * base * qty
             se = ent(state, seller)
-            se["wealth"] = float(se["wealth"]) + value
-            be["wealth"] = float(be["wealth"]) - value
+            se["wealth"] = float(se["wealth"]) + to_seller
+            be["wealth"] = float(be["wealth"]) - pay
+            for t in path:
+                state["npc"][t]["wealth"] = float(state["npc"][t]["wealth"]) + per_transit
+                transit[t] = transit.get(t, 0.0) + per_transit
             exports[seller][res] += qty
             imports[buyer][res] += qty
             offer[seller] -= qty
             d_flow[buyer] -= q_flow
             d_refill[buyer] -= q_ref
             if seller in ("A", "B"):
-                vol_players[seller] += value
+                vol_players[seller] += pay
             if buyer in ("A", "B"):
-                vol_players[buyer] += value
+                vol_players[buyer] += pay
             if is_npc(seller) and is_npc(buyer):
-                vol_npc += value
+                vol_npc += pay
             if res == GOODS:
-                goods_volume += value
+                goods_volume += pay
             pair = sorted((seller, buyer))
             if pair not in new_pairs:
                 new_pairs.append(pair)
             trace.add("4.1a automaticky trh",
                       {"prodejce": seller, "kupec": buyer, "res": res},
                       {"qty": round(qty, 3), "z_toho_doplneni": round(q_ref, 3),
-                       "cena": round(price, 3), "objem": round(value, 3)})
+                       "cena": round(price, 3), "zaklad": round(base, 3),
+                       "prejezdy": k, "tranzit": list(path),
+                       "objem": round(pay, 3), "prodejci": round(to_seller, 3),
+                       "tranzitu_kazdemu": round(per_transit, 4)})
 
     return vol_npc, vol_players, goods_volume, new_pairs
 
@@ -888,6 +949,8 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
     trade_mult = 1.0
     if crash_turn is not None and state["phase"] in ("crash",) and turn - crash_turn < 6:
         trade_mult = 0.5
+
+    state["_transit_income"] = {}
 
     # 1. predbezne potreby
     potential = {i: goods_potential(ent(state, i)) for i in ids}
@@ -1030,6 +1093,11 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
                        "by_player": volume_by_player, "by_npc": volume_by_npc}
     state["_npc_trade_volume"] = npc_volume
     state["_goods_trade_volume"] = goods_volume
+    # 4.1a (v1.5): tranzitni prijem tahu jako radek snimku
+    state["transit_income"] = {k: round(v, 4) for k, v in
+                               sorted(state.pop("_transit_income", {}).items(), key=lambda x: _npc_key(x[0]))}
+    for sid, amount in state["transit_income"].items():
+        trace.add("4.1a tranzitni prijem", {"stat": sid}, {"prijem": amount})
     return grain_deficit
 
 
@@ -1165,20 +1233,18 @@ def step_poverty(state, npcdata, grain_deficit, trace: Trace, events: list) -> N
         e["influence"]["A"] = 0.0
         e["influence"]["B"] = 0.0
         e["coups"] = int(e.get("coups", 0)) + 1
-        e["status"] = "independent"
         e["poverty_streak"] = 0
         e["last_coup_turn"] = turn
         C = state["players"]["C"]
         if i in C["members"]:
-            C["members"] = [x for x in C["members"] if x != i]
-            events.append({"kind": "union_exit", "npc": i, "to": "prevrat"})
-        if i in C["candidates"]:
-            # 4.3 a 7.4 (v1.4): kandidatura prezije, pokud stat dal sousedi s clenem (K7)
-            if any(mm in neighbours(npcdata, i) for mm in C["members"]):
-                e["status"] = "candidate"
-            else:
-                C["candidates"] = [x for x in C["candidates"] if x != i]
-                events.append({"kind": "union_candidacy_lost", "npc": i})
+            # 4.3 a 7.5 (v1.5): prevrat clenstvi neprusi, clenovi klesne law o 1
+            e["status"] = "union"
+            e["law"] = clamp(float(e["law"]) - COUP_LAW_PENALTY, 0.0, 10.0)
+            events.append({"kind": "union_member_coup", "npc": i, "law": e["law"]})
+        elif i in C["candidates"]:
+            e["status"] = "candidate"  # K7: kandidatura prevrat prezije (v1.5 vzdy)
+        else:
+            e["status"] = "independent"
         events.append({"kind": "coup", "stat": i, "coups": e["coups"]})
         trace.add("4.3 pad vlady", {"stat": i},
                   {"coups": e["coups"], "status": "independent", "zruseno": cancelled})
@@ -1685,42 +1751,70 @@ def _components(npcdata, nodes: list[str]) -> list[list[str]]:
     return out
 
 
-def _pick_founders(state, npcdata, eligible: list[str], trace: Trace) -> list[str]:
-    """7.1 (v1.1): zakladatele musi tvorit souvisle uzemi, nejvys ctyri.
+def _pick_founders(state, npcdata, eligible: list[str], trace: Trace):
+    """7.1: zakladatele musi tvorit souvisle uzemi, nejvys ctyri (C9).
 
-    Z vice oddelenych skupin zaklada nejvetsi, pri shode ta s nizsim prumernym
-    wealth. Uvnitr skupiny se bere nejvys ctyri podle nejvyssi fragility, ale
-    tak, aby vyber zustal souvisly: zacne se nejkrehcim a pridava se vzdy
-    nejkrehci soused uz vybraneho. Kombinaci "nejvyssi fragilita" se
-    "souvislym uzemim" pravidla nedourcuji, viz OPEN_QUESTIONS C9.
+    v1.5: nema-li zadna souvisla skupina zpusobilych statu aspon 3, mohou se
+    skupiny spojit pres jeden nezavisly nezpusobily stat (most). Vybere se most,
+    ktery spoji nejvic zpusobilych statu, pri shode skupina s nizsim prumernym
+    wealth, pak nizsi ID (M6). Most se stane kandidatem jen tehdy, kdyz pres nej
+    vybrani zakladatele opravdu vedou.
+
+    Vraci (zakladatele, most nebo None).
     """
     if not eligible:
-        return []
+        return [], None
+
+    def avg_w(group):
+        return sum(float(state["npc"][x]["wealth"]) for x in group) / len(group)
+
     skupiny = _components(npcdata, eligible)
-    skupiny.sort(key=lambda g: (-len(g),
-                                sum(float(state["npc"][x]["wealth"]) for x in g) / len(g),
-                                g[0]))
+    skupiny.sort(key=lambda g: (-len(g), avg_w(g), _npc_key(g[0])))
     nejlepsi = skupiny[0]
+    bridge = None
+    if len(nejlepsi) < 3:
+        best = None
+        for x in sorted(state["npc"], key=_npc_key):
+            if x in eligible or state["npc"][x]["status"] != "independent":
+                continue
+            nbx = set(neighbours(npcdata, x))
+            joined = [g for g in skupiny if any(m in nbx for m in g)]
+            if len(joined) < 2:
+                continue
+            merged = sorted({m for g in joined for m in g}, key=_npc_key)
+            score = (-len(merged), avg_w(merged), _npc_key(x))
+            if best is None or score < best[0]:
+                best = (score, x, merged)
+        if best is not None and len(best[2]) > len(nejlepsi):
+            bridge, nejlepsi = best[1], best[2]
+
+    bridge_nb = set(neighbours(npcdata, bridge)) if bridge else set()
+
+    def linked(a, b):
+        return b in neighbours(npcdata, a) or (a in bridge_nb and b in bridge_nb)
+
     vybrani = []
-    zbyva = sorted(nejlepsi, key=lambda x: (-_fragility(state, x), x))
+    zbyva = sorted(nejlepsi, key=lambda x: (-_fragility(state, x), _npc_key(x)))
     while zbyva and len(vybrani) < UNION_MAX_FOUNDERS:
         if not vybrani:
             vybrani.append(zbyva.pop(0))
             continue
-        soused = [x for x in zbyva
-                  if any(x in neighbours(npcdata, v) for v in vybrani)]
+        soused = [x for x in zbyva if any(linked(v, x) for v in vybrani)]
         if not soused:
             break
         pick = soused[0]
         zbyva.remove(pick)
         vybrani.append(pick)
+    if bridge and len(_components(npcdata, vybrani)) <= 1:
+        bridge = None  # zakladatele jsou souvisli i bez mostu
     trace.add("7.1 vyber zakladatelu",
               {"zpusobili": eligible,
                "skupiny": [len(g) for g in skupiny],
-               "nejvetsi_skupina": nejlepsi},
+               "nejvetsi_skupina": nejlepsi,
+               "most": bridge},
               {"vybrani": vybrani,
                "fragility": {x: round(_fragility(state, x), 3) for x in vybrani}})
-    return vybrani
+    return vybrani, bridge
 
 
 def _union_can_join(state, npcdata, nid: str) -> bool:
@@ -1733,6 +1827,7 @@ def _union_can_join(state, npcdata, nid: str) -> bool:
 
 def step_union(state, npcdata, trace: Trace, events: list) -> None:
     C = state["players"]["C"]
+    state["union_solidarity"] = {}
     turn = state["meta"]["turn"]
     m = state["minsky"]
 
@@ -1753,7 +1848,7 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
                 continue
             if i not in m["fallen_touched"]:
                 eligible.append(i)
-        founders = _pick_founders(state, npcdata, eligible, trace)
+        founders, bridge = _pick_founders(state, npcdata, eligible, trace)
         if len(founders) >= 3:
             C["active"] = True
             C["founded_turn"] = turn
@@ -1769,7 +1864,13 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
                 fund += take
             C["wealth"] = fund
             C["fund"] = fund
-            events.append({"kind": "union_founded", "members": founders, "fund": fund})
+            if bridge is not None:
+                # 7.1 (v1.5): most se stava kandidatem (pocita se do stropu 3)
+                C["candidates"] = [bridge]
+                state["npc"][bridge]["status"] = "candidate"
+                events.append({"kind": "union_bridge", "npc": bridge})
+            events.append({"kind": "union_founded", "members": list(founders), "fund": fund,
+                           "bridge": bridge})
             trace.add("7.1 vznik Unie", {"zakladatele": founders},
                       {"fond": round(fund, 3), "tah": turn})
         else:
@@ -1838,6 +1939,23 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
                 C["members"].append(i)
             n["status"] = "union"
             events.append({"kind": "union_join", "npc": i, "how": "prah splnen"})
+
+    # 7.2 (v1.5): automaticka solidarita. Clenovi v bide posle fond az 3 za tah,
+    # pokud ve fondu zustane aspon 5. Od tahu po zalozeni, nejchudsi prvni (M8).
+    if C.get("founded_turn") != turn:
+        poor = set(state.get("_poverty", []))
+        for mm in sorted(C["members"], key=lambda x: (float(state["npc"][x]["wealth"]), _npc_key(x))):
+            if mm not in poor:
+                continue
+            amount = min(SOLIDARITY_MAX, float(C["wealth"]) - SOLIDARITY_FUND_FLOOR)
+            if amount <= 1e-9:
+                break
+            C["wealth"] = float(C["wealth"]) - amount
+            state["npc"][mm]["wealth"] = float(state["npc"][mm]["wealth"]) + amount
+            state["union_solidarity"][mm] = round(amount, 4)
+            events.append({"kind": "union_solidarity", "npc": mm, "amount": round(amount, 4)})
+            trace.add("7.2 automaticka solidarita", {"npc": mm}, {"prijem": round(amount, 4),
+                                                                   "fond": round(float(C["wealth"]), 4)})
 
     C["power"] = sum(float(state["npc"][mm]["power"]) for mm in C["members"]) \
         if C["members"] else 0.0
