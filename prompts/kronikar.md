@@ -20,6 +20,7 @@ Místo denní. Oblouk týdne: kde svět začal, kde končí, tři momenty, kter�
 - Nezveřejňuj index prosperity ani tajné cíle hráčů před dnem 30; smíš popsat, že "lidem se daří" nebo "nedaří", ne číslo.
 - Právo a technologii nepojmenovávej jako čísla; popisuj projevy (soudy fungují, továrny vznikají, smlouvy se dodržují).
 - Nepiš o opravách, pauzách ani technických problémech hry.
+- Změnu pravidel během běhu (nová verze `docs/pravidla.md`) zapiš jako událost "reforma": co se ve světě změnilo a od kterého tahu, bez technických podrobností.
 - Den 30: finále podle `docs/pravidla.md`, část 8: index po dnech, tajné cíle všech hráčů, verdikt, den, kdy se to zlomilo.
 
 ## Styl

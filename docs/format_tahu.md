@@ -34,7 +34,8 @@ Statky: `grain`, `oil`, `metal`, `goods`, od displacementu i `orit`.
 Směr určuje NPC: má-li statku přebytek, prodává ti, má-li deficit, kupuje od tebe.
 Cena musí být v pásmu 0.7 až 1.5 aktuální tržní ceny. Množství se ořízne na velikost bilance NPC.
 Cílem může být i druhý hráč (`A` nebo `B`); směr pak určuje jeho bilance.
-Obchod s členem Unie nese clo 10 %, které platí strana mimo Unii.
+Obchod s členem Unie nese clo, které platí strana mimo Unii. Platnou sazbu vidíš v pohledu jako `clo_unie`
+(výchozí 0.10).
 
 NPC nabídku vyhodnotí podle své vůle. Může ji přijmout, přijmout s podmínkou (menší objem),
 poslat protinávrh soukromou zprávou, nebo odmítnout. Výsledek s důvodem najdeš ve svém
@@ -172,6 +173,25 @@ Jen nezávislému NPC, které sousedí s některým členem. NPC nabídku vyhodn
 
 ```json
 { "type": "admit", "target": "N10" }
+```
+
+### `trade_offer` Unie: obchod za členy (jen Unie)
+
+Unie obchoduje s NPC, které není členem, nebo s hráčem `A` či `B`. Prodává z přebytků členů a nakupuje
+pro jejich deficity; směr určí souhrnná bilance členů u daného statku. Cíl musí mít opačnou bilanci.
+Peníze jdou přes fond a fond při nákupu zaplatí nejvýš to, co má. Cena v pásmu 0.7 až 1.5 tržní ceny.
+Orit Unie neprodává. NPC nabídku vyhodnotí podle své vůle; obchod nedává vliv.
+
+```json
+{ "type": "trade_offer", "target": "A", "res": "grain", "qty": 4, "price_per_unit": 0.7 }
+```
+
+### `set_tariff`: sazba cla celní unie (jen Unie)
+
+`rate` od 0 do 0.20 po 0.05, výchozí 0.10. Platí od dalšího tahu; clo platí strana mimo Unii a jde do fondu.
+
+```json
+{ "type": "set_tariff", "rate": 0.15 }
 ```
 
 ### `union_fund`: převod ze společného fondu (jen Unie)

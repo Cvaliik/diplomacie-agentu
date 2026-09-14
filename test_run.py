@@ -160,6 +160,30 @@ def _balance(state, applied):
     return out
 
 
+def _trade_split(state, applied):
+    """v1.9: objem automatickeho trhu celkem a s hracem jako stranou; obchod clenu Unie
+    mezi sebou (vnitrni trh v trzni cene) a s necleny (automaticky, cileny, obchod Unie)."""
+    members = set(state["players"]["C"].get("members") or [])
+    out = {"auto": 0.0, "auto_hraci": 0.0, "unie_vnitrni": 0.0, "unie_s_necleny": 0.0}
+    for a in applied:
+        rule, inp, o = a["rule"], a["inputs"], a["outputs"]
+        if rule == "4.1a automaticky trh":
+            v = float(o["objem"])
+            out["auto"] += v
+            if inp["prodejce"] in ("A", "B") or inp["kupec"] in ("A", "B"):
+                out["auto_hraci"] += v
+            if (inp["prodejce"] in members) != (inp["kupec"] in members):
+                out["unie_s_necleny"] += v
+        elif rule == "4.1 cileny obchod":
+            if (inp["prodejce"] in members) != (inp["kupec"] in members):
+                out["unie_s_necleny"] += float(o["objem"])
+        elif rule == "7.2 obchod Unie za cleny":
+            out["unie_s_necleny"] += float(o["objem"])
+        elif rule == "7.2 vnitrni trh Unie":
+            out["unie_vnitrni"] += float(o.get("hodnota", 0.0))
+    return out
+
+
 def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
     if state is None:
         state, npcdata = engine.load_world(config.STATE_PATH, config.NPC_PATH)
@@ -224,6 +248,7 @@ def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
             "tariff": sum(float(v) for v in (new_state.get("union_tariff") or {}).values()),
             "invest_prod": sum(1 for e in events if e.get("kind") in ("invest_prod_done", "npc_invest_prod")),
             "balance": _balance(new_state, applied),
+            "split": _trade_split(new_state, applied),
             "decisions": [(d["player"], d["action"], d["outcome"]) for d in new_state.get("npc_decisions", [])],
             "offers_new": [(o["player"], o["type"]) for o in new_state.get("offers_new", [])],
             "offers_accepted": [(e["player"], e["offer"]["type"]) for e in events if e.get("kind") == "offer_accepted"],

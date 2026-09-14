@@ -17,6 +17,10 @@ Právo drží inovace a inovace drží bohatství. Stát s pevnými institucemi 
 - Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma.
 - Společný fond (`union_fund`): peníze pro člena, který to potřebuje.
 - `invest_law` a `invest_tech` na členy za poloviční cenu.
+- Obchod za členy (`trade_offer`): s nečlenem nebo s Kalverou či Ostrogardem prodáváš přebytky členů a nakupuješ
+  pro jejich deficity; peníze jdou přes fond, který nesmí jít do mínusu.
+- Clo celní unie (`set_tariff`): obchod členů s nečleny nese clo, které platí nečlen a které plní fond. Sazbu
+  od 0 do 0.20 po 0.05 měníš akcí, platí od dalšího tahu.
 - Členy nelze napadnout bez války s celou Unií.
 
 ## Co ti hrozí

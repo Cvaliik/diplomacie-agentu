@@ -1,4 +1,9 @@
-# Pravidla světa Ardan (v1.8)
+# Pravidla světa Ardan (v1.9)
+
+Verze v1.9 zapracovává rozhodnutí Adama ze 14. 9. 2026: cíl automatické `invest_prod` podle ceny (4.2a),
+spekulativní nabídka velkých továren na trhu (4.0, 4.1a), párování automatického trhu podle ceny s paušálem
+přejezdu hráčů (4.1a), clo jako akce Unie `set_tariff` a obchod Unie za členy (7.2, 3.2). Potvrzené výklady
+S1 až S7 z `docs/OPEN_QUESTIONS.md` jsou nově závazným textem.
 
 Verze v1.8 zapracovává rozhodnutí Adama z 18. 9. 2026: komparativní výhoda ve výrobě `goods` (4.0),
 celní unie (7.2), nová akce `invest_prod` a její automatika u NPC (3.2, 4.2a) a úprava produkce ropy
@@ -120,7 +125,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 | type | parametry | efekt | náklad |
 |---|---|---|---|
-| `trade_offer` | `target`, `res`, `qty`, `price_per_unit` | NPC přijme, pokud má přebytek/deficit a cena je v pásmu 0.7 až 1.5 aktuální tržní ceny podle 4.1b; vzniká trvalý obchod, dokud ho někdo nezruší. Směr určuje bilance NPC u dané suroviny: přebytek znamená, že NPC hráči prodává, deficit, že od něj nakupuje, nulová bilance je odmítnutí. Množství se ořízne na velikost bilance. NPC nabídku vyhodnotí podle 3.4. Cílem může být i druhý hráč (A nebo B); obchod mezi hráči projde bez vyhodnocení podle 3.4, má-li cíl přebytek nebo deficit a je-li cena v pásmu | žádný |
+| `trade_offer` | `target`, `res`, `qty`, `price_per_unit` | NPC přijme, pokud má přebytek/deficit a cena je v pásmu 0.7 až 1.5 aktuální tržní ceny podle 4.1b; vzniká trvalý obchod, dokud ho někdo nezruší. Směr určuje bilance NPC u dané suroviny: přebytek znamená, že NPC hráči prodává, deficit, že od něj nakupuje, nulová bilance je odmítnutí. Množství se ořízne na velikost bilance. NPC nabídku vyhodnotí podle 3.4. Cílem může být i druhý hráč (A nebo B); obchod mezi hráči projde bez vyhodnocení podle 3.4, má-li cíl přebytek nebo deficit a je-li cena v pásmu. Unie obchoduje za členy, viz 7.2 | žádný |
 | `loan` | `target`, `amount` | hráč převede `amount` bohatství NPC; NPC dluží `amount × 1.2`; splácí 10 % dluhu za tah z bohatství | `amount` wealth |
 | `pressure` | `target`, `demand` | sankce: přeruší obchody hráče s NPC; NPC ztrácí 3 wealth/tah, hráč 1; `influence` protivníka +1. Cílem může být i druhý hráč: sankce pak po dobu trvání přeruší vzájemný automatický obchod obou hráčů a stojí oba 1 wealth/tah; cílené obchody mezi nimi trvají dál | 1 wealth/tah |
 | `protect` | `target` | vojenský pakt: NPC `power` +2/tah, `influence[hráč]` +2/tah, `law` −0.2/tah; NPC nelze napadnout, dokud pakt trvá (útok = válka s ochráncem, viz 3.3) | 2 power/tah |
@@ -128,13 +133,14 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `invest_tech` | (vlastní stát nebo `target` v sphere/union) | `tech` +0.3 | 8 wealth |
 | `invest_law` | `target` v sphere/union, nebo vlastní | `law` +0.3 | 6 wealth |
 | `invest_industry` | vlastní stát nebo `target` v sphere/union (Unie: členové a kandidáti) | `industry` +0.3 × (law/5), jen při `law ≥ 4` cíle | 10 wealth |
-| `invest_prod` | `res`, `target` (volitelný) | `prod[res]` +1, jen pro zdroj s `prod[res] > 0` a jen při `tech ≥ 3`; orit se takto zvýšit nedá | 12 wealth |
+| `invest_prod` | `res`, `target` (volitelný) | `prod[res]` +1, jen pro zdroj s `prod[res] > 0` a jen při `tech ≥ 3`; orit se takto zvýšit nedá. Cílem je vlastní stát nebo NPC ve vlastní sféře, u Unie členové a kandidáti (jako `invest_industry`); `prod > 0` i `tech ≥ 3` se berou u cíle | 12 wealth |
 | `explore` | (vlastní stát) | 15 % šance na malé ložisko oritu (prod.orit +2) | 5 wealth |
 | `arm` | (vlastní stát) | `power` +5 | 8 wealth |
 | `admit` | jen Unie: `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
 | `cancel` | `deal_id` | zruší obchod, pakt nebo sankci | žádný |
 | `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí | žádný |
 | `union_fund` | jen Unie: `target` člen, `amount` | převod ze společného fondu členovi | fond |
+| `set_tariff` | jen Unie: `rate` 0 až 0.20 po 0.05 | sazba cla celní unie od dalšího tahu, viz 7.2 | žádný |
 | `accept_offer` | `offer_id` | přijme nabídku NPC z pohledu hráče bez vyhodnocení podle 3.4 (3.5) | žádný |
 
 **Zánik paktu:** pakt `protect` zaniká, když `power` ochránce klesne na 0. Engine k tomu vydá událost pro rozhodčího: „X stahuje posádky z N“. Srazí-li sílu na 0 sama údržba paktu, pakt v tomto tahu ještě působí a pak zanikne; klesne-li síla na 0 jinak (bída, válka), pakt zanikne při nejbližší údržbě.
@@ -204,7 +210,7 @@ Každý stát má vedle surovin i průmysl. Průmysl vyrábí produkt `goods`, k
 
 **Výroba podle poptávky:** stát vyrábí jen do výše `plánovaná výroba = min(kapacita, vlastní potřeba goods + 1.2 × goods prodané v minulém tahu + doplnění rezervy goods)`; zbytek kapacity továren stojí. Prodaným množstvím se rozumí `goods` prodané na automatickém trhu a cílenými obchody, bez vnitřního trhu Unie. Doplnění rezervy `goods` je 3 tahy spotřeby minus zásoba; doplňuje se vlastní výrobou, a proto se na něj práh `wealth ≥ 25` nevztahuje.
 
-**Komparativní výhoda:** stát s `industry < 2` plánuje výrobu `goods` nejvýš na 50 % vlastní potřeby a zbytek dováží (malé továrny jsou drahé). Stát s `industry ≥ 4` plánuje navíc export: vlastní potřeba + prodané minulý tah × 1.2 + 10 % kapacity jako spekulativní nabídka na trh. Ostatní státy plánují podle vzorce výše.
+**Komparativní výhoda:** stát s `industry < 2` plánuje výrobu `goods` nejvýš na 50 % vlastní potřeby a zbytek dováží (malé továrny jsou drahé). Strop 50 % vlastní potřeby platí pro celý plán, tedy i pro prodej minulého tahu a doplnění rezervy. Svůj deficit `goods` včetně doplnění rezervy malé továrny nakupují na automatickém trhu jako u ostatních statků (4.1a, 4.1c). Stát s `industry ≥ 4` plánuje navíc export: vlastní potřeba + prodané minulý tah × 1.2 + doplnění rezervy `goods` + 10 % kapacity jako spekulativní nabídka na trh. **Spekulativní nabídka** (10 % kapacity, nejvýš letošní výroba) jde na automatický trh vždy, i když zásoba `goods` po výrobě nedosahuje rezervy 3 tahů spotřeby; do zásoby jde jen to, co se neprodá. Ostatní státy plánují podle vzorce výše.
 
 `goods_out = plánovaná výroba × coverage`
 
@@ -249,11 +255,12 @@ Po vyhodnocení obchodů hráčů spáruje engine zbylé přebytky se zbylými d
 
 **Pořadí v tahu:** nejdřív obchody hráčů, pak vnitřní trh Unie zdarma mezi členy (7.2), pak placené párování podle tohoto pravidla na tom, co zbylo.
 
-- **Globální trh:** páruje se kdokoli s kýmkoli. Hráči A a B obchodují se všemi NPC i spolu navzájem bez přirážky (loďstvo a obchodní síť); vzájemný automatický obchod hráčů přeruší jen sankce `pressure` mezi nimi (3.2). Unie (C) na trhu neprodává, nemá vlastní výrobu.
+- **Globální trh:** páruje se kdokoli s kýmkoli. Hráči A a B obchodují se všemi NPC i spolu navzájem; vzájemný automatický obchod hráčů přeruší jen sankce `pressure` mezi nimi (3.2). Unie (C) na automatickém trhu neprodává, nemá vlastní výrobu; cíleně obchoduje za členy (7.2).
+- **Paušál hráčů:** každá dvojice, kde je stranou hráč A nebo B, má na automatickém trhu paušálně 1 přejezd (loďstvo), i obchod A s B. Kupec platí `tržní cena × 1.1`, prodejce dostane tržní cenu, přirážka celá propadá jako náklad dopravy a tranzitní příjem z ní nikdo nedostane. Paušál platí jen pro A a B; Unie ani její členové ho nemají.
 - **Tranzit:** mezi dvěma NPC platí kupec `tržní cena × (1 + 0.1 × počet přejezdů)`. Přejezd je cizí stát na nejkratší cestě po `adjacency` mezi prodejcem a kupcem (hledá se do šířky); sousedé mají 0 přejezdů. Víc než 3 přejezdy se nepárují. Přes území A a B tranzit nevede. Je-li nejkratších cest víc, platí první nalezená při procházení sousedů v pořadí ID. Přirážka se počítá z ceny prodejce.
 - **Tranzitní příjem:** každý tranzitní stát dostane jako `wealth` polovinu přirážky připadající na jeho přejezd. Snímek tahu zapisuje tranzitní příjem podle státu do řádku `transit_income`. Druhá polovina přirážky propadá jako náklad dopravy; prodejce dostane cenu bez přirážky.
-- Pořadí párování: (1) dvojice, které spolu obchodovaly minulý tah, (2) dvojice ve stejné sféře, (3) největší poptávka; při shodě má přednost menší počet přejezdů, pak pořadí ID. Hráč a NPC v jeho sféře (`sphere_A` pro A, `sphere_B` pro B) jsou ve stejné sféře, ať hráč prodává, nebo nakupuje.
-- Prodejce nabízí vše nad rezervu **3 tahů spotřeby**: zásobu plus bilanci tahu minus trojnásobek spotřeby (4.1c).
+- **Pořadí párování:** dvojice se řadí podle efektivní ceny pro kupce `tržní cena × (1 + 0.1 × přejezdy) + clo` od nejlevnější; clo se přičítá, jen když ho platí kupec (7.2). Při shodě ceny rozhoduje v tomto pořadí: (1) dvojice, které spolu obchodovaly minulý tah, (2) dvojice ve stejné sféře, (3) největší poptávka, (4) pořadí ID. Hráč a NPC v jeho sféře (`sphere_A` pro A, `sphere_B` pro B) jsou ve stejné sféře, ať hráč prodává, nebo nakupuje.
+- Prodejce nabízí vše nad rezervu **3 tahů spotřeby**: zásobu plus bilanci tahu minus trojnásobek spotřeby (4.1c). U `goods` nabízí stát s `industry ≥ 4` aspoň spekulativní nabídku podle 4.0, nejvýš však zásobu plus bilanci tahu.
 - Kupec poptává deficit toku tohoto tahu a doplnění rezervy zpět na 3 tahy spotřeby; doplnění jen u státu s `wealth ≥ 25` (4.1c) a platí se jen z bohatství nad 25; deficit toku smí stát pokrýt celým bohatstvím.
 - Obchoduje se `grain`, `oil`, `metal` a `goods`. **Orit se automaticky neobchoduje:** NPC ho získá jen akcí `trade_offer` od hráče A nebo B, nebo vlastním nálezem. Unie orit neprodává. Poptávka NPC po oritu se od `euphoria` projevuje žádostmi o půjčku (část 5).
 - Hráči prodávají i nakupují za tržní cenu. Automatický obchod hráče nedává `influence` a pro 4.4 se nepočítá jako obchod s hráčem. Cíleným obchodem s vlivem a vlastní cenou zůstává `trade_offer`.
@@ -282,7 +289,7 @@ Každý stát (hráči A, B a NPC) má zásoby `stock[res]` pro `grain`, `oil`, 
 - Pokuta `wealth −1` padá jen za jednotku, kterou nepokryje ani zásoba.
 - Neprodaný přebytek a nevyužité průmyslové vstupy jdou do zásoby. Zásoba nad rezervu je na prodej (4.1a).
 - Strop zásoby je 10násobek spotřeby za tah, u oritu 20 jednotek. Strop omezuje jen přidávání; zásoba nad stropem se nekrátí a spotřebovává se normálně.
-- Výchozí zásoby: padlé říše 12 tahů spotřeby, NPC s `wealth ≥ 40` 8 tahů, s `wealth` 25 až 39 5 tahů, pod 25 2 tahy, hráči 6 tahů. Orit 0. Spotřebou za tah se pro výchozí zásoby rozumí potřeby podle 4.0 při výrobě jen z vlastních surovin, bez obchodu a bez zásob. Plánovaná výroba je přitom `min(kapacita, vlastní potřeba goods)`.
+- Výchozí zásoby: padlé říše 12 tahů spotřeby, NPC s `wealth ≥ 40` 8 tahů, s `wealth` 25 až 39 5 tahů, pod 25 2 tahy, hráči 6 tahů. Orit 0. Spotřebou za tah se pro výchozí zásoby rozumí potřeby podle 4.0 při výrobě jen z vlastních surovin, bez obchodu a bez zásob. Plánovaná výroba je přitom `min(kapacita, vlastní potřeba goods)`, upravená o komparativní výhodu z 4.0: `industry < 2` nejvýš 50 % vlastní potřeby, `industry ≥ 4` vlastní potřeba plus 10 % kapacity.
 
 ### 4.2 Růst
 - Autonomní růst bohatství je zrušený. Bohatství se mění jen příjmy z prodeje, výdaji za dovoz a investice, půjčkami a splátkami a neformálním příjmem podle 4.2b.
@@ -291,7 +298,7 @@ Každý stát (hráči A, B a NPC) má zásoby `stock[res]` pro `grain`, `oil`, 
 
 ### 4.2a Automatika NPC
 
-Běžné NPC s `wealth > 40` a `law ≥ 5`, jehož `wealth` za poslední 3 tahy vzrostlo, provede každý třetí tah (tah dělitelný třemi) jednu investici, střídavě `invest_tech` za 8 wealth, `invest_industry` za 10 wealth a `invest_prod` za 12 wealth do zdroje, kde má NPC největší produkci. Padlé říše ne. Střídá se podle čísla tahu pro všechna NPC najednou. Růst bohatství se měří v okamžiku investice proti bohatství na konci tahu o tři tahy dříve. Podmínka `law ≥ 5` platí dál vedle podmínky růstu.
+Běžné NPC s `wealth > 40` a `law ≥ 5`, jehož `wealth` za poslední 3 tahy vzrostlo, provede každý třetí tah (tah dělitelný třemi) jednu investici, střídavě `invest_tech` za 8 wealth, `invest_industry` za 10 wealth a `invest_prod` za 12 wealth. Padlé říše ne. Střídá se podle čísla tahu pro všechna NPC najednou v cyklu devíti tahů: tahy 3, 12, 21 a dál `invest_tech`, tahy 6, 15, 24 a dál `invest_industry`, tahy 9, 18, 27 a dál `invest_prod`. `invest_prod` míří do zdroje, který NPC už vyrábí (`prod > 0`) a jehož aktuální tržní cena je nejvyšší, při shodě v pořadí oil, grain, metal; nikdy do zdroje s cenou na dolní mezi (0.7 × základu). Není-li žádný vhodný zdroj, nebo má-li NPC `tech < 3`, v tom tahu neinvestuje. Růst bohatství se měří v okamžiku investice proti bohatství na konci tahu o tři tahy dříve. Podmínka `law ≥ 5` platí dál vedle podmínky růstu.
 
 ### 4.2b Neformální příjem
 
@@ -380,7 +387,9 @@ Ze způsobilých států zakládá Unii největší souvislá skupina podle `adj
 - Fond (`wealth` C) = 10 % `wealth` každého člena při vstupu (odvedeno členem). Dále každý člen odvádí do fondu každý tah 2 % svého `wealth`.
 - Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma. Sdílí se jen tok tahu, ne zásoby, a vnitřní trh zahrnuje i orit; výjimka pro orit v 4.1a se ho netýká.
 - **Automatická solidarita:** fond pošle každý tah až 3 `wealth` nejchudšímu členovi v bídě a smí se přitom vyprázdnit až na 0. Nevyžaduje akci Unie a snímek ji zapisuje jako `union_solidarity`.
-- **Celní unie:** obchod mezi členem Unie a nečlenem (NPC i hráči, automatický i cílený) nese přirážku 10 %, kterou platí nečlen a která jde do fondu Unie; snímek ji zapisuje jako `union_tariff`. Vnitřní trh členů beze změny.
+- **Celní unie:** obchod mezi členem Unie a nečlenem (NPC i hráči, automatický i cílený) nese clo, které platí nečlen a které jde do fondu Unie; snímek ho zapisuje jako `union_tariff`. Vnitřní trh členů beze změny. Členem jsou jen `members`, kandidát je nečlen. Clo je podíl z hodnoty obchodu bez tranzitní přirážky: u automatického trhu ze základní tržní ceny, u cíleného obchodu z dohodnuté ceny. Platí-li ho kupec, zaplatí cenu i clo; platí-li ho prodejce, dostane cenu bez cla. Do objemu obchodu pro metriku A se clo nepočítá.
+- **Sazba cla (`set_tariff`):** Unie nastavuje sazbu akcí `set_tariff` s parametrem `rate` od 0 do 0.20 po 0.05; výchozí sazba je 0.10. Nová sazba platí od dalšího tahu a počítá se do limitu 3 akcí. Sazba je veřejná.
+- **Obchod Unie za členy:** Unie smí `trade_offer` s NPC, které není členem, nebo s hráčem A či B. Nabídka se kryje z poolu členů: prodává se z přebytků členů nad rezervu 3 tahů spotřeby, nakupuje se pro deficity členů. Směr určí souhrnná bilance poolu (přebytky minus deficity). Prodané množství se odebírá členům poměrně k jejich přebytku, nakoupené se rozděluje poměrně k deficitu. Peníze jdou přes fond: kupec platí do fondu, při nákupu platí fond; kupec zaplatí nejvýš to, co má, a fond tedy nejde do mínusu. Cena musí být v pásmu 0.7 až 1.5 tržní ceny jako u hráčů, obchod nedává vliv, NPC ho vyhodnotí podle 3.4 a nečlen z něj odvádí clo.
 - `union_fund`: převod z fondu členovi nebo kandidátovi. `invest_law`, `invest_tech`, `invest_industry` a `invest_prod` na členy a kandidáty za poloviční cenu.
 - Členy nelze napadnout bez války s celou Unií. V prvním tahu takové války brání Unie polovinou součtu `power` členů, od druhého tahu plným součtem.
 - Nikdy si nepůjčuje (akce `loan` s `target = C` je neplatná). Sama půjčovat nezávislým NPC a kandidátům může; platí běžná pravidla půjčky včetně vlivu a eroze práva dlužníka.

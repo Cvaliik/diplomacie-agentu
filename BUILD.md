@@ -85,6 +85,12 @@ Pak jeden ostrý tah ručně (`python run_turn.py --once`), Adam zkontroluje vý
 - **Kde hledat chybu:** `history/failed_turn_NNN.json` → `validate` důvod; `applied_rules` ve snímku → které pravidlo a s jakými čísly.
 - **Limity:** pokud Opus dochází, přepnout `PLAYER_MODEL` na Sonnet; kronikář zůstává Opus.
 
-## 10. docs/format_tahu.md
+## 10. Změny pravidel během ostrého běhu
+
+Pravidla se smějí měnit i během ostrého běhu. Každá změna se verzuje (nová verze `docs/pravidla.md`, commit se
+zněním rozhodnutí), kronikář ji zapíše jako událost "reforma" a běh se nerestartuje: pokračuje z aktuálního
+`state.json` podle nové verze pravidel.
+
+## 11. docs/format_tahu.md
 
 Vytvoř podle části 3.1 a 3.2 pravidel: přesné JSON schéma tahu s příklady každé akce, včetně `message` a `admit`. Hráči ho dostávají v každém tahu.

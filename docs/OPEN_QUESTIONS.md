@@ -4272,8 +4272,9 @@ Převratů celkem za 90 tahů: **33**. Bohatství:
 
 ## S. Nově otevřené otázky z implementace v1.8
 
-Neopravuji je, engine u každé používá uvedený výklad. Nejdůležitější jsou S9 a S10, protože ukazují, že
-investice a komparativní výhoda zatím nevytvářejí obchod, kvůli kterému vznikly.
+**Uzavřeno rozhodnutím ze 14. 9. 2026 (v1.9):** S1 až S7 potvrzeny podle enginu a zapsány do `docs/pravidla.md`;
+S8 a S9 řeší cíl automatické `invest_prod` podle ceny (4.2a), S10 spekulativní nabídka na trhu (4.0, 4.1a). Jak změny
+dopadly, ukazuje oddíl T; co zůstává otevřené, je v U.
 
 ### S9. `invest_prod` do největší produkce vytváří přebytek
 
@@ -4325,3 +4326,119 @@ pořadí oil, grain, metal. NPC s `tech < 3` v tahu `invest_prod` neinvestuje v�
 
 **Výklad:** plán výroby bez obchodu pro výchozí zásoby (Q5) jsem upravil i o komparativní výhodu: `industry < 2` nejvýš
 50 % vlastní potřeby, `industry ≥ 4` vlastní potřeba plus 10 % kapacity. Změnily se zásoby ropy a kovů N11 a N12.
+
+---
+
+## T. Test pravidel v1.9: scénáře (0) a (b), 90 tahů
+
+Oba scénáře běží na enginu v1.9. Řádek o podílu hráčů porovnává párování v1.8 (bez paušálu, stará kritéria) a v1.9 na stejném
+skriptu; ostatní změny v1.9 jsou v obou bězích zapnuté. Objem je to, co zaplatil kupec, součet za 90 tahů. Obchod členů Unie mezi sebou
+je vnitřní trh v tržní ceně (zdarma, hodnota jen pro srovnání), s nečleny automatický a cílený obchod, kde je stranou právě jeden člen.
+
+### Souhrn
+
+| ukazatel | (0) nikdo netahne | (b) realistické půjčování |
+|---|---|---|
+| kritéria scénáře | prošla | prošla |
+| crash | tah 69, den 23 | tah 33, den 11 |
+| vznik Unie | tah 69: N13, N1, N8, N2 | tah 33: N13, N8, N2, N7 |
+| index tah 30 / 60 / 90 | 93.11 / 99.83 / 109.10 | 95.90 / 85.63 / 97.77 |
+| W_real tah 90 | 1817.5 | 1366.1 |
+| nejvíc NPC v bídě naráz | 3 (tah 70) | 4 (tah 34) |
+| převratů | 18 | 18 |
+| ceny tah 90 | oil 0.70, grain 0.56, metal 0.84, goods 1.18 | oil 0.71, grain 0.56, metal 0.84, goods 1.12 |
+| investic do zdrojů za běh | 10 | 9 |
+| objem obchodu `goods` za běh | 210.3 | 260.4 |
+| validate | 0 chyb | 0 chyb |
+| podíl hráčů na objemu automatického trhu, před a po změně 3 | 56.5 % před (objem 2430), 32.7 % po (objem 2564) | 64.5 % před (objem 2500), 41.2 % po (objem 2689) |
+| obchod členů Unie mezi sebou vs. s nečleny | mezi sebou 386.4, s nečleny 145.6 | mezi sebou 398.2, s nečleny 56.8 |
+
+### Bilance goods, ropy a obilí (svět, v tahu)
+
+| scénář | tah | goods kapacita / plán / výroba / spotřeba / prodáno / cena | ropa výroba / domácnosti / průmysl / pokuty / cena | obilí výroba / domácnosti / pokuty / cena |
+|---|---|---|---|---|
+| (0) | 1 | 89.0 / 41.2 / 41.2 / 38.6 / 3.8 / 1.05 | 50.0 / 12.3 / 20.6 / 0.0 / 1.14 | 65.6 / 61.6 / 0.0 / 0.75 |
+| (0) | 30 | 146.7 / 55.5 / 55.5 / 44.0 / 2.1 / 1.19 | 59.2 / 11.8 / 27.8 / 0.0 / 0.70 | 79.9 / 59.0 / 0.0 / 0.59 |
+| (0) | 60 | 168.0 / 59.3 / 59.3 / 46.3 / 1.6 / 1.17 | 61.4 / 11.3 / 29.6 / 0.0 / 0.70 | 83.1 / 56.5 / 0.0 / 0.56 |
+| (0) | 90 | 166.8 / 60.4 / 60.4 / 47.6 / 1.0 / 1.18 | 61.8 / 11.2 / 30.2 / 0.0 / 0.70 | 83.3 / 56.0 / 0.0 / 0.56 |
+| (b) | 1 | 89.0 / 41.2 / 41.2 / 38.6 / 3.8 / 1.05 | 50.0 / 12.3 / 20.6 / 0.0 / 1.14 | 65.6 / 61.6 / 0.0 / 0.75 |
+| (b) | 30 | 149.0 / 52.8 / 52.8 / 39.5 / 2.8 / 1.13 | 58.1 / 12.2 / 26.4 / 0.0 / 0.70 | 81.9 / 61.1 / 0.0 / 0.60 |
+| (b) | 60 | 163.1 / 54.6 / 54.6 / 40.8 / 1.4 / 1.12 | 56.9 / 11.3 / 27.3 / 0.0 / 0.70 | 84.9 / 56.4 / 0.0 / 0.56 |
+| (b) | 90 | 173.8 / 58.3 / 58.3 / 43.5 / 1.5 / 1.12 | 57.0 / 11.3 / 29.2 / 0.0 / 0.71 | 85.1 / 56.4 / 0.0 / 0.56 |
+
+---
+
+## U. Nově otevřené otázky z implementace v1.9
+
+Neopravuji je, engine u každé používá uvedený výklad. Nejdůležitější jsou U1 a U2, protože ukazují, že ceny ropy a obilí
+zůstávají na dolní mezi i po změnách 1 a 2 a obchod s `goods` zůstává malý.
+
+### U1. Ropa a obilí dál na dolní mezi
+
+Automatika do nich už neinvestuje (do zdroje na dolní mezi nesmí), ceny se ale nezvedly: ropa 0.70 až 0.71 a obilí 0.56 v tahu 90
+v obou scénářích. Výroba převyšuje potřebu už v tahu 1 (ropa 50.0 proti 32.9, obilí 65.6 proti 61.6) a v tahu 90 dál (ropa 61.8
+proti 41.4, obilí 83.3 proti 56.0 v (0)). **Otázka:** snížit výchozí produkci ropy a obilí, nebo zvednout potřebu?
+
+### U2. Spekulativní nabídka `goods` obchod nerozhýbala
+
+Prodáno je 1 až 4 `goods` za tah a objem obchodu `goods` za 90 tahů je 210 v (0) a 260 v (b). Výroba světa převyšuje spotřebu
+(tah 90: 60.4 proti 47.6 v (0), 58.3 proti 43.5 v (b)), trh ale přebytek neodebírá. Proč kupci nekupují víc, jsem podrobně
+nerozebral. **Otázka:** mám rozebrat poptávku po `goods` podle států, než se rozhodne o další úpravě?
+
+### U3. Pool Unie
+
+**Výklad enginu:** přebytek člena je zásoba plus bilance toku minus rezerva 3 tahů spotřeby (stejně jako nabídka v 4.1a), deficit
+člena je deficit toku tohoto tahu, bez doplnění rezervy. Při podání akce se bere poslední známá potřeba, při provedení potřeba
+z plánované výroby a dosavadní dovozy a vývozy.
+
+### U4. Peníze obchodu Unie
+
+Rozhodnutí říká "peníze jdou přes fond". **Výklad enginu:** příjem z prodeje zůstává ve fondu a nákup platí fond; členové
+předávají a dostávají zboží bez placení, jako na vnitřním trhu. Clo odvádí nečlen do fondu. Druhá možnost je, že fond příjem
+rozdělí členům poměrně k prodanému množství a nákup jim naúčtuje.
+
+### U5. Protistrana obchodu Unie
+
+**Výklad enginu:** cíl musí mít opačnou bilanci než pool (když Unie prodává, cíl musí mít deficit), množství se ořízne na pool i
+na bilanci cíle. NPC nabídku vyhodnotí podle 3.4 bez členu vlivu, u padlé říše platí dolní mez 1.3 × tržní ceny (7a). Obchod
+s hráčem projde bez hodu jako obchod mezi hráči.
+
+### U6. Spekulativní nabídka a zásoba
+
+**Výklad enginu:** spekulativní nabídka je nejvýš 10 % kapacity a zároveň nejvýš letošní výroba `goods`; na trh smí jít, i když tím
+zásoba klesne pod rezervu, ne však pod nulu. Malé továrny nakupovaly deficit `goods` včetně doplnění rezervy už ve v1.8 (od
+`wealth ≥ 25`), druhá věta změny 2 proto engine neměnila, jen je zapsána do pravidel.
+
+### U7. Paušál a pořadí párování
+
+**Výklad enginu:** paušál 1 přejezd má každá dvojice s hráčem A nebo B, i obchod A s B (ne 1 za každého hráče). Počet přejezdů
+mezi kritéria při shodě ceny už nepatří, rozhodnutí ho nevyjmenovává; cena se pro shodu porovnává na 9 desetinných míst.
+Podíl hráčů na automatickém trhu po změně 3 je 32.7 % v (0) a 41.2 % v (b), paušál proto zůstává 1.
+
+### U8. Clo v pohledech a dvojí `set_tariff`
+
+**Výklad enginu:** platná sazba je veřejná, hráči A a B ji vidí jako `clo_unie`, Unie navíc sazbu ohlášenou na další tah. Pošle-li
+Unie v jednom tahu `set_tariff` dvakrát, platí poslední platná.
+
+### U9. Chyba migrace (opraveno v enginu)
+
+Migrace strhávala dárci `prod.grain` −0.5 jen do nuly, ale migrace zpět vracela vždy 0.5. Dárci bez obilí tak obilí dostávali:
+ve (b) N7 z 0 na 36, N15 z 0 na 22.5, světová výroba obilí 190.7 místo 85.1 v tahu 90. Opraveno podle pravidla 5 (srážka je
+dočasná): záznam migrace nese skutečnou srážku a vrací se jen ta. Týká se i výsledků oddílů R a dříve.
+
+### U10. Syntetický stav Unie má 4 členy
+
+Bod 9 zadání počítá se 3 členy. Ve scénáři (b) vzniká Unie v tahu 33 se čtyřmi zakladateli (N13, N8, N2, N7) a třemi kandidáty.
+`debug/state_post_crisis.json` je proto skutečný stav po tahu 33, se 4 členy; ruční úpravou členství by vznikl stav, který engine
+nevytváří.
+
+### U11. Ostré volání Unie neproběhlo
+
+Na tomto počítači chybí balíček `anthropic` a přihlášení k API (`ANTHROPIC_API_KEY` ani `ant auth login`). `run_turn.py --only C
+--state debug/state_post_crisis.json --no-apply` skončil před voláním modelu, `debug/unie_C_response.json` proto neexistuje.
+Instalaci balíčku a klíč musí dodat Adam.
+
+### U12. E-mail při selhání tahu
+
+BUILD.md část 3 chce e-mail Adamovi přes Gmail konektor. Skript konektor volat nemůže; `run_turn.py` zapíše
+`history/failed_turn_NNN.json` a důvod vytiskne, e-mail musí poslat routine. Routiny zatím nevznikly.
