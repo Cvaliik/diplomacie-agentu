@@ -218,6 +218,11 @@ def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
             "industry": {i: float(engine.ent(new_state, i).get("industry") or 0.0) for i in TRACKED},
             "goods_out": {i: float(engine.ent(new_state, i).get("goods_out") or 0.0) for i in TRACKED},
             "stock_world": stock_world,
+            # v1.8: svetova produkce zdroju, clo celni unie a investice do zdroju
+            "prod_world": {r: sum(engine.supply_of(new_state, i, r) for i in engine.world_ids(new_state))
+                           for r in ("oil", "grain", "metal", "orit")},
+            "tariff": sum(float(v) for v in (new_state.get("union_tariff") or {}).values()),
+            "invest_prod": sum(1 for e in events if e.get("kind") in ("invest_prod_done", "npc_invest_prod")),
             "balance": _balance(new_state, applied),
             "decisions": [(d["player"], d["action"], d["outcome"]) for d in new_state.get("npc_decisions", [])],
             "offers_new": [(o["player"], o["type"]) for o in new_state.get("offers_new", [])],

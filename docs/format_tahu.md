@@ -34,6 +34,7 @@ Statky: `grain`, `oil`, `metal`, `goods`, od displacementu i `orit`.
 Směr určuje NPC: má-li statku přebytek, prodává ti, má-li deficit, kupuje od tebe.
 Cena musí být v pásmu 0.7 až 1.5 aktuální tržní ceny. Množství se ořízne na velikost bilance NPC.
 Cílem může být i druhý hráč (`A` nebo `B`); směr pak určuje jeho bilance.
+Obchod s členem Unie nese clo 10 %, které platí strana mimo Unii.
 
 NPC nabídku vyhodnotí podle své vůle. Může ji přijmout, přijmout s podmínkou (menší objem),
 poslat protinávrh soukromou zprávou, nebo odmítnout. Výsledek s důvodem najdeš ve svém
@@ -115,6 +116,19 @@ Továrny potřebují ropu a kovy, bez nich stojí i po investici.
 ```
 ```json
 { "type": "invest_industry", "target": "N4" }
+```
+
+### `invest_prod`: investice do těžby a zemědělství
+
+Zvýší produkci jednoho zdroje (`oil`, `grain` nebo `metal`) o 1. Vlastní stát, nebo NPC ve tvé sféře.
+Jen pro zdroj, který cíl už produkuje, a jen když má cíl dost vyspělou technologii, jinak investice
+neprojde. Orit se takto zvýšit nedá. Stojí 12 bohatství. Unie platí na členy a kandidáty polovinu.
+
+```json
+{ "type": "invest_prod", "res": "grain" }
+```
+```json
+{ "type": "invest_prod", "res": "oil", "target": "N14" }
 ```
 
 ### `explore`: průzkum ložisek

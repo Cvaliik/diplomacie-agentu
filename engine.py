@@ -60,6 +60,7 @@ UNION_CONTRIBUTION = 0.02                   # prispevek clena do fondu za tah (7
 UNION_FOUNDER_LOSS = 0.20                   # ztrata 20 % predkrizoveho maxima (7.1, v1.6)
 OFFER_VALID_TURNS = 2                       # nabidka NPC plati 2 tahy (3.5, v1.6)
 COUNTER_VALID_TURNS = 3                     # protinavrh plati 3 tahy (3.4, v1.6)
+TARIFF_RATE = 0.10                          # clo celni unie (7.2, v1.8)
 MAX_CROSSINGS = 3                           # nejvys 3 prejezdy na trhu (4.1a, v1.5)
 TRANSIT_SURCHARGE = 0.1                     # prirazka za prejezd (4.1a, v1.5)
 SOLIDARITY_MAX = 3.0                        # automaticka solidarita Unie za tah (7.2, v1.5)
@@ -224,7 +225,15 @@ def planned_goods(state, sid: str, capacity: float) -> float:
     own = household_need(e, state.get("_need_wealth", {}).get(sid))["goods"]
     sold = float(e.get("goods_sold_last") or 0.0)
     refill = max(0.0, RESERVE_TURNS * own - float((e.get("stock") or {}).get("goods", 0.0)))
-    return max(0.0, min(capacity, own + 1.2 * sold + refill))
+    plan = own + 1.2 * sold + refill
+    industry = float(e.get("industry") or 0.0)
+    if industry < 2.0:
+        # 4.0 (v1.8): male tovarny planuji nejvys 50 % vlastni potreby, zbytek se dovazi (S1)
+        plan = min(plan, 0.5 * own)
+    elif industry >= 4.0:
+        # 4.0 (v1.8): velke tovarny pridavaji spekulativni exportni nabidku 10 % kapacity (S2)
+        plan = plan + 0.1 * capacity
+    return max(0.0, min(capacity, plan))
 
 
 def current_need(state, sid: str) -> dict:
@@ -353,6 +362,7 @@ COST = {
     "invest_tech": 8.0,
     "invest_law": 6.0,
     "invest_industry": 10.0,
+    "invest_prod": 12.0,
     "explore": 5.0,
     "arm": 8.0,
 }
@@ -510,6 +520,29 @@ def _counter_match(state, pid, nid, res, qty, price) -> bool:
             state["counter_offers"].remove(c)
             return True
     return False
+
+
+def _tariff_payer(state, a: str, b: str):
+    """7.2 (v1.8): kdo plati clo celni unie. Vraci necelna ze dvojice clen/necleen, jinak None.
+
+    Kandidat neni clen (S4).
+    """
+    C = state["players"]["C"]
+    if not C.get("active"):
+        return None
+    members = set(C.get("members") or [])
+    in_a, in_b = a in members, b in members
+    if in_a == in_b:
+        return None
+    return b if in_a else a
+
+
+def _collect_tariff(state, payer: str, amount: float) -> None:
+    """7.2 (v1.8): clo jde do fondu Unie a zapisuje se do union_tariff."""
+    C = state["players"]["C"]
+    C["wealth"] = float(C["wealth"]) + amount
+    book = state.setdefault("_union_tariff", {})
+    book[payer] = book.get(payer, 0.0) + amount
 
 
 def _loan_counter_match(state, pid, nid, amount) -> bool:
@@ -808,6 +841,52 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                            field: e[field]})
             trace.add(f"3.2 {atype}", {"player": pid, "target": tgt, "cost": cost},
                       {field: e[field], "from": before})
+
+        # --- invest_prod (3.2, v1.8) -------------------------------------------
+        elif atype == "invest_prod":
+            res = act.get("res")
+            cost = COST["invest_prod"]
+            tgt = target or pid
+            if res not in BASE_RESOURCES:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "takto lze zvysit jen oil, grain nebo metal"})
+                continue
+            if tgt == pid:
+                if pid == "C":
+                    continue  # Unie nema vlastni produkci
+                e = player
+            elif tgt in state["npc"]:
+                e = state["npc"][tgt]
+                allowed = e.get("status") in (f"sphere_{pid}", "union") if pid in ("A", "B") else True
+                if pid == "C":
+                    allowed = tgt in state["players"]["C"]["members"] or \
+                              tgt in state["players"]["C"]["candidates"]
+                    cost = cost / 2.0  # 7.2: polovicni cena
+                if not allowed:
+                    events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                                   "reason": "cil mimo sferu nebo Unii"})
+                    continue
+            else:
+                continue
+            if float(e.get("prod", {}).get(res, 0.0)) <= 0:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "cil tento zdroj neprodukuje"})
+                continue
+            if float(e.get("tech") or 0.0) < 3.0:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "tech cile pod 3"})
+                continue
+            if float(player["wealth"]) < cost:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "nedostatek wealth"})
+                continue
+            player["wealth"] = float(player["wealth"]) - cost
+            before = float(e["prod"][res])
+            e["prod"][res] = before + 1.0
+            events.append({"kind": "invest_prod_done", "player": pid, "target": tgt, "res": res,
+                           "prod": e["prod"][res]})
+            trace.add("3.2 invest_prod", {"player": pid, "target": tgt, "res": res, "cost": cost},
+                      {"prod": e["prod"][res], "from": before})
 
         # --- explore -----------------------------------------------------------
         elif atype == "explore":
@@ -1139,20 +1218,27 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
             price = base * (1.0 + TRANSIT_SURCHARGE * k)
             if price <= 0 or offer[seller] <= 1e-9:
                 continue
+            # 7.2 (v1.8): clo celni unie 10 % ze zakladni ceny, plati necleen (S3)
+            payer = _tariff_payer(state, seller, buyer)
+            unit_tariff = TARIFF_RATE * base if payer is not None else 0.0
+            buyer_price = price + (unit_tariff if payer == buyer else 0.0)
             be = ent(state, buyer)
-            q_flow = max(0.0, min(offer[seller], d_flow[buyer], max(0.0, float(be["wealth"])) / price))
-            wealth_after = float(be["wealth"]) - q_flow * price
+            q_flow = max(0.0, min(offer[seller], d_flow[buyer], max(0.0, float(be["wealth"])) / buyer_price))
+            wealth_after = float(be["wealth"]) - q_flow * buyer_price
             q_ref = max(0.0, min(offer[seller] - q_flow, d_refill[buyer],
-                                 max(0.0, wealth_after - REFILL_MIN_WEALTH) / price))
+                                 max(0.0, wealth_after - REFILL_MIN_WEALTH) / buyer_price))
             qty = q_flow + q_ref
             if qty <= 1e-9:
                 continue
             pay = qty * price
-            to_seller = qty * base
+            tariff = qty * unit_tariff
+            to_seller = qty * base - (tariff if payer == seller else 0.0)
             per_transit = 0.5 * TRANSIT_SURCHARGE * base * qty
             se = ent(state, seller)
             se["wealth"] = float(se["wealth"]) + to_seller
-            be["wealth"] = float(be["wealth"]) - pay
+            be["wealth"] = float(be["wealth"]) - pay - (tariff if payer == buyer else 0.0)
+            if tariff > 0:
+                _collect_tariff(state, payer, tariff)
             for t in path:
                 state["npc"][t]["wealth"] = float(state["npc"][t]["wealth"]) + per_transit
                 transit[t] = transit.get(t, 0.0) + per_transit
@@ -1183,7 +1269,8 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                        "cena": round(price, 3), "zaklad": round(base, 3),
                        "prejezdy": k, "tranzit": list(path),
                        "objem": round(pay, 3), "prodejci": round(to_seller, 3),
-                       "tranzitu_kazdemu": round(per_transit, 4)})
+                       "tranzitu_kazdemu": round(per_transit, 4),
+                       "clo": round(tariff, 4), "clo_plati": payer})
 
     return vol_npc, vol_players, goods_volume, new_pairs
 
@@ -1253,6 +1340,7 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
 
     state["_transit_income"] = {}
     state["_goods_sold"] = {}
+    state["_union_tariff"] = {}
     # 4.0 (v1.7): poptavka po goods z bohatstvi na zacatku prepoctu zdroju (Q2)
     state["_need_wealth"] = {i: float(ent(state, i)["wealth"]) for i in ids}
     state["_ab_volume"] = 0.0
@@ -1279,15 +1367,24 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
             seller, buyer = owner, tgt
         se = ent(state, seller)
         be = ent(state, buyer)
-        value = min(qty * price, max(0.0, float(be["wealth"])))
-        if value < qty * price and price > 0:
-            qty = value / price
+        # 7.2 (v1.8): clo celni unie 10 % z hodnoty obchodu, plati necleen (S3)
+        payer = _tariff_payer(state, seller, buyer)
+        unit_buyer = price * (1.0 + TARIFF_RATE) if payer == buyer else price
+        if unit_buyer > 0:
+            qty = min(qty, max(0.0, float(be["wealth"])) / unit_buyer)
+        value = qty * price
+        tariff = TARIFF_RATE * value if payer is not None else 0.0
         if seller in imports:
             exports[seller][res] += qty
         if buyer in imports:
             imports[buyer][res] += qty
-        se["wealth"] = float(se["wealth"]) + value
-        be["wealth"] = float(be["wealth"]) - value
+        se["wealth"] = float(se["wealth"]) + value - (tariff if payer == seller else 0.0)
+        be["wealth"] = float(be["wealth"]) - value - (tariff if payer == buyer else 0.0)
+        if tariff > 0:
+            _collect_tariff(state, payer, tariff)
+        trace.add("4.1 cileny obchod", {"prodejce": seller, "kupec": buyer, "res": res, "owner": owner},
+                  {"qty": round(qty, 3), "objem": round(value, 3), "clo": round(tariff, 4),
+                   "clo_plati": payer})
         if res == GOODS and seller in imports:
             state["_goods_sold"][seller] = state["_goods_sold"].get(seller, 0.0) + qty
         weight = 2.0 if res == "orit" else 1.0
@@ -1412,6 +1509,12 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
     # 4.0 (v1.7): prodane goods tohoto tahu jsou "minuly tah" pro plan pristiho tahu (Q3)
     for i in ids:
         ent(state, i)["goods_sold_last"] = round(state["_goods_sold"].get(i, 0.0), 4)
+    # 7.2 (v1.8): clo celni unie jako radek snimku
+    state["union_tariff"] = {k: round(v, 4) for k, v in state.get("_union_tariff", {}).items()}
+    if state["union_tariff"]:
+        trace.add("7.2 clo celni unie", {"platci": sorted(state["union_tariff"])},
+                  {"celkem": round(sum(state["union_tariff"].values()), 4),
+                   "podle_platce": state["union_tariff"]})
     state["_player_imports"] = {pid: {r: round(imports[pid][r], 4) for r in TRADEABLES}
                                 for pid in ("A", "B")}
     state["_trade"] = {"volume": trade_volume, "weighted": trade_volume_weighted,
@@ -1463,7 +1566,8 @@ def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
     turn = state["meta"]["turn"]
     if turn % 3 != 0:
         return
-    do_tech = (turn % 6 == 3)
+    # 4.2a (v1.8): stridani tri investic podle cisla tahu pro vsechna NPC (S6)
+    kind = {3: "tech", 6: "industry", 0: "prod"}[turn % 9]
     for i, n in sorted(state["npc"].items()):
         if n.get("kind") == "fallen":
             continue
@@ -1473,14 +1577,14 @@ def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
         hist = n.get("wealth_history") or []
         if len(hist) < 3 or float(n["wealth"]) <= float(hist[0]):
             continue
-        if do_tech:
+        if kind == "tech":
             n["wealth"] = float(n["wealth"]) - COST["invest_tech"]
             before = float(n["tech"])
             n["tech"] = clamp(before + 0.3, 0.0, 10.0)
             events.append({"kind": "npc_invest_tech", "npc": i, "tech": n["tech"]})
             trace.add("4.2a automatika NPC: invest_tech", {"npc": i, "cost": COST["invest_tech"]},
                       {"tech": n["tech"], "from": before})
-        else:
+        elif kind == "industry":
             n["wealth"] = float(n["wealth"]) - COST["invest_industry"]
             before = float(n.get("industry") or 0.0)
             n["industry"] = clamp(before + 0.3 * (float(n["law"]) / 5.0), 0.0, 10.0)
@@ -1488,6 +1592,22 @@ def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
             trace.add("4.2a automatika NPC: invest_industry",
                       {"npc": i, "cost": COST["invest_industry"]},
                       {"industry": n["industry"], "from": before})
+        else:
+            # 4.2a (v1.8): invest_prod do zdroje s nejvetsi produkci, jen pri tech >= 3;
+            # pri shode poradi oil, grain, metal (S6)
+            if float(n["tech"]) < 3.0:
+                continue
+            cands = [(float(n["prod"].get(r, 0.0)), -idx, r) for idx, r in enumerate(BASE_RESOURCES)
+                     if float(n["prod"].get(r, 0.0)) > 0]
+            if not cands:
+                continue
+            res = max(cands)[2]
+            n["wealth"] = float(n["wealth"]) - COST["invest_prod"]
+            before = float(n["prod"][res])
+            n["prod"][res] = before + 1.0
+            events.append({"kind": "npc_invest_prod", "npc": i, "res": res, "prod": n["prod"][res]})
+            trace.add("4.2a automatika NPC: invest_prod", {"npc": i, "cost": COST["invest_prod"], "res": res},
+                      {"prod": n["prod"][res], "from": before})
 
 
 def step_income(state, trace: Trace) -> None:
@@ -2644,6 +2764,7 @@ def apply_turn(state, npcdata, actions):
     st.pop("_player_imports", None)
     st.pop("_goods_sold", None)
     st.pop("_need_wealth", None)
+    st.pop("_union_tariff", None)
     st.pop("_ab_volume", None)
     st.pop("_ab_auto", None)
     st["players"]["C"]["fund"] = st["players"]["C"]["wealth"]

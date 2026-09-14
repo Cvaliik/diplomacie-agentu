@@ -53,7 +53,7 @@
       "tech": 4,
       "industry": 6,
       "prod": {
-        "oil": 10,
+        "oil": 9,
         "grain": 3,
         "metal": 2
       },
@@ -163,7 +163,7 @@
       "tech": 3,
       "industry": 4,
       "prod": {
-        "oil": 11,
+        "oil": 10,
         "grain": 1,
         "metal": 0
       },
@@ -449,8 +449,8 @@
       },
       "stock": {
         "grain": 18.0,
-        "oil": 11.1,
-        "metal": 7.5,
+        "oil": 16.8,
+        "metal": 10.92,
         "goods": 15.0,
         "orit": 0.0
       },
@@ -484,8 +484,8 @@
       },
       "stock": {
         "grain": 25.2,
-        "oil": 14.84,
-        "metal": 10.08,
+        "oil": 21.98,
+        "metal": 14.36,
         "goods": 19.6,
         "orit": 0.0
       },
