@@ -55,7 +55,8 @@
       },
       "pop": 190,
       "pop_start": 190,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 5
     },
     {
       "id": "N2",
@@ -75,7 +76,8 @@
       },
       "pop": 160,
       "pop_start": 160,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 4
     },
     {
       "id": "N3",
@@ -89,13 +91,14 @@
       "tech": 3,
       "industry": 4,
       "prod": {
-        "oil": 8,
+        "oil": 11,
         "grain": 1,
         "metal": 0
       },
       "pop": 120,
       "pop_start": 120,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 4
     },
     {
       "id": "N4",
@@ -109,13 +112,14 @@
       "tech": 4,
       "industry": 4,
       "prod": {
-        "oil": 7,
+        "oil": 9,
         "grain": 2,
         "metal": 0
       },
       "pop": 110,
       "pop_start": 110,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 6
     },
     {
       "id": "N5",
@@ -135,7 +139,8 @@
       },
       "pop": 100,
       "pop_start": 100,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 6
     },
     {
       "id": "N6",
@@ -155,7 +160,8 @@
       },
       "pop": 90,
       "pop_start": 90,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 5
     },
     {
       "id": "N7",
@@ -175,7 +181,8 @@
       },
       "pop": 110,
       "pop_start": 110,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 5
     },
     {
       "id": "N8",
@@ -195,7 +202,8 @@
       },
       "pop": 80,
       "pop_start": 80,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 5
     },
     {
       "id": "N9",
@@ -209,13 +217,14 @@
       "tech": 1,
       "industry": 1,
       "prod": {
-        "oil": 2,
+        "oil": 3,
         "grain": 2,
         "metal": 0
       },
       "pop": 60,
       "pop_start": 60,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 2
     },
     {
       "id": "N10",
@@ -235,7 +244,8 @@
       },
       "pop": 85,
       "pop_start": 85,
-      "kind": "normal"
+      "kind": "normal",
+      "openness": 4
     },
     {
       "id": "N11",
@@ -255,7 +265,8 @@
         "metal": 1
       },
       "pop": 50,
-      "pop_start": 50
+      "pop_start": 50,
+      "openness": 9
     },
     {
       "id": "N12",
@@ -275,7 +286,92 @@
         "metal": 2
       },
       "pop": 70,
-      "pop_start": 70
+      "pop_start": 70,
+      "openness": 3
+    },
+    {
+      "id": "N13",
+      "name": "Meridia",
+      "role": "pobřežní průmyslový stát bez ropy, vyváží produkt",
+      "x": 250,
+      "y": 520,
+      "wealth": 50,
+      "power": 8,
+      "law": 6,
+      "tech": 5,
+      "industry": 5,
+      "prod": {
+        "oil": 0,
+        "grain": 3,
+        "metal": 2
+      },
+      "pop": 120,
+      "pop_start": 120,
+      "kind": "normal",
+      "openness": 7
+    },
+    {
+      "id": "N14",
+      "name": "Tavros",
+      "role": "smíšený stát",
+      "x": 430,
+      "y": 230,
+      "wealth": 40,
+      "power": 8,
+      "law": 5,
+      "tech": 3,
+      "industry": 3,
+      "prod": {
+        "oil": 3,
+        "grain": 4,
+        "metal": 2
+      },
+      "pop": 100,
+      "pop_start": 100,
+      "kind": "normal",
+      "openness": 5
+    },
+    {
+      "id": "N15",
+      "name": "Kaldera",
+      "role": "hornický stát, kovy a trocha ropy",
+      "x": 730,
+      "y": 130,
+      "wealth": 35,
+      "power": 7,
+      "law": 3,
+      "tech": 2,
+      "industry": 2,
+      "prod": {
+        "oil": 2,
+        "grain": 1,
+        "metal": 6
+      },
+      "pop": 80,
+      "pop_start": 80,
+      "kind": "normal",
+      "openness": 3
+    },
+    {
+      "id": "N16",
+      "name": "Elmyr",
+      "role": "chudý vnitrozemský stát, obilí",
+      "x": 730,
+      "y": 460,
+      "wealth": 22,
+      "power": 4,
+      "law": 4,
+      "tech": 1,
+      "industry": 1,
+      "prod": {
+        "oil": 0,
+        "grain": 5,
+        "metal": 0
+      },
+      "pop": 90,
+      "pop_start": 90,
+      "kind": "normal",
+      "openness": 4
     }
   ],
   "adjacency": {
@@ -284,44 +380,51 @@
       "N5",
       "N6",
       "N8",
-      "N11"
+      "N11",
+      "N13"
     ],
     "B": [
       "N2",
       "N4",
       "N7",
       "N10",
-      "N12"
+      "N12",
+      "N16"
     ],
     "N1": [
       "A",
       "N6",
       "N8",
-      "N11"
+      "N11",
+      "N13"
     ],
     "N2": [
       "B",
       "N7",
       "N10",
-      "N8"
+      "N8",
+      "N16"
     ],
     "N3": [
       "N5",
       "N6",
       "N9",
-      "N4"
+      "N4",
+      "N14"
     ],
     "N4": [
       "B",
       "N3",
       "N7",
       "N9",
-      "N12"
+      "N12",
+      "N15"
     ],
     "N5": [
       "A",
       "N3",
-      "N6"
+      "N6",
+      "N14"
     ],
     "N6": [
       "A",
@@ -329,37 +432,66 @@
       "N3",
       "N5",
       "N7",
-      "N8"
+      "N8",
+      "N14"
     ],
     "N7": [
       "B",
       "N2",
       "N4",
-      "N6"
+      "N6",
+      "N16"
     ],
     "N8": [
       "A",
       "N1",
       "N2",
       "N6",
-      "N11"
+      "N11",
+      "N13"
     ],
     "N9": [
       "N3",
-      "N4"
+      "N4",
+      "N15"
     ],
     "N10": [
       "B",
-      "N2"
+      "N2",
+      "N16"
     ],
     "N11": [
       "A",
       "N1",
-      "N8"
+      "N8",
+      "N13"
     ],
     "N12": [
       "B",
-      "N4"
+      "N4",
+      "N15"
+    ],
+    "N13": [
+      "A",
+      "N8",
+      "N11",
+      "N1"
+    ],
+    "N14": [
+      "N5",
+      "N3",
+      "N6"
+    ],
+    "N15": [
+      "N4",
+      "N9",
+      "N12"
+    ],
+    "N16": [
+      "B",
+      "N2",
+      "N7",
+      "N10"
     ]
   }
 }

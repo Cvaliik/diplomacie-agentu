@@ -34,6 +34,7 @@ from __future__ import annotations
 
 import json
 import random
+import zlib
 from copy import deepcopy
 
 RESOURCES = ("oil", "grain", "metal", "orit")     # suroviny; do metriky B jde jen tohle
@@ -53,7 +54,12 @@ ORIT_STOCK_CAP = 20.0                       # strop zasoby oritu v jednotkach
 RESERVE_TURNS = 3                           # 4.1a prodava prebytek nad 3 tahy spotreby
 INDUSTRY_FLOOR = 0.5                        # dno prumyslu vsech statu (4.2c, v1.4)
 INCOME_POP_DIVISOR = 60.0                   # neformalni prijem pop / 60 (4.2b, v1.4)
-REFILL_MIN_WEALTH = 15.0                    # rezervu doplnuje jen stat mimo bidu s wealth >= 15 (4.1c, v1.5)
+REFILL_MIN_WEALTH = 25.0                    # rezervu doplnuje jen stat s wealth >= 25 (4.1c, v1.6)
+SPHERE_OVERLOAD = 0.8                       # pretizeni sfer: 0.8 na kazdou drzenou sferu (4.4, v1.6)
+UNION_CONTRIBUTION = 0.02                   # prispevek clena do fondu za tah (7.2, v1.6)
+UNION_FOUNDER_LOSS = 0.20                   # ztrata 20 % predkrizoveho maxima (7.1, v1.6)
+OFFER_VALID_TURNS = 2                       # nabidka NPC plati 2 tahy (3.5, v1.6)
+COUNTER_VALID_TURNS = 3                     # protinavrh plati 3 tahy (3.4, v1.6)
 MAX_CROSSINGS = 3                           # nejvys 3 prejezdy na trhu (4.1a, v1.5)
 TRANSIT_SURCHARGE = 0.1                     # prirazka za prejezd (4.1a, v1.5)
 SOLIDARITY_MAX = 3.0                        # automaticka solidarita Unie za tah (7.2, v1.5)
@@ -170,7 +176,7 @@ def clamp(v: float, lo: float, hi: float) -> float:
 def household_need(e: dict) -> dict:
     """4.0: spotreba domacnosti podle obyvatelstva."""
     p = float(e.get("pop") or 0.0) / 100.0
-    return {"grain": 3.0 * p, "goods": 2.0 * p, "oil": 1.0 * p, "metal": 0.5 * p}
+    return {"grain": 3.0 * p, "goods": 2.0 * p, "oil": 0.6 * p, "metal": 0.5 * p}  # 4.0 (v1.6): ropa 0.6
 
 
 def goods_potential(e: dict) -> float:
@@ -246,6 +252,8 @@ def normalize(state) -> None:
         n.setdefault("pop_start", n.get("pop", 100))
         # Bohatstvi na konci poslednich tahu pro podminku rustu v 4.2a (v1.4).
         n.setdefault("wealth_history", [float(n["wealth"])])
+        # Vliv na konci poslednich tahu pro protect_request v 3.5 (v1.6).
+        n.setdefault("influence_history", [dict(n["influence"])])
         stock = n.setdefault("stock", {})
         for r in STOCK_RESOURCES:
             stock.setdefault(r, 0.0)
@@ -268,6 +276,14 @@ def normalize(state) -> None:
     state["minsky"].setdefault("npc_trade_last", [])
     state["minsky"].setdefault("next_deal_id", 1)
     state["minsky"].setdefault("next_invasion_id", 1)
+    # v1.6: sankce pro 3.4, nabidky NPC 3.5, protinavrhy a soukromy log hracu
+    state["minsky"].setdefault("pressure_log", [])
+    state["minsky"].setdefault("next_offer_id", 1)
+    state["minsky"].setdefault("offer_ignored", {"A": {}, "B": {}, "C": {}})
+    state.setdefault("offers", [])
+    state.setdefault("counter_offers", [])
+    state.setdefault("private_log", {"A": [], "B": [], "C": []})
+    state.setdefault("npc_decisions", [])
 
 
 class Trace:
@@ -322,6 +338,217 @@ COST = {
 }
 
 
+def add_influence(state, nid: str, pid: str, amount: float) -> float:
+    """4.4 (v1.6): prirustek vlivu hrace u NPC s pretizenim sfer.
+
+    Kazda sfera, kterou hrac aktualne drzi, nasobi jeho prirustky vlivu u ostatnich
+    NPC koeficientem 0.8. Snizeni vlivu se nenasobi. Vraci skutecne pripsanou hodnotu.
+    """
+    n = state["npc"][nid]
+    if amount > 0 and n["status"] != "sphere_%s" % pid:
+        held = sum(1 for x in state["npc"].values() if x["status"] == "sphere_%s" % pid)
+        amount *= SPHERE_OVERLOAD ** held
+    n["influence"][pid] = float(n["influence"].get(pid, 0.0)) + amount
+    return amount
+
+
+def _openness(npcdata, nid: str) -> float:
+    """Skryta ochota NPC prijimat cilene nabidky (npc.json, 0 az 10)."""
+    for item in npcdata.get("npc", []):
+        if item.get("id") == nid:
+            return float(item.get("openness", 5))
+    return 5.0
+
+
+def _decision_roll(state, nid: str) -> int:
+    """3.4: hod d100 z random.Random(rng_seed + turn + hash(ID)).
+
+    Vestaveny hash() retezcu je v Pythonu mezi behy nahodny, beh by nebyl
+    reprodukovatelny; engine proto bere stabilni CRC32 z ID NPC (N1).
+    """
+    seed = int(state["meta"]["rng_seed"]) + int(state["meta"]["turn"]) + zlib.crc32(nid.encode("utf-8"))
+    return random.Random(seed).randint(1, 100)
+
+
+DECISION_REASONS = {
+    "vliv": "Váš vliv u nás je slabší než vliv vašeho soupeře.",
+    "cena": "Nabízené podmínky pro nás nejsou výhodné.",
+    "prah": "Zatím nesplňujeme podmínky pro vstup.",
+    "otevrenost": "K zahraničním nabídkám jsme obecně zdrženliví.",
+    "dluh": "Jsme už příliš zadlužení.",
+    "sila": "Svou obranu zvládneme sami.",
+    "sankce": "Nedávno jste proti nám uvalili sankce.",
+    "pravo": "Naše soudy by takovou cenu neuznaly.",
+}
+DECISION_POSITIVE = "Nabídka odpovídá našim zájmům."
+DECISION_NEUTRAL = "Nabídku jsme po zvážení nepřijali."
+
+
+def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
+                direction=None, events=None, trace=None) -> str:
+    """3.4 (v1.6): NPC vyhodnoti cilenou nabidku.
+
+    Vraci "prijato", "podminka", "protinavrh" nebo "odmitnuto". Vysledek s vetou
+    duvodu jde do soukromeho logu hrace a do snimku (npc_decisions), ne do Zprav.
+    """
+    turn = int(state["meta"]["turn"])
+    n = state["npc"][nid]
+    f = {}
+    if pid in ("A", "B"):
+        rival = "B" if pid == "A" else "A"
+        f["vliv"] = 4.0 * (float(n["influence"].get(pid, 0.0)) - float(n["influence"].get(rival, 0.0)))
+    if atype == "trade_offer" and price_ratio is not None:
+        gain = price_ratio - 1.0
+        if direction == "npc_buys":
+            gain = -gain  # vyhodnost ceny z pohledu NPC (N-otazka)
+        f["cena"] = 30.0 * gain
+    if atype == "admit":
+        thr = state["players"]["C"].get("law_threshold")
+        met = thr is None or float(n["law"]) >= float(thr)
+        f["prah"] = 10.0 if met else -30.0
+    f["otevrenost"] = 4.0 * (_openness(npcdata, nid) - 5.0)
+    if atype == "loan":
+        if state["phase"] in ("boom", "euphoria"):
+            f["boom"] = 20.0
+        debt = sum(float(v) for v in n["debt"].values())
+        if debt > 0.5 * max(1.0, float(n["wealth"])):
+            f["dluh"] = -20.0
+    if atype == "protect" and float(n["power"]) > 8.0:
+        f["sila"] = -15.0
+    if pid in ("A", "B") and any(r["owner"] == pid and r["target"] == nid and int(r["turn"]) >= turn - 6
+                                 for r in state["minsky"].get("pressure_log", [])):
+        f["sankce"] = -25.0
+    if (atype == "trade_offer" and price_ratio is not None and float(n["law"]) >= 7.0
+            and not (0.9 <= price_ratio <= 1.2)):
+        f["pravo"] = -20.0
+
+    score = 40.0 + sum(f.values())
+    roll = _decision_roll(state, nid)
+    if roll <= score:
+        outcome = "prijato"
+    elif roll <= score + 20:
+        outcome = "podminka"
+    elif roll <= score + 35:
+        outcome = "protinavrh"
+    else:
+        outcome = "odmitnuto"
+    negatives = {k: v for k, v in f.items() if v < 0}
+    if negatives:
+        reason = DECISION_REASONS[min(negatives, key=negatives.get)]
+    else:
+        reason = DECISION_POSITIVE if outcome in ("prijato", "podminka") else DECISION_NEUTRAL
+
+    counter = None
+    if outcome == "protinavrh":
+        if atype == "trade_offer":
+            factor = 1.1 if direction == "npc_sells" else 0.9
+            counter = {"type": "trade_offer", "player": pid, "npc": nid, "res": params["res"],
+                       "qty": round(float(params["qty"]), 3),
+                       "price": round(float(params["price"]) * factor, 4),
+                       "expires": turn + COUNTER_VALID_TURNS}
+            state.setdefault("counter_offers", []).append(counter)
+            text = "Obchod s %s přijmeme za cenu %.4f při množství %.3f." % (
+                params["res"], counter["price"], counter["qty"])
+        elif atype == "loan":
+            counter = {"type": "loan", "amount": round(float(params["amount"]) * 0.7, 2)}
+            text = "Půjčku přijmeme ve výši %.2f." % counter["amount"]
+        elif atype == "protect":
+            text = "O paktu můžeme jednat později."
+        else:
+            text = "O vstupu můžeme jednat později."
+        state.setdefault("messages_pending", []).append(
+            {"from": nid, "to": pid, "text": text, "turn": turn, "protinavrh": counter})
+
+    record = {"turn": turn, "player": pid, "npc": nid, "action": atype, "outcome": outcome,
+              "reason": reason, "score": round(score, 2), "roll": roll,
+              "params": dict(params), "counter": counter}
+    state.setdefault("npc_decisions", []).append(record)
+    state.setdefault("private_log", {"A": [], "B": [], "C": []}).setdefault(pid, []).append(
+        {"turn": turn, "npc": nid, "action": atype, "outcome": outcome, "reason": reason,
+         "counter": counter})
+    if events is not None:
+        events.append({"kind": "npc_decision", "private": True, "player": pid, "npc": nid,
+                       "action": atype, "outcome": outcome})
+    if trace is not None:
+        trace.add("3.4 rozhodnuti NPC", {"player": pid, "npc": nid, "action": atype,
+                                         "faktory": {k: round(v, 2) for k, v in f.items()}},
+                  {"skore": round(score, 2), "hod": roll, "vysledek": outcome, "duvod": reason})
+    return outcome
+
+
+def _counter_match(state, pid, nid, res, qty, price) -> bool:
+    """3.4: trade_offer se shodnymi parametry protinavrhu projde bez hodu."""
+    turn = int(state["meta"]["turn"])
+    for c in list(state.get("counter_offers", [])):
+        if (c["type"] == "trade_offer" and c["player"] == pid and c["npc"] == nid
+                and c["res"] == res and abs(float(c["qty"]) - qty) < 1e-6
+                and abs(float(c["price"]) - price) < 1e-6 and turn <= int(c["expires"])):
+            state["counter_offers"].remove(c)
+            return True
+    return False
+
+
+def _players_sanctioned(state) -> bool:
+    """3.2 (v1.6): bezi sankce mezi hraci A a B?"""
+    return any(d["type"] == "pressure" and d["owner"] in ("A", "B") and d["target"] in ("A", "B")
+               for d in state["deals"])
+
+
+def _do_loan(state, pid, target, amount, events, trace) -> None:
+    """Provedeni pujcky (3.2) vcetne vlivu z pohledavky (4.4)."""
+    player = state["players"][pid]
+    n = state["npc"][target]
+    player["wealth"] = float(player["wealth"]) - amount
+    n["wealth"] = float(n["wealth"]) + amount
+    owed = amount * 1.2
+    n["debt"][pid] = float(n["debt"].get(pid, 0.0)) + owed
+    gain = owed / 20.0
+    if pid in ("A", "B"):
+        if is_fallen(state, target):
+            gain *= 0.1
+        gain = add_influence(state, target, pid, gain)
+    events.append({"kind": "loan_given", "player": pid, "target": target,
+                   "amount": amount, "debt": n["debt"][pid]})
+    trace.add("3.2 loan / 4.4 vliv z pohledavky",
+              {"player": pid, "target": target, "amount": amount},
+              {"debt": n["debt"][pid], "influence_gain": gain})
+
+
+def _accept_offer(state, npcdata, pid, oid, events, trace) -> None:
+    """3.5 (v1.6): prijeti nabidky NPC bez vyhodnoceni podle 3.4."""
+    turn = int(state["meta"]["turn"])
+    offers = state.get("offers", [])
+    offer = next((o for o in offers if o["offer_id"] == oid and o["player"] == pid), None)
+    if offer is None or turn > int(offer["expires"]):
+        events.append({"kind": "action_invalid", "player": pid, "type": "accept_offer",
+                       "reason": "nabidka neexistuje nebo propadla"})
+        return
+    nid = offer["npc"]
+    if offer["type"] == "sell":
+        deal = {"id": _new_deal_id(state), "type": "trade", "owner": pid, "target": nid,
+                "res": offer["res"], "qty": float(offer["qty"]), "price": float(offer["price"]),
+                "direction": "npc_sells", "since": turn, "one_shot": True, "offer_id": oid}
+        state["deals"].append(deal)
+    elif offer["type"] == "loan_request":
+        if float(state["players"][pid]["wealth"]) < float(offer["amount"]):
+            events.append({"kind": "action_invalid", "player": pid, "type": "accept_offer",
+                           "reason": "nedostatek wealth"})
+            return
+        _do_loan(state, pid, nid, float(offer["amount"]), events, trace)
+    elif offer["type"] == "protect_request":
+        if pid not in ("A", "B") or _active_deal(state, pid, nid, "protect"):
+            events.append({"kind": "action_invalid", "player": pid, "type": "accept_offer",
+                           "reason": "pakt nelze uzavrit"})
+            return
+        state["deals"].append({"id": _new_deal_id(state), "type": "protect", "owner": pid,
+                               "target": nid, "since": turn, "offer_id": oid})
+    state["offers"] = [o for o in offers if o["offer_id"] != oid]
+    state["minsky"]["offer_ignored"].setdefault(pid, {})[nid] = 0
+    events.append({"kind": "offer_accepted", "player": pid, "npc": nid, "offer": dict(offer)})
+    trace.add("3.5 accept_offer", {"player": pid, "offer_id": oid, "type": offer["type"]},
+              {"npc": nid})
+
+
 def _new_deal_id(state) -> str:
     n = state["minsky"]["next_deal_id"]
     state["minsky"]["next_deal_id"] = n + 1
@@ -373,14 +600,16 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
             res = act.get("res")
             qty = float(act.get("qty", 0))
             price = float(act.get("price_per_unit", 0))
-            if target not in state["npc"] or res not in TRADEABLES or qty <= 0:
+            # 3.2 (v1.6): cilem muze byt i druhy hrac
+            to_player = pid in ("A", "B") and target in ("A", "B") and target != pid
+            if (target not in state["npc"] and not to_player) or res not in TRADEABLES or qty <= 0:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "neznamy cil nebo surovina"})
                 continue
             mp = market_price(state, res)
             lo, hi = 0.7 * mp, 1.5 * mp
-            if is_fallen(state, target):
-                lo = 1.3 * mp  # pravidlo 7a: obchoduji jen za >= 1.3x
+            if not to_player and is_fallen(state, target):
+                lo = 1.3 * mp  # 7a: trade_offer s padlou risi jen za >= 1.3x
             if not (lo <= price <= hi):
                 events.append({"kind": "trade_rejected", "player": pid, "target": target,
                                "res": res, "reason": "cena mimo pasmo"})
@@ -392,13 +621,27 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 direction = "npc_buys"
             else:
                 events.append({"kind": "trade_rejected", "player": pid, "target": target,
-                               "res": res, "reason": "NPC nema prebytek ani deficit"})
+                               "res": res, "reason": "cil nema prebytek ani deficit"})
                 continue
             if pid == "C" and res == "orit" and direction == "npc_buys":
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "Unie orit neprodava"})
                 continue
+            offered_qty = qty
             qty = min(qty, abs(bal))
+            if not to_player:
+                if _counter_match(state, pid, target, res, offered_qty, price):
+                    trace.add("3.4 protinavrh prijat", {"player": pid, "npc": target, "res": res},
+                              {"qty": offered_qty, "price": price})
+                else:
+                    outcome = _npc_decide(state, npcdata, pid, target, "trade_offer",
+                                          {"res": res, "qty": offered_qty, "price": price},
+                                          price_ratio=(price / mp) if mp > 0 else 1.0,
+                                          direction=direction, events=events, trace=trace)
+                    if outcome == "podminka":
+                        qty = qty * 0.7  # 3.4: objem -30 %
+                    elif outcome in ("protinavrh", "odmitnuto"):
+                        continue
             deal = {"id": _new_deal_id(state), "type": "trade", "owner": pid,
                     "target": target, "res": res, "qty": round(qty, 3),
                     "price": price, "direction": direction,
@@ -418,39 +661,33 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 continue
             if is_fallen(state, target):
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
-                               "reason": "padla rise nepremia pujcku"})
+                               "reason": "padla rise neprijima pujcku"})
                 continue
             if float(player["wealth"]) < amount:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "nedostatek wealth"})
                 continue
-            n = state["npc"][target]
-            player["wealth"] = float(player["wealth"]) - amount
-            n["wealth"] = float(n["wealth"]) + amount
-            owed = amount * 1.2
-            n["debt"][pid] = float(n["debt"].get(pid, 0.0)) + owed
-            # pravidlo 4.4: vliv jednorazove o debt/20
-            gain = owed / 20.0
-            if pid in ("A", "B"):
-                if is_fallen(state, target):
-                    gain *= 0.1
-                n["influence"][pid] = float(n["influence"].get(pid, 0.0)) + gain
-            events.append({"kind": "loan_given", "player": pid, "target": target,
-                           "amount": amount, "debt": n["debt"][pid]})
-            trace.add("3.2 loan / 4.4 vliv z pohledavky",
-                      {"player": pid, "target": target, "amount": amount},
-                      {"debt": n["debt"][pid], "influence_gain": gain})
+            outcome = _npc_decide(state, npcdata, pid, target, "loan", {"amount": amount},
+                                  events=events, trace=trace)
+            if outcome == "podminka":
+                amount = amount * 0.7  # 3.4: pujcka -30 %
+            elif outcome in ("protinavrh", "odmitnuto"):
+                continue
+            _do_loan(state, pid, target, amount, events, trace)
 
         # --- pressure ------------------------------------------------------
         elif atype == "pressure":
-            if target not in state["npc"]:
+            to_player = pid in ("A", "B") and target in ("A", "B") and target != pid
+            if target not in state["npc"] and not to_player:
                 continue
             if _active_deal(state, pid, target, "pressure"):
                 continue
-            # sankce prerusi obchody hrace s NPC
-            removed = [d["id"] for d in state["deals"]
-                       if d["type"] == "trade" and d["owner"] == pid and d["target"] == target]
-            state["deals"] = [d for d in state["deals"] if d["id"] not in removed]
+            removed = []
+            if not to_player:
+                # sankce prerusi obchody hrace s NPC
+                removed = [d["id"] for d in state["deals"]
+                           if d["type"] == "trade" and d["owner"] == pid and d["target"] == target]
+                state["deals"] = [d for d in state["deals"] if d["id"] not in removed]
             deal = {"id": _new_deal_id(state), "type": "pressure", "owner": pid,
                     "target": target, "demand": act.get("demand", ""),
                     "since": state["meta"]["turn"]}
@@ -458,8 +695,9 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
             events.append({"kind": "pressure_started", "player": pid, "target": target,
                            "cancelled_trades": removed})
             trace.add("3.2 pressure", {"player": pid, "target": target},
-                      {"deal_id": deal["id"], "cancelled": removed})
-            _mark_fallen_touched(state, target)
+                      {"deal_id": deal["id"], "cancelled": removed, "mezi_hraci": to_player})
+            if not to_player:
+                _mark_fallen_touched(state, target)
 
         # --- protect --------------------------------------------------------
         elif atype == "protect":
@@ -467,10 +705,15 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 continue
             if is_fallen(state, target):
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
-                               "reason": "padla rise nepremia pakt"})
+                               "reason": "padla rise neprijima pakt"})
                 continue
             if _active_deal(state, pid, target, "protect"):
                 continue
+            if pid in ("A", "B"):
+                outcome = _npc_decide(state, npcdata, pid, target, "protect", {},
+                                      events=events, trace=trace)
+                if outcome in ("protinavrh", "odmitnuto"):
+                    continue
             deal = {"id": _new_deal_id(state), "type": "protect", "owner": pid,
                     "target": target, "since": state["meta"]["turn"]}
             state["deals"].append(deal)
@@ -581,6 +824,10 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 continue
             _union_admit(state, npcdata, target, events, trace)
 
+        # --- accept_offer (3.5, v1.6) -------------------------------------------------
+        elif atype == "accept_offer":
+            _accept_offer(state, npcdata, pid, act.get("offer_id"), events, trace)
+
         # --- union_fund -------------------------------------------------------------
         elif atype == "union_fund":
             if pid != "C" or not state["players"]["C"]["active"]:
@@ -682,10 +929,17 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
     for d in list(state["deals"]):
         owner = d["owner"]
         tgt = d["target"]
+        player = state["players"].get(owner)
+        if d["type"] == "pressure" and tgt in ("A", "B"):
+            # 3.2 (v1.6): sankce mezi hraci stoji oba 1 wealth za tah
+            for x in (owner, tgt):
+                state["players"][x]["wealth"] = max(0.0, float(state["players"][x]["wealth"]) - 1.0)
+            trace.add("3.2 pressure mezi hraci", {"owner": owner, "target": tgt},
+                      {"A": state["players"]["A"]["wealth"], "B": state["players"]["B"]["wealth"]})
+            continue
         if tgt not in state["npc"]:
             continue
         n = state["npc"][tgt]
-        player = state["players"].get(owner)
         if d["type"] == "protect":
             if player is None:
                 continue
@@ -696,7 +950,7 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
             n["power"] = float(n["power"]) + 2.0
             if owner in ("A", "B"):
                 mult = 0.1 if n.get("kind") == "fallen" else 1.0
-                n["influence"][owner] = float(n["influence"].get(owner, 0.0)) + 2.0 * mult
+                add_influence(state, tgt, owner, 2.0 * mult)
             n["law"] = clamp(float(n["law"]) - 0.2, 0.0, 10.0)
             trace.add("3.2 protect upkeep", {"owner": owner, "target": tgt},
                       {"npc_power": n["power"], "npc_law": n["law"],
@@ -712,7 +966,9 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
             other = "B" if owner == "A" else "A"
             if owner in ("A", "B"):
                 mult = 0.1 if n.get("kind") == "fallen" else 1.0
-                n["influence"][other] = float(n["influence"].get(other, 0.0)) + 1.0 * mult
+                add_influence(state, tgt, other, 1.0 * mult)
+                state["minsky"].setdefault("pressure_log", []).append(
+                    {"turn": state["meta"]["turn"], "owner": owner, "target": tgt})
             trace.add("3.2 pressure upkeep", {"owner": owner, "target": tgt},
                       {"npc_wealth": n["wealth"], f"influence_{other}": n["influence"][other]})
 
@@ -794,8 +1050,7 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
             reserve = RESERVE_TURNS * need
             offer[i] = max(0.0, stock + bal - reserve)
             d_flow[i] = max(0.0, -bal)
-            can_refill = (float(e["wealth"]) >= REFILL_MIN_WEALTH
-                          and int(e.get("poverty_streak", 0)) == 0)
+            can_refill = float(e["wealth"]) >= REFILL_MIN_WEALTH  # 4.1c (v1.6): jen pri wealth >= 25
             d_refill[i] = max(0.0, reserve - stock) if can_refill else 0.0
 
         pairs = []
@@ -805,8 +1060,9 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
             for buyer in traders:
                 if buyer == seller:
                     continue
-                if seller in ("A", "B") and buyer in ("A", "B"):
-                    continue  # K1
+                both_players = seller in ("A", "B") and buyer in ("A", "B")
+                if both_players and _players_sanctioned(state):
+                    continue  # 3.2 (v1.6): sankce mezi hraci prerusi jejich automaticky obchod
                 dem = d_flow[buyer] + d_refill[buyer]
                 if dem <= 0:
                     continue
@@ -818,7 +1074,9 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                         continue
                     k, path = route
                 key = tuple(sorted((seller, buyer)))
-                if seller in ("A", "B"):
+                if both_players:
+                    same_sphere = False
+                elif seller in ("A", "B"):
                     same_sphere = state["npc"][buyer]["status"] == "sphere_%s" % seller
                 elif buyer in ("A", "B"):
                     same_sphere = state["npc"][seller]["status"] == "sphere_%s" % buyer
@@ -837,9 +1095,7 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
         pairs.sort()
 
         for _, _, _, k, _, _, seller, buyer, path in pairs:
-            base = market_price(state, res)
-            if is_npc(seller) and is_fallen(state, seller):
-                base *= 1.3  # 7a: padla rise prodava za 1.3x
+            base = market_price(state, res)  # 7a (v1.6): padle rise na trhu za trzni cenu
             price = base * (1.0 + TRANSIT_SURCHARGE * k)
             if price <= 0 or offer[seller] <= 1e-9:
                 continue
@@ -869,6 +1125,9 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 vol_players[seller] += pay
             if buyer in ("A", "B"):
                 vol_players[buyer] += pay
+            if seller in ("A", "B") and buyer in ("A", "B"):
+                state["_ab_volume"] = state.get("_ab_volume", 0.0) + pay
+                state["_ab_auto"] = state.get("_ab_auto", 0.0) + pay
             if is_npc(seller) and is_npc(buyer):
                 vol_npc += pay
             if res == GOODS:
@@ -951,6 +1210,8 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         trade_mult = 0.5
 
     state["_transit_income"] = {}
+    state["_ab_volume"] = 0.0
+    state["_ab_auto"] = 0.0
 
     # 1. predbezne potreby
     potential = {i: goods_potential(ent(state, i)) for i in ids}
@@ -963,7 +1224,7 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         owner, tgt, res = d["owner"], d["target"], d["res"]
         qty = float(d["qty"]) * trade_mult
         price = float(d["price"])
-        if tgt not in state["npc"] or res not in TRADEABLES:
+        if (tgt not in state["npc"] and tgt not in ("A", "B")) or res not in TRADEABLES:
             continue
         if d["direction"] == "npc_sells":
             seller, buyer = tgt, owner
@@ -987,6 +1248,9 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
             goods_volume += value
         if owner in volume_by_player:
             volume_by_player[owner] += value * weight
+        if tgt in ("A", "B"):
+            volume_by_player[tgt] += value * weight
+            state["_ab_volume"] = state.get("_ab_volume", 0.0) + value
         if tgt in volume_by_npc:
             volume_by_npc[tgt] += value * weight
 
@@ -1031,6 +1295,9 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         volume_by_player[pid] += pv
         trade_volume += pv
         trade_volume_weighted += pv
+    # obchod A s B je v objemu obou hracu, do svetoveho objemu patri jen jednou
+    trade_volume -= state.get("_ab_auto", 0.0)
+    trade_volume_weighted -= state.get("_ab_auto", 0.0)
     pairs = list(pairs_in)
     for p in pairs_g:
         if p not in pairs:
@@ -1089,6 +1356,8 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
                    "stock": {k: round(float(v), 3) for k, v in stock.items()},
                    "wealth": round(float(e["wealth"]), 3)})
 
+    state["_player_imports"] = {pid: {r: round(imports[pid][r], 4) for r in TRADEABLES}
+                                for pid in ("A", "B")}
     state["_trade"] = {"volume": trade_volume, "weighted": trade_volume_weighted,
                        "by_player": volume_by_player, "by_npc": volume_by_npc}
     state["_npc_trade_volume"] = npc_volume
@@ -1375,7 +1644,7 @@ def step_influence(state, trace: Trace, events: list) -> None:
             if d["target"] != i or d["owner"] not in ("A", "B"):
                 continue
             if d["type"] == "trade":
-                n["influence"][d["owner"]] = float(n["influence"][d["owner"]]) + 1.0 * mult
+                add_influence(state, i, d["owner"], 1.0 * mult)
                 has_link[d["owner"]] = True
                 if d["owner"] == "A":
                     n["law"] = min(8.0, float(n["law"]) + 0.1) if float(n["law"]) < 8.0 \
@@ -1596,8 +1865,8 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
             # uvolneni sfer: NPC ve sphere_X, ktere X nesplacelo, zpet na independent
             for i, nn in state["npc"].items():
                 for pid in ("A", "B"):
-                    if nn["status"] == f"sphere_{pid}" and any(
-                            d["npc"] == i and d["creditor"] == pid for d in m["defaults"]):
+                    # 5 (v1.6): staci nenulovy dluh vuci X, ne jen nesplaceni
+                    if nn["status"] == f"sphere_{pid}" and float(nn["debt"].get(pid, 0.0)) > 0:
                         nn["status"] = "independent"
                         nn["influence"][pid] = float(nn["influence"][pid]) / 2.0
                         events.append({"kind": "sphere_released", "npc": i, "from": pid})
@@ -1752,69 +2021,38 @@ def _components(npcdata, nodes: list[str]) -> list[list[str]]:
 
 
 def _pick_founders(state, npcdata, eligible: list[str], trace: Trace):
-    """7.1: zakladatele musi tvorit souvisle uzemi, nejvys ctyri (C9).
+    """7.1 (v1.6): nejvetsi souvisla skupina zpusobilych statu, bez mostu.
 
-    v1.5: nema-li zadna souvisla skupina zpusobilych statu aspon 3, mohou se
-    skupiny spojit pres jeden nezavisly nezpusobily stat (most). Vybere se most,
-    ktery spoji nejvic zpusobilych statu, pri shode skupina s nizsim prumernym
-    wealth, pak nizsi ID (M6). Most se stane kandidatem jen tehdy, kdyz pres nej
-    vybrani zakladatele opravdu vedou.
+    Pri shode velikosti vyhrava skupina s vyssim prumernym law, pak nizsi ID (N-otazka).
+    Ma-li skupina vic nez 4 cleny, zakladateli jsou ctyri s nejvyssim law (pri shode
+    vyssi wealth), dalsi ze skupiny ve stejnem poradi se stavaji kandidaty do stropu 3.
+    Ma-li mene nez 3, Unie nevznikne (volajici). fragility se nepouziva.
 
-    Vraci (zakladatele, most nebo None).
+    Vraci (zakladatele nebo cela mala skupina, kandidati).
     """
     if not eligible:
-        return [], None
+        return [], []
 
-    def avg_w(group):
-        return sum(float(state["npc"][x]["wealth"]) for x in group) / len(group)
+    def avg_law(group):
+        return sum(float(state["npc"][x]["law"]) for x in group) / len(group)
 
     skupiny = _components(npcdata, eligible)
-    skupiny.sort(key=lambda g: (-len(g), avg_w(g), _npc_key(g[0])))
-    nejlepsi = skupiny[0]
-    bridge = None
-    if len(nejlepsi) < 3:
-        best = None
-        for x in sorted(state["npc"], key=_npc_key):
-            if x in eligible or state["npc"][x]["status"] != "independent":
-                continue
-            nbx = set(neighbours(npcdata, x))
-            joined = [g for g in skupiny if any(m in nbx for m in g)]
-            if len(joined) < 2:
-                continue
-            merged = sorted({m for g in joined for m in g}, key=_npc_key)
-            score = (-len(merged), avg_w(merged), _npc_key(x))
-            if best is None or score < best[0]:
-                best = (score, x, merged)
-        if best is not None and len(best[2]) > len(nejlepsi):
-            bridge, nejlepsi = best[1], best[2]
-
-    bridge_nb = set(neighbours(npcdata, bridge)) if bridge else set()
-
-    def linked(a, b):
-        return b in neighbours(npcdata, a) or (a in bridge_nb and b in bridge_nb)
-
-    vybrani = []
-    zbyva = sorted(nejlepsi, key=lambda x: (-_fragility(state, x), _npc_key(x)))
-    while zbyva and len(vybrani) < UNION_MAX_FOUNDERS:
-        if not vybrani:
-            vybrani.append(zbyva.pop(0))
-            continue
-        soused = [x for x in zbyva if any(linked(v, x) for v in vybrani)]
-        if not soused:
-            break
-        pick = soused[0]
-        zbyva.remove(pick)
-        vybrani.append(pick)
-    if bridge and len(_components(npcdata, vybrani)) <= 1:
-        bridge = None  # zakladatele jsou souvisli i bez mostu
+    skupiny.sort(key=lambda g: (-len(g), -avg_law(g), min(_npc_key(x) for x in g)))
+    group = skupiny[0]
+    ranked = sorted(group, key=lambda x: (-float(state["npc"][x]["law"]),
+                                          -float(state["npc"][x]["wealth"]), _npc_key(x)))
+    if len(group) < 3:
+        founders, candidates = ranked, []
+    else:
+        founders = ranked[:UNION_MAX_FOUNDERS]
+        candidates = ranked[UNION_MAX_FOUNDERS:UNION_MAX_FOUNDERS + UNION_MAX_CANDIDATES]
     trace.add("7.1 vyber zakladatelu",
-              {"zpusobili": eligible,
-               "skupiny": [len(g) for g in skupiny],
-               "nejvetsi_skupina": nejlepsi,
-               "most": bridge},
-              {"vybrani": vybrani,
-               "fragility": {x: round(_fragility(state, x), 3) for x in vybrani}})
-    return vybrani, bridge
+              {"zpusobili": eligible, "skupiny": [len(g) for g in skupiny],
+               "nejvetsi_skupina": group},
+              {"zakladatele": founders, "kandidati": candidates,
+               "law": {x: float(state["npc"][x]["law"]) for x in ranked},
+               "wealth": {x: round(float(state["npc"][x]["wealth"]), 2) for x in ranked}})
+    return founders, candidates
 
 
 def _union_can_join(state, npcdata, nid: str) -> bool:
@@ -1834,21 +2072,21 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
     # 7.1 vznik v tahu crash
     if not C["active"] and state["phase"] == "crash" and m.get("crash_turn") == turn:
         eligible = []
-        for i, n in sorted(state["npc"].items()):
-            if n["status"] != "independent" or n.get("kind") != "normal":
+        for i, n in sorted(state["npc"].items(), key=lambda x: _npc_key(x[0])):
+            # 7.1 (v1.6): nezavisla NPC (ne sphere_X, ne occupied_X)
+            if n["status"] != "independent":
+                continue
+            if n.get("kind") == "fallen":
+                # 7a: padla rise, kterou behem boom az panic nikdo netlacil
+                if i not in m["fallen_touched"]:
+                    eligible.append(i)
                 continue
             defaulted = any(d["npc"] == i for d in m["defaults"])
             peak = float(n.get("wealth_peak", n["wealth"]))
-            lost = peak > 0 and float(n["wealth"]) <= 0.7 * peak
+            lost = peak > 0 and float(n["wealth"]) <= (1.0 - UNION_FOUNDER_LOSS) * peak
             if defaulted or lost:
                 eligible.append(i)
-        for i, n in sorted(state["npc"].items()):
-            # 7a: padla rise, kterou behem boom az panic nikdo netlacil
-            if n.get("kind") != "fallen" or n["status"] != "independent":
-                continue
-            if i not in m["fallen_touched"]:
-                eligible.append(i)
-        founders, bridge = _pick_founders(state, npcdata, eligible, trace)
+        founders, extra_candidates = _pick_founders(state, npcdata, eligible, trace)
         if len(founders) >= 3:
             C["active"] = True
             C["founded_turn"] = turn
@@ -1864,13 +2102,13 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
                 fund += take
             C["wealth"] = fund
             C["fund"] = fund
-            if bridge is not None:
-                # 7.1 (v1.5): most se stava kandidatem (pocita se do stropu 3)
-                C["candidates"] = [bridge]
-                state["npc"][bridge]["status"] = "candidate"
-                events.append({"kind": "union_bridge", "npc": bridge})
+            if extra_candidates:
+                # 7.1 (v1.6): zbytek nejvetsi skupiny se stava kandidaty do stropu 3
+                C["candidates"] = list(extra_candidates)
+                for c_id in extra_candidates:
+                    state["npc"][c_id]["status"] = "candidate"
             events.append({"kind": "union_founded", "members": list(founders), "fund": fund,
-                           "bridge": bridge})
+                           "candidates": list(extra_candidates)})
             trace.add("7.1 vznik Unie", {"zakladatele": founders},
                       {"fond": round(fund, 3), "tah": turn})
         else:
@@ -1940,22 +2178,32 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
             n["status"] = "union"
             events.append({"kind": "union_join", "npc": i, "how": "prah splnen"})
 
-    # 7.2 (v1.5): automaticka solidarita. Clenovi v bide posle fond az 3 za tah,
-    # pokud ve fondu zustane aspon 5. Od tahu po zalozeni, nejchudsi prvni (M8).
+    # 7.2 (v1.6): prispevky clenu 2 % wealth za tah a solidarita nejchudsimu clenovi v bide.
+    # Obojí od tahu po zalozeni; fond se smi solidaritou vyprazdnit az na 0.
+    state["union_contributions"] = {}
     if C.get("founded_turn") != turn:
-        poor = set(state.get("_poverty", []))
-        for mm in sorted(C["members"], key=lambda x: (float(state["npc"][x]["wealth"]), _npc_key(x))):
-            if mm not in poor:
+        for mm in sorted(C["members"], key=_npc_key):
+            take = float(state["npc"][mm]["wealth"]) * UNION_CONTRIBUTION
+            if take <= 0:
                 continue
-            amount = min(SOLIDARITY_MAX, float(C["wealth"]) - SOLIDARITY_FUND_FLOOR)
-            if amount <= 1e-9:
-                break
-            C["wealth"] = float(C["wealth"]) - amount
-            state["npc"][mm]["wealth"] = float(state["npc"][mm]["wealth"]) + amount
-            state["union_solidarity"][mm] = round(amount, 4)
-            events.append({"kind": "union_solidarity", "npc": mm, "amount": round(amount, 4)})
-            trace.add("7.2 automaticka solidarita", {"npc": mm}, {"prijem": round(amount, 4),
-                                                                   "fond": round(float(C["wealth"]), 4)})
+            state["npc"][mm]["wealth"] = float(state["npc"][mm]["wealth"]) - take
+            C["wealth"] = float(C["wealth"]) + take
+            state["union_contributions"][mm] = round(take, 4)
+        if state["union_contributions"]:
+            trace.add("7.2 prispevky do fondu", {"clenove": list(C["members"])},
+                      {"prispevky": state["union_contributions"], "fond": round(float(C["wealth"]), 4)})
+        poor = set(state.get("_poverty", []))
+        poor_members = [mm for mm in C["members"] if mm in poor]
+        if poor_members:
+            mm = min(poor_members, key=lambda x: (float(state["npc"][x]["wealth"]), _npc_key(x)))
+            amount = min(SOLIDARITY_MAX, float(C["wealth"]))
+            if amount > 1e-9:
+                C["wealth"] = float(C["wealth"]) - amount
+                state["npc"][mm]["wealth"] = float(state["npc"][mm]["wealth"]) + amount
+                state["union_solidarity"][mm] = round(amount, 4)
+                events.append({"kind": "union_solidarity", "npc": mm, "amount": round(amount, 4)})
+                trace.add("7.2 automaticka solidarita", {"npc": mm},
+                          {"prijem": round(amount, 4), "fond": round(float(C["wealth"]), 4)})
 
     C["power"] = sum(float(state["npc"][mm]["power"]) for mm in C["members"]) \
         if C["members"] else 0.0
@@ -1976,11 +2224,13 @@ def _union_admit(state, npcdata, target, events, trace) -> None:
         events.append({"kind": "union_rejected", "npc": target,
                        "reason": "nesousedi s zadnym clenem"})
         return
-    if C["law_threshold"] is not None and float(n["law"]) < float(C["law_threshold"]):
-        events.append({"kind": "union_rejected", "npc": target, "reason": "law pod prahem"})
-        return
     if float(n["influence"]["A"]) > 8 or float(n["influence"]["B"]) > 8:
         events.append({"kind": "union_rejected", "npc": target, "reason": "vliv velmoci"})
+        return
+    # 3.4 (v1.6): NPC nabidku vyhodnoti; prah prava je faktor skore (+10 / -30)
+    outcome = _npc_decide(state, npcdata, "C", target, "admit", {}, events=events, trace=trace)
+    if outcome in ("protinavrh", "odmitnuto"):
+        events.append({"kind": "union_rejected", "npc": target, "reason": "NPC nabidku neprijalo (3.4)"})
         return
     n["status"] = "union"
     if target not in C["members"]:
@@ -1995,6 +2245,98 @@ def _union_admit(state, npcdata, target, events, trace) -> None:
 # --------------------------------------------------------------------------
 # 8 metriky
 # --------------------------------------------------------------------------
+
+def step_offers(state, npcdata, trace: Trace, events: list) -> None:
+    """3.5 (v1.6): nabidky NPC hracum.
+
+    Nejdriv propadnou neprijate nabidky (tri po sobe ignorovane od tehoz NPC: vliv -1).
+    Pak engine pro kazdeho hrace (A, B, po vzniku i C) vybere nejvys 2 nove nabidky od NPC
+    podle nejvyssiho vlivu hrace. Jedno NPC da hraci nejvys jednu nabidku, typy se zkousi
+    v poradi sell, loan_request, protect_request (N-otazka).
+    """
+    turn = int(state["meta"]["turn"])
+    m = state["minsky"]
+    ignored = m.setdefault("offer_ignored", {"A": {}, "B": {}, "C": {}})
+    kept = []
+    for o in state.get("offers", []):
+        if int(o["expires"]) <= turn:
+            cnt = int(ignored.setdefault(o["player"], {}).get(o["npc"], 0)) + 1
+            if cnt >= 3:
+                if o["player"] in ("A", "B") and o["npc"] in state["npc"]:
+                    nn = state["npc"][o["npc"]]
+                    nn["influence"][o["player"]] = max(0.0, float(nn["influence"][o["player"]]) - 1.0)
+                    trace.add("3.5 ignorovane nabidky", {"player": o["player"], "npc": o["npc"]},
+                              {"influence": nn["influence"][o["player"]]})
+                cnt = 0
+            ignored[o["player"]][o["npc"]] = cnt
+        else:
+            kept.append(o)
+
+    players = ["A", "B"] + (["C"] if state["players"]["C"]["active"] else [])
+    imports = state.get("_player_imports", {})
+    poor = set(state.get("_poverty", []))
+    orit_on = state["phase"] in ORIT_PHASES
+    invaded = {v["target"] for v in state.get("invasions", [])}
+    new = []
+    for pid in players:
+        active_npcs = {o["npc"] for o in kept if o["player"] == pid}
+        cands = []
+        for nid in sorted(state["npc"], key=_npc_key):
+            if nid in active_npcs:
+                continue
+            nn = state["npc"][nid]
+            need = nn.get("need") or {}
+            offer = None
+            # (1) sell: prebytek nad rezervu u statku, ktery hrac tento tah dovazel
+            if pid in ("A", "B"):
+                for res in ("grain", "oil", "metal", "goods"):
+                    imp = float(imports.get(pid, {}).get(res, 0.0))
+                    if imp <= 0:
+                        continue
+                    surplus = float(nn["stock"].get(res, 0.0)) - RESERVE_TURNS * float(need.get(res, 0.0))
+                    if surplus <= 1e-6:
+                        continue
+                    op = _openness(npcdata, nid)
+                    factor = 1.15 if op <= 3 else (0.9 if float(nn["wealth"]) < 25 else 1.0)
+                    offer = {"type": "sell", "res": res, "qty": round(min(surplus, imp), 3),
+                             "price": round(market_price(state, res) * factor, 4)}
+                    break
+            # (2) loan_request: NPC v bide nebo s deficitem oritu
+            if offer is None and nn.get("kind") != "fallen":
+                orit_short = 0.0
+                if orit_on:
+                    orit_short = max(0.0, float(need.get("orit", 0.0)) - eff_prod(nn, "orit")
+                                     - float(nn["stock"].get("orit", 0.0)))
+                if (nid in poor or orit_short > 0) and not (
+                        pid == "C" and nn["status"] not in ("independent", "candidate")):
+                    gap = max(0.0, 15.0 - float(nn["wealth"])) + 5.0 * orit_short
+                    offer = {"type": "loan_request", "amount": round(clamp(10.0 + gap, 10.0, 20.0), 2)}
+            # (3) protect_request: ohrozeny soused nebo rostouci vliv soupere, jen hraci s vyssim vlivem
+            if offer is None and pid in ("A", "B") and nn.get("kind") != "fallen":
+                rival = "B" if pid == "A" else "A"
+                inf_p = float(nn["influence"].get(pid, 0.0))
+                inf_r = float(nn["influence"].get(rival, 0.0))
+                hist = nn.get("influence_history") or []
+                rise = inf_r - float(hist[0].get(rival, 0.0)) if len(hist) >= 3 else 0.0
+                threatened = any(nb in invaded for nb in neighbours(npcdata, nid))
+                if inf_p > inf_r and (threatened or rise >= 4.0) and not _active_deal(state, pid, nid, "protect"):
+                    offer = {"type": "protect_request"}
+            if offer is not None:
+                infl = float(nn["influence"].get(pid, 0.0)) if pid in ("A", "B") else 0.0
+                cands.append((-infl, _npc_key(nid), nid, offer))
+        cands.sort()
+        for _, _, nid, offer in cands[:2]:
+            oid = "o%d" % int(m.get("next_offer_id", 1))
+            m["next_offer_id"] = int(m.get("next_offer_id", 1)) + 1
+            o = dict(offer)
+            o.update({"offer_id": oid, "player": pid, "npc": nid, "created": turn,
+                      "expires": turn + OFFER_VALID_TURNS})
+            kept.append(o)
+            new.append(o)
+            trace.add("3.5 nabidka NPC", {"player": pid, "npc": nid, "type": offer["type"]}, dict(o))
+    state["offers"] = kept
+    state["offers_new"] = new
+
 
 def step_metrics(state, trace: Trace) -> None:
     tr = state.get("_trade", {"volume": 0.0, "weighted": 0.0,
@@ -2043,7 +2385,8 @@ def step_metrics(state, trace: Trace) -> None:
     n_bida = len(state.get("_poverty", []))
     # 8 (v1.1): prvni clen zastropovan na 1.5, jinak by slozene uroceni ze 4.2
     # hnalo index k nekonecnu a vyhral by i svet, kde vetsina statu hladovi.
-    index = 100.0 * min(1.5, w_real / w0) * (1.0 - max_share) * (1.0 - n_bida / 14.0)
+    # 8 (v1.6): delitel bidy = pocet statu sveta (18)
+    index = 100.0 * min(1.5, w_real / w0) * (1.0 - max_share) * (1.0 - n_bida / float(len(world_ids(state))))
 
     state["metrics"].update({
         "A_trade_share": round(a_share, 4),
@@ -2058,6 +2401,7 @@ def step_metrics(state, trace: Trace) -> None:
         "trade_volume_players": round(
             max(0.0, tr["weighted"] - state.get("_npc_trade_volume", 0.0)), 3),
         "trade_volume_goods": round(state.get("_goods_trade_volume", 0.0), 3),
+        "trade_volume_AB": round(state.get("_ab_volume", 0.0), 3),
         "poverty_ids": sorted(state.get("_poverty", [])),
     })
     trace.add("8 metriky", {"W_real": round(w_real, 2), "W0": w0, "n_bida": n_bida},
@@ -2141,6 +2485,9 @@ def build_views(state, npcdata) -> dict:
             "ceny": {r: market_price(state, r) for r in TRADEABLES
                      if r != "orit" or orit_on},
             "deals": [d for d in state["deals"] if d["owner"] == pid],
+            # 3.4 a 3.5 (v1.6): nabidky NPC a soukromy log rozhodnuti NPC
+            "nabidky": [o for o in state.get("offers", []) if o["player"] == pid],
+            "soukromy_log": list(state.get("private_log", {}).get(pid, [])),
             "news": list(state.get("news", [])),
         }
     return views
@@ -2166,6 +2513,8 @@ def apply_turn(state, npcdata, actions):
 
     pop_before = sum(float(ent(st, i)["pop"]) for i in world_ids(st))
 
+    st["npc_decisions"] = []
+    st["counter_offers"] = [c for c in st.get("counter_offers", []) if int(c["expires"]) >= turn]
     step_prices(st, trace)
     events = apply_actions(st, npcdata, actions, rng, trace)
     upkeep_deals(st, trace, events)
@@ -2180,12 +2529,25 @@ def apply_turn(state, npcdata, actions):
     step_influence(st, trace, events)
     step_minsky(st, npcdata, rng, trace, events)
     step_union(st, npcdata, trace, events)
+    step_offers(st, npcdata, trace, events)
     step_metrics(st, trace)
 
     pop_after = sum(float(ent(st, i)["pop"]) for i in world_ids(st))
     trace.add("kontrola pop", {"pred": round(pop_before, 3)},
               {"po": round(pop_after, 3), "rozdil": round(pop_after - pop_before, 3)})
 
+    # jednorazove obchody z prijatych nabidek (3.5) po vyuziti mizi
+    st["deals"] = [d for d in st["deals"] if not d.get("one_shot")]
+    # log sankci pro 3.4 a soukromy log hracu drzi jen posledni tahy
+    st["minsky"]["pressure_log"] = [r for r in st["minsky"].get("pressure_log", [])
+                                    if int(r["turn"]) > turn - 7]
+    for p_id in ("A", "B", "C"):
+        st["private_log"][p_id] = [r for r in st["private_log"].get(p_id, [])
+                                   if int(r["turn"]) > turn - 9]
+    for n_id, n_e in st["npc"].items():
+        ih = list(n_e.get("influence_history") or [])
+        ih.append({k: round(float(v), 4) for k, v in n_e["influence"].items()})
+        n_e["influence_history"] = ih[-3:]
     for n_id, n_e in st["npc"].items():
         hist = list(n_e.get("wealth_history") or [])
         hist.append(round(float(n_e["wealth"]), 4))
@@ -2194,6 +2556,9 @@ def apply_turn(state, npcdata, actions):
     st.pop("_poverty", None)
     st.pop("_npc_trade_volume", None)
     st.pop("_goods_trade_volume", None)
+    st.pop("_player_imports", None)
+    st.pop("_ab_volume", None)
+    st.pop("_ab_auto", None)
     st["players"]["C"]["fund"] = st["players"]["C"]["wealth"]
     st["log"] = (st.get("log", []) + [{"turn": turn, "events": events}])[-9:]
     return st, events, trace.items

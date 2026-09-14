@@ -3,20 +3,20 @@
 Suchy beh bez volani modelu (BUILD.md cast 8). Nic nezapisuje do state.json
 ani do history/, jen pocita a tiskne.
 
-Scenare (pravidla v1.3):
+Scenare (pravidla v1.6):
 
   (0) nikdo netahne: hraci mlci, zadne akce.
-      Kriteria: do tahu 15 nejvys dve NPC v bide a zadne z N1 az N5, N7, N11, N12;
-      W_real v tahu 30 aspon 90 % startu; do tahu 90 nejvys 5 NPC v bide.
+      Kriteria: do tahu 15 nejvys dve NPC v bide a zadne z N1 az N5, N7, N11 az N14;
+      W_real v tahu 30 aspon 90 % startu; do tahu 90 nejvys 6 NPC v bide (z 16).
   (a) scenar ze zadani: A pujcuje N6 od tahu 8, B chrani N7, oba obchoduji obilim.
   (b) realisticke pujcovani: hrac pujci jen v tahu, kdy nejake NPC zada pujcku
       (euforie) nebo ma deficit oritu; nejvys jedna pujcka na hrace a tah.
+      Oba skripty navic prijimaji nabidky NPC (3.5): sell, ktere kryji deficit hrace,
+      a loan_request ve fazich boom a euphoria, do limitu akci.
       Kriteria pro (a) i (b): crash mezi dnem 7 a 11, Unie s aspon 3 zakladateli,
-      validate 0 chyb.
+      validate 0 chyb. Mine-li okno kvuli pujckam odmitnutym podle 3.4, je to informace.
 
-Vyklad kriterii (0), viz OPEN_QUESTIONS I12: "do tahu 15 nejvys dve NPC" se meri
-jako pocet ruznych NPC, ktera byla v bide v kteremkoli tahu 1 az 15; "do tahu 90
-nejvys 5 NPC" jako nejvyssi pocet NPC v bide v jednom tahu. Tisknou se obe miry.
+Vyklad kriterii (0) podle pravidel cast 11.
 
 Spusteni:
     python test_run.py
@@ -34,7 +34,8 @@ from validate import validate
 
 TURNS = 90
 TRACKED = ("A", "B", "N1", "N6", "N11")
-PROTECTED = ("N1", "N2", "N3", "N4", "N5", "N7", "N11", "N12")
+PROTECTED = ("N1", "N2", "N3", "N4", "N5", "N7", "N11", "N12", "N13", "N14")
+MAX_POVERTY_90 = 6
 
 
 # --------------------------------------------------------------------------
@@ -59,11 +60,31 @@ def _base_actions(turn: int, state) -> list[dict]:
     return acts
 
 
+def _accept_offers(state, acts: list[dict]) -> None:
+    """3.5: prijmi sell, ktere kryji deficit hrace, a loan_request v boom a euphoria."""
+    turn = int(state["meta"]["turn"]) + 1
+    for o in state.get("offers", []):
+        pid = o["player"]
+        if pid not in ("A", "B") or turn > int(o["expires"]):
+            continue
+        if sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
+            continue
+        if o["type"] == "sell":
+            deficit = float(engine.current_need(state, pid).get(o["res"], 0.0)) - \
+                engine.supply_of(state, pid, o["res"])
+            if deficit > 0:
+                acts.append({"player": pid, "type": "accept_offer", "offer_id": o["offer_id"]})
+        elif o["type"] == "loan_request" and state["phase"] in ("boom", "euphoria"):
+            if float(state["players"][pid]["wealth"]) >= float(o["amount"]):
+                acts.append({"player": pid, "type": "accept_offer", "offer_id": o["offer_id"]})
+
+
 def scenario_a(turn: int, state) -> list[dict]:
     """(a) Scenar ze zadani."""
     acts = _base_actions(turn, state)
     if turn >= 8 and float(state["players"]["A"]["wealth"]) >= 10:
         acts.append({"player": "A", "type": "loan", "target": "N6", "amount": 10})
+    _accept_offers(state, acts)
     return acts
 
 
@@ -72,7 +93,7 @@ def _loan_seekers(state) -> list[str]:
     displacementu kazde NPC, ktere orit potrebuje a nema vlastni tezbu."""
     out = []
     phase = state["phase"]
-    for i, n in sorted(state["npc"].items()):
+    for i, n in sorted(state["npc"].items(), key=lambda x: int(x[0][1:])):
         if n.get("kind") == "fallen":
             continue
         if n["status"] not in ("independent", "sphere_A", "sphere_B"):
@@ -90,15 +111,15 @@ def scenario_b(turn: int, state) -> list[dict]:
     """(b) Realisticke pujcovani, nejvys jedna pujcka na hrace a tah."""
     acts = _base_actions(turn, state)
     seekers = _loan_seekers(state)
-    if not seekers:
-        return acts
-    for idx, pid in enumerate(("A", "B")):
-        if sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
-            continue
-        if float(state["players"][pid]["wealth"]) < 12:
-            continue
-        cil = seekers[(turn + idx) % len(seekers)]
-        acts.append({"player": pid, "type": "loan", "target": cil, "amount": 10})
+    if seekers:
+        for idx, pid in enumerate(("A", "B")):
+            if sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
+                continue
+            if float(state["players"][pid]["wealth"]) < 12:
+                continue
+            cil = seekers[(turn + idx) % len(seekers)]
+            acts.append({"player": pid, "type": "loan", "target": cil, "amount": 10})
+    _accept_offers(state, acts)
     return acts
 
 
@@ -112,6 +133,22 @@ SCENARE = {
 # --------------------------------------------------------------------------
 # beh
 # --------------------------------------------------------------------------
+
+def _balance(state, applied):
+    """Svetova bilance ropy a obili v tahu: vyroba, potreba domacnosti a prumyslu, pokuty."""
+    out = {}
+    for res in ("oil", "grain"):
+        prod = sum(engine.supply_of(state, i, res) for i in engine.world_ids(state))
+        hh = sum(engine.household_need(engine.ent(state, i))[res] for i in engine.world_ids(state))
+        ind = 0.0
+        if res in engine.GOODS_INPUT:
+            ind = sum(engine.GOODS_INPUT[res] * float(engine.ent(state, i).get("goods_out") or 0.0)
+                      for i in engine.world_ids(state))
+        pen = sum(float(a["outputs"]["pokuta_podle_statku"].get(res, 0.0))
+                  for a in applied if a["rule"].startswith("4.1 zdroje"))
+        out[res] = {"vyroba": prod, "domacnosti": hh, "prumysl": ind, "pokuty": pen}
+    return out
+
 
 def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
     if state is None:
@@ -138,10 +175,10 @@ def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
                                "trigger": rec[-1]["threshold"] if rec else "start"}
         for e in events:
             if e.get("kind") == "union_founded" and founders is None:
-                founders = {"turn": t, "members": list(e["members"]), "fund": e["fund"]}
+                founders = {"turn": t, "members": list(e["members"]), "fund": e["fund"],
+                            "candidates": list(e.get("candidates", []))}
             if e.get("kind") == "union_failed" and founders is None:
-                founders = {"turn": t, "members": list(e.get("candidates", [])),
-                            "failed": True}
+                founders = {"turn": t, "members": list(e.get("candidates", [])), "failed": True}
 
         m = new_state["metrics"]
         C = new_state["players"]["C"]
@@ -158,13 +195,23 @@ def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
             "vol_npc": m.get("trade_volume_npc", 0.0),
             "vol_players": m.get("trade_volume_players", 0.0),
             "vol_goods": m.get("trade_volume_goods", 0.0),
+            "vol_ab": m.get("trade_volume_AB", 0.0),
             "members": list(C["members"]), "candidates": list(C["candidates"]),
-            "coups": sum(int(n.get("coups", 0)) for n in new_state["npc"].values()),
-            "wealth": {i: float(engine.ent(new_state, i)["wealth"])
-                       for i in engine.world_ids(new_state)},
+            "fund": float(C["wealth"]) if C["active"] else None,
+            "solidarity": sum(float(v) for v in (new_state.get("union_solidarity") or {}).values()),
+            "contributions": sum(float(v) for v in (new_state.get("union_contributions") or {}).values()),
+            "spheres": {p: sum(1 for x in new_state["npc"].values() if x["status"] == "sphere_%s" % p)
+                        for p in ("A", "B")},
+            "coups": sum(int(x.get("coups", 0)) for x in new_state["npc"].values()),
+            "wealth": {i: float(engine.ent(new_state, i)["wealth"]) for i in engine.world_ids(new_state)},
+            "law": {i: float(x["law"]) for i, x in new_state["npc"].items()},
             "industry": {i: float(engine.ent(new_state, i).get("industry") or 0.0) for i in TRACKED},
             "goods_out": {i: float(engine.ent(new_state, i).get("goods_out") or 0.0) for i in TRACKED},
             "stock_world": stock_world,
+            "balance": _balance(new_state, applied),
+            "decisions": [(d["player"], d["action"], d["outcome"]) for d in new_state.get("npc_decisions", [])],
+            "offers_new": [(o["player"], o["type"]) for o in new_state.get("offers_new", [])],
+            "offers_accepted": [(e["player"], e["offer"]["type"]) for e in events if e.get("kind") == "offer_accepted"],
             "errors": len(errs),
             "applied": applied if keep_applied else None,
         })
@@ -204,7 +251,7 @@ def kriteria_0(res) -> bool:
         "OK " if passed else "NE ", len(ever15), ", ".join(ever15) or "zadne"))
     passed = not chranena
     ok &= passed
-    print("  [%s] do tahu 15 v bide zadne z N1 az N5, N7, N11, N12 (%s)" % (
+    print("  [%s] do tahu 15 v bide zadne z N1 az N5, N7, N11 az N14 (%s)" % (
         "OK " if passed else "NE ", ", ".join(chranena) or "zadne"))
 
     r30 = row_at(res, 30)
@@ -214,10 +261,10 @@ def kriteria_0(res) -> bool:
     print("  [%s] W_real v tahu 30 aspon 90 %% startu (%.1f z %.1f, tj. %.1f %%)" % (
         "OK " if passed else "NE ", r30["W_real"], res["w_start"], podil * 100))
 
-    passed = len(peak["npc_bida"]) <= 5
+    passed = len(peak["npc_bida"]) <= MAX_POVERTY_90
     ok &= passed
-    print("  [%s] do tahu 90 nejvys 5 NPC v bide (nejvic %d v tahu %d; ruznych za beh %d)" % (
-        "OK " if passed else "NE ", len(peak["npc_bida"]), peak["turn"], len(ever90)))
+    print("  [%s] do tahu 90 nejvys %d NPC v bide z 16 (nejvic %d v tahu %d; ruznych za beh %d)" % (
+        "OK " if passed else "NE ", MAX_POVERTY_90, len(peak["npc_bida"]), peak["turn"], len(ever90)))
 
     print("  [info] validate: %s" % ("0 chyb" if not res["errors"] else "%d tahu s chybou" % len(res["errors"])))
     for t, errs in res["errors"][:5]:
@@ -237,16 +284,19 @@ def kriteria_ab(res) -> bool:
     else:
         print("  [%s] crash mezi dnem 7 a 11 (tah %d, den %d)" % (
             "OK " if passed else "NE ", crash["turn"], crash["day"]))
+    loans = [d for r in res["rows"] for d in r["decisions"] if d[1] == "loan"]
+    refused = sum(1 for d in loans if d[2] in ("protinavrh", "odmitnuto"))
+    if not passed:
+        print("  [info] pujcky podle 3.4: %d vyhodnocenych, %d neprijatych" % (len(loans), refused))
     u = res["union"]
     passed = u is not None and not u.get("failed") and len(u["members"]) >= 3
     ok &= passed
     if u is None:
         print("  [NE ] Unie s aspon 3 zakladateli (Unie nevznikla)")
     elif u.get("failed"):
-        print("  [NE ] Unie s aspon 3 zakladateli (zpusobilych jen %d)" % len(u["members"]))
+        print("  [NE ] Unie s aspon 3 zakladateli (skupina jen %d)" % len(u["members"]))
     else:
-        print("  [OK ] Unie s aspon 3 zakladateli (tah %d: %s)" % (
-            u["turn"], ", ".join(u["members"])))
+        print("  [OK ] Unie s aspon 3 zakladateli (tah %d: %s)" % (u["turn"], ", ".join(u["members"])))
     val_ok = not res["errors"]
     ok &= val_ok
     print("  [%s] validate bez chyb" % ("OK " if val_ok else "NE "))
@@ -261,9 +311,9 @@ def souhrn(res) -> None:
     for t in (1, 12, 30, 45, 60, 90):
         r = row_at(res, t)
         if r:
-            print("  tah %2d: index %6.2f  W_real %8.1f  v bide %2d  goods %.2f  NPC v bide: %s" % (
-                t, r["index"], r["W_real"], r["n_bida"], r["prices"].get("goods", 0.0),
-                ", ".join(r["npc_bida"]) or "-"))
+            print("  tah %2d: index %6.2f  W_real %8.1f  v bide %2d  oil %.2f goods %.2f  NPC v bide: %s" % (
+                t, r["index"], r["W_real"], r["n_bida"], r["prices"].get("oil", 0.0),
+                r["prices"].get("goods", 0.0), ", ".join(r["npc_bida"]) or "-"))
     print("  prevratu celkem: %d" % res["rows"][-1]["coups"])
 
 

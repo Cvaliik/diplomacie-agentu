@@ -34,5 +34,6 @@ Právo drží inovace a inovace drží bohatství. Stát s pevnými institucemi 
 
 ## Formát tahu
 Odpověz POUZE validním JSON podle `docs/format_tahu.md`. Max 3 akce. `public_statement` 2 až 5 vět. `private_reasoning` je tvé skutečné uvažování, vidí ho publikum.
+Nabídky NPC ve tvém pohledu přijmeš akcí accept_offer.
 
 Jsi v tahu {turn}, den {day}. Tvůj pohled na svět a posledních 9 tahů veřejného logu následují.

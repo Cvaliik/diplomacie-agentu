@@ -28,14 +28,14 @@
       "tech": 6,
       "industry": 8,
       "prod": {
-        "oil": 2,
+        "oil": 3,
         "grain": 3,
         "metal": 8
       },
       "stock": {
         "grain": 41.4,
-        "oil": 15.6,
-        "metal": 7.98,
+        "oil": 23.4,
+        "metal": 15.97,
         "goods": 27.6,
         "orit": 0.0
       },
@@ -53,13 +53,13 @@
       "tech": 4,
       "industry": 6,
       "prod": {
-        "oil": 8,
+        "oil": 10,
         "grain": 3,
         "metal": 2
       },
       "stock": {
         "grain": 37.8,
-        "oil": 26.1,
+        "oil": 21.06,
         "metal": 14.4,
         "goods": 25.2,
         "orit": 0.0
@@ -99,7 +99,7 @@
       },
       "stock": {
         "grain": 45.6,
-        "oil": 15.2,
+        "oil": 9.12,
         "metal": 7.6,
         "goods": 30.4,
         "orit": 0.0
@@ -134,7 +134,7 @@
       },
       "stock": {
         "grain": 38.4,
-        "oil": 12.8,
+        "oil": 7.68,
         "metal": 6.4,
         "goods": 25.6,
         "orit": 0.0
@@ -163,13 +163,13 @@
       "tech": 3,
       "industry": 4,
       "prod": {
-        "oil": 8,
+        "oil": 11,
         "grain": 1,
         "metal": 0
       },
       "stock": {
         "grain": 28.8,
-        "oil": 9.6,
+        "oil": 5.76,
         "metal": 4.8,
         "goods": 19.2,
         "orit": 0.0
@@ -198,13 +198,13 @@
       "tech": 4,
       "industry": 4,
       "prod": {
-        "oil": 7,
+        "oil": 9,
         "grain": 2,
         "metal": 0
       },
       "stock": {
         "grain": 26.4,
-        "oil": 8.8,
+        "oil": 5.28,
         "metal": 4.4,
         "goods": 17.6,
         "orit": 0.0
@@ -239,7 +239,7 @@
       },
       "stock": {
         "grain": 24.0,
-        "oil": 8.0,
+        "oil": 4.8,
         "metal": 4.0,
         "goods": 16.0,
         "orit": 0.0
@@ -274,7 +274,7 @@
       },
       "stock": {
         "grain": 5.4,
-        "oil": 1.8,
+        "oil": 1.08,
         "metal": 0.9,
         "goods": 3.6,
         "orit": 0.0
@@ -309,7 +309,7 @@
       },
       "stock": {
         "grain": 16.5,
-        "oil": 5.5,
+        "oil": 3.3,
         "metal": 2.75,
         "goods": 11.0,
         "orit": 0.0
@@ -344,7 +344,7 @@
       },
       "stock": {
         "grain": 4.8,
-        "oil": 1.6,
+        "oil": 0.96,
         "metal": 0.8,
         "goods": 3.2,
         "orit": 0.0
@@ -373,13 +373,13 @@
       "tech": 1,
       "industry": 1,
       "prod": {
-        "oil": 2,
+        "oil": 3,
         "grain": 2,
         "metal": 0
       },
       "stock": {
         "grain": 3.6,
-        "oil": 1.2,
+        "oil": 0.72,
         "metal": 0.6,
         "goods": 2.4,
         "orit": 0.0
@@ -414,7 +414,7 @@
       },
       "stock": {
         "grain": 12.75,
-        "oil": 4.25,
+        "oil": 2.55,
         "metal": 2.12,
         "goods": 8.5,
         "orit": 0.0
@@ -450,7 +450,7 @@
       "stock": {
         "grain": 18.0,
         "oil": 16.8,
-        "metal": 9.48,
+        "metal": 10.92,
         "goods": 12.0,
         "orit": 0.0
       },
@@ -485,7 +485,7 @@
       "stock": {
         "grain": 25.2,
         "oil": 32.4,
-        "metal": 18.6,
+        "metal": 20.62,
         "goods": 16.8,
         "orit": 0.0
       },
@@ -504,6 +504,146 @@
       "poverty_streak": 0,
       "kind": "fallen",
       "coups": 0
+    },
+    "N13": {
+      "wealth": 50,
+      "paper_wealth": 0,
+      "power": 8,
+      "law": 6,
+      "tech": 5,
+      "industry": 5,
+      "prod": {
+        "oil": 0,
+        "grain": 3,
+        "metal": 2
+      },
+      "stock": {
+        "grain": 28.8,
+        "oil": 5.76,
+        "metal": 4.8,
+        "goods": 19.2,
+        "orit": 0.0
+      },
+      "pop": 120,
+      "pop_start": 120,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N14": {
+      "wealth": 40,
+      "paper_wealth": 0,
+      "power": 8,
+      "law": 5,
+      "tech": 3,
+      "industry": 3,
+      "prod": {
+        "oil": 3,
+        "grain": 4,
+        "metal": 2
+      },
+      "stock": {
+        "grain": 24.0,
+        "oil": 20.4,
+        "metal": 13.36,
+        "goods": 16.0,
+        "orit": 0.0
+      },
+      "pop": 100,
+      "pop_start": 100,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N15": {
+      "wealth": 35,
+      "paper_wealth": 0,
+      "power": 7,
+      "law": 3,
+      "tech": 2,
+      "industry": 2,
+      "prod": {
+        "oil": 2,
+        "grain": 1,
+        "metal": 6
+      },
+      "stock": {
+        "grain": 12.0,
+        "oil": 8.4,
+        "metal": 5.6,
+        "goods": 8.0,
+        "orit": 0.0
+      },
+      "pop": 80,
+      "pop_start": 80,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
+    },
+    "N16": {
+      "wealth": 22,
+      "paper_wealth": 0,
+      "power": 4,
+      "law": 4,
+      "tech": 1,
+      "industry": 1,
+      "prod": {
+        "oil": 0,
+        "grain": 5,
+        "metal": 0
+      },
+      "stock": {
+        "grain": 5.4,
+        "oil": 1.08,
+        "metal": 0.9,
+        "goods": 3.6,
+        "orit": 0.0
+      },
+      "pop": 90,
+      "pop_start": 90,
+      "influence": {
+        "A": 0,
+        "B": 0
+      },
+      "debt": {
+        "A": 0,
+        "B": 0,
+        "C": 0
+      },
+      "status": "independent",
+      "poverty_streak": 0,
+      "kind": "normal",
+      "coups": 0
     }
   },
   "deals": [],
@@ -515,7 +655,7 @@
     "A_trade_share": 0,
     "B_resource_share": 0,
     "C_min_member": null,
-    "W0": 717
+    "W0": 864
   },
   "log": []
 }

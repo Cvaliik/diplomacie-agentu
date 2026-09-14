@@ -24,7 +24,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 Neplatnou akci rozhodčí vyřadí a zapíše důvod. Zbytek tahu platí.
 Pokud odpověď není validní JSON ani po dvou opakováních, hráč v tahu mlčí (pravidla 10.6).
 
-Identifikátory států: hráči `A`, `B`, `C` (Unie), NPC `N1` až `N12`.
+Identifikátory států: hráči `A`, `B`, `C` (Unie), NPC `N1` až `N16`.
 Statky: `grain`, `oil`, `metal`, `goods`, od displacementu i `orit`.
 
 ## Akce
@@ -33,6 +33,12 @@ Statky: `grain`, `oil`, `metal`, `goods`, od displacementu i `orit`.
 
 Směr určuje NPC: má-li statku přebytek, prodává ti, má-li deficit, kupuje od tebe.
 Cena musí být v pásmu 0.7 až 1.5 aktuální tržní ceny. Množství se ořízne na velikost bilance NPC.
+Cílem může být i druhý hráč (`A` nebo `B`); směr pak určuje jeho bilance.
+
+NPC nabídku vyhodnotí podle své vůle. Může ji přijmout, přijmout s podmínkou (menší objem),
+poslat protinávrh soukromou zprávou, nebo odmítnout. Výsledek s důvodem najdeš ve svém
+`soukromy_log`. Protinávrh přijmeš tak, že v dalších 3 tazích pošleš `trade_offer`
+s jeho přesnými parametry; ten projde bez dalšího vyjednávání.
 
 ```json
 { "type": "trade_offer", "target": "N1", "res": "grain", "qty": 3, "price_per_unit": 0.8 }
@@ -41,7 +47,8 @@ Cena musí být v pásmu 0.7 až 1.5 aktuální tržní ceny. Množství se oř�
 ### `loan`: půjčka NPC
 
 Převedeš `amount` svého bohatství, NPC ti dluží `amount × 1.2` a splácí 10 % dluhu za tah.
-Unii (`C`) půjčit nelze, padlé říše půjčky nepřijímají.
+Unii (`C`) půjčit nelze, padlé říše půjčky nepřijímají. NPC půjčku vyhodnotí podle své vůle
+a může ji přijmout i v menší výši.
 
 ```json
 { "type": "loan", "target": "N6", "amount": 10 }
@@ -50,14 +57,20 @@ Unii (`C`) půjčit nelze, padlé říše půjčky nepřijímají.
 ### `pressure`: sankce
 
 Přeruší tvé obchody s NPC. NPC ztrácí 3 bohatství za tah, ty 1.
+Cílem může být i druhý hráč: sankce pak po dobu trvání přeruší váš vzájemný automatický
+obchod a stojí oba 1 bohatství za tah.
 
 ```json
 { "type": "pressure", "target": "N3", "demand": "Zrušte obchod s Ostrogardem." }
+```
+```json
+{ "type": "pressure", "target": "B", "demand": "Stáhněte posádky z Kessaru." }
 ```
 
 ### `protect`: vojenský pakt
 
 NPC nelze napadnout, dokud pakt trvá. Stojí 2 síly za tah. Padlé říše pakt nepřijímají.
+NPC pakt vyhodnotí podle své vůle. Pakt zaniká, když ti síla klesne na 0.
 
 ```json
 { "type": "protect", "target": "N7" }
@@ -141,7 +154,7 @@ Doručena v příštím tahu. Adresát je `A`, `B` nebo `C`. Publikum ji vidí.
 
 ### `admit`: nabídka členství (jen Unie)
 
-Jen nezávislému NPC, které sousedí s některým členem.
+Jen nezávislému NPC, které sousedí s některým členem. NPC nabídku vyhodnotí podle své vůle.
 
 ```json
 { "type": "admit", "target": "N10" }
@@ -153,6 +166,17 @@ Jen členovi nebo kandidátovi.
 
 ```json
 { "type": "union_fund", "target": "N6", "amount": 5 }
+```
+
+### `accept_offer`: přijetí nabídky NPC
+
+Nabídky NPC najdeš ve svém pohledu v seznamu `nabidky`. Každá má `offer_id`, typ a platí 2 tahy:
+`sell` je jednorázový nákup statku za nabídnutou cenu, `loan_request` půjčka v uvedené výši,
+`protect_request` vojenský pakt. Přijetí se počítá jako akce a proběhne bez dalšího vyjednávání.
+Když nabídky téhož NPC třikrát po sobě ignoruješ, ubírá ti to u něj vliv.
+
+```json
+{ "type": "accept_offer", "offer_id": "o12" }
 ```
 
 ## Celý příklad

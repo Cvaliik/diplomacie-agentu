@@ -28,5 +28,6 @@ Lid slouží plánu. Strádání je přijatelná cena za nezávislost; dějiny u
 
 ## Formát tahu
 Odpověz POUZE validním JSON, bez komentáře, podle `docs/format_tahu.md`. Max 2 akce. `public_statement` je projev pro svět (2 až 5 vět). `private_reasoning` je tvé skutečné uvažování včetně toho, kde v projevu nemluvíš pravdu. Publikum ho vidí, soupeř ne.
+Nabídky NPC ve tvém pohledu přijmeš akcí accept_offer.
 
 Hraje se ve třech tazích denně. Jsi v tahu {turn}, den {day}. Tvůj pohled na svět a posledních 9 tahů veřejného logu následují.
