@@ -45,13 +45,15 @@ TRADEABLES = INPUT_GOODS + (GOODS,)
 BASE_PRICE = {"oil": 1.0, "grain": 0.8, "metal": 1.2, "goods": 1.5}
 GOODS_INPUT = {"oil": 0.5, "metal": 0.3}   # vstupy na jednotku goods (4.0)
 ORIT_PRICE_CAP = 200.0                      # strop ceny oritu (5, v1.2)
-CYCLE_GUARD_TURNS = 10                      # pojistka cyklu (5, v1.3)
+CYCLE_GUARD_TURNS = 8                       # pojistka cyklu (5, v1.4)
 COUP_IMMUNITY_TURNS = 6                     # imunita po prevratu (4.3, v1.2)
 STOCK_RESOURCES = ("grain", "oil", "metal", "goods", "orit")   # zasoby (4.1c, v1.3)
 STOCK_CAP_TURNS = 10                        # strop zasoby = 10 tahu spotreby
 ORIT_STOCK_CAP = 20.0                       # strop zasoby oritu v jednotkach
 RESERVE_TURNS = 3                           # 4.1a prodava prebytek nad 3 tahy spotreby
-INDUSTRY_FLOOR = 0.5                        # dno prumyslu hracu a beznych NPC (4.2c, v1.3)
+INDUSTRY_FLOOR = 0.5                        # dno prumyslu vsech statu (4.2c, v1.4)
+INCOME_POP_DIVISOR = 60.0                   # neformalni prijem pop / 60 (4.2b, v1.4)
+REFILL_MIN_WEALTH = 10.0                    # rezerva se doplnuje jen pri wealth > 10 (4.1c, v1.4)
 
 # Faze, ve kterych orit uz existuje (displacement a dal).
 ORIT_PHASES = ("displacement", "boom", "euphoria", "overtrading",
@@ -170,8 +172,9 @@ def goods_potential(e: dict) -> float:
     """4.0: vyroba goods pri plnem pokryti vstupu (coverage = 1)."""
     industry = float(e.get("industry") or 0.0)
     pop = float(e.get("pop") or 0.0)
+    pop_start = float(e.get("pop_start") or 0.0) or 100.0
     tech = float(e.get("tech") or 0.0)
-    return industry * (pop / 100.0) * (1.0 + tech / 10.0)
+    return industry * (pop / pop_start) * (1.0 + tech / 10.0)   # 4.0 (v1.4)
 
 
 def orit_need(state, sid: str) -> float:
@@ -236,6 +239,8 @@ def normalize(state) -> None:
         n.setdefault("paper_wealth", 0.0)
         n.setdefault("industry", 0.0)
         n.setdefault("pop_start", n.get("pop", 100))
+        # Bohatstvi na konci poslednich tahu pro podminku rustu v 4.2a (v1.4).
+        n.setdefault("wealth_history", [float(n["wealth"])])
         stock = n.setdefault("stock", {})
         for r in STOCK_RESOURCES:
             stock.setdefault(r, 0.0)
@@ -383,6 +388,10 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
             else:
                 events.append({"kind": "trade_rejected", "player": pid, "target": target,
                                "res": res, "reason": "NPC nema prebytek ani deficit"})
+                continue
+            if pid == "C" and res == "orit" and direction == "npc_buys":
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "Unie orit neprodava"})
                 continue
             qty = min(qty, abs(bal))
             deal = {"id": _new_deal_id(state), "type": "trade", "owner": pid,
@@ -655,6 +664,15 @@ def _register_invasion(state, npcdata, pid, target, events, trace) -> None:
 # trvale efekty paktu a sankci (pravidla 3.2)
 # --------------------------------------------------------------------------
 
+def _withdraw_protect(state, deal, events, trace: Trace) -> None:
+    """3.2 (v1.4): pakt zanika, kdyz sila ochrance klesne na 0."""
+    state["deals"] = [d for d in state["deals"] if d["id"] != deal["id"]]
+    events.append({"kind": "protect_withdrawn", "player": deal["owner"], "target": deal["target"],
+                   "zprava": "%s stahuje posadky z %s" % (deal["owner"], deal["target"])})
+    trace.add("3.2 zanik paktu", {"owner": deal["owner"], "target": deal["target"]},
+              {"deal_id": deal["id"], "duvod": "sila ochrance 0"})
+
+
 def upkeep_deals(state, trace: Trace, events: list) -> None:
     for d in list(state["deals"]):
         owner = d["owner"]
@@ -666,7 +684,9 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
         if d["type"] == "protect":
             if player is None:
                 continue
-            # Sila nesmi do zaporu; co s paktem, kdyz ochranci dojde sila, viz OPEN_QUESTIONS I15.
+            if float(player["power"]) <= 0.0:
+                _withdraw_protect(state, d, events, trace)
+                continue
             player["power"] = max(0.0, float(player["power"]) - 2.0)
             n["power"] = float(n["power"]) + 2.0
             if owner in ("A", "B"):
@@ -674,7 +694,11 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
                 n["influence"][owner] = float(n["influence"].get(owner, 0.0)) + 2.0 * mult
             n["law"] = clamp(float(n["law"]) - 0.2, 0.0, 10.0)
             trace.add("3.2 protect upkeep", {"owner": owner, "target": tgt},
-                      {"npc_power": n["power"], "npc_law": n["law"]})
+                      {"npc_power": n["power"], "npc_law": n["law"],
+                       "owner_power": player["power"]})
+            if float(player["power"]) <= 0.0:
+                # Posledni udrzba srazila silu na 0: pakt po ucinku tohoto tahu zanika (K6).
+                _withdraw_protect(state, d, events, trace)
         elif d["type"] == "pressure":
             if player is None:
                 continue
@@ -693,16 +717,16 @@ def upkeep_deals(state, trace: Trace, events: list) -> None:
 # --------------------------------------------------------------------------
 
 def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trace):
-    """4.1a (v1.3): automaticky trh.
+    """4.1a (v1.4): automaticky trh obema smery.
 
-    Prodavaji NPC i hraci A a B, nakupuji jen NPC (vcetne padlych risi).
-    Hraci jsou pro trh sousedy vsech NPC. Prodejce nabizi prebytek nad zasobu
-    na 3 tahy spotreby, tedy stock + bilance - 3 x need. Kupec nakupuje jen to,
-    co nepokryje vlastni zasoba (4.1c: deficit se kryje nejdriv ze zasoby).
-    Padla rise prodava za 1.3x, nakupuje za trzni cenu. Orit se neobchoduje.
-    Kupec nakoupi jen za to, co ma.
+    Prodavaji i nakupuji NPC a hraci A a B. Hraci jsou pro trh sousedy vsech
+    NPC, navzajem ne (K1). Prodejce nabizi vse nad rezervu 3 tahu spotreby,
+    tedy stock + bilance - 3 x need (I2). Kupec poptava deficit toku tohoto tahu
+    a doplneni rezervy zpet na 3 tahy spotreby; doplneni jen pri wealth > 10
+    a jen z bohatstvi nad 10 (K2). Padla rise prodava za 1.3x, nakupuje za trzni
+    cenu. Orit se automaticky neobchoduje.
 
-    Vraci (objem NPC s NPC, objem prodeju hracu {A, B}, objem goods, dvojice).
+    Vraci (objem NPC s NPC, objem hracu {A, B}, objem goods, dvojice).
     """
     last_pairs = {tuple(sorted(p)) for p in state["minsky"].get("npc_trade_last", [])}
     new_pairs: list[list[str]] = []
@@ -710,36 +734,42 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
     vol_players = {"A": 0.0, "B": 0.0}
     goods_volume = 0.0
     npcs = npc_ids(state)
-    sellers = npcs + ["A", "B"]
+    traders = npcs + ["A", "B"]
 
     for res in resources:
         if res == "orit":
-            continue  # 4.1a (v1.3): orit se automaticky neobchoduje
-        bal = {}
-        offer = {}
-        for i in sellers:
+            continue  # 4.1a: orit se automaticky neobchoduje
+        offer, d_flow, d_refill = {}, {}, {}
+        for i in traders:
             e = ent(state, i)
-            bal[i] = (supply_of(state, i, res) - float(needs[i].get(res, 0.0))
-                      + imports[i][res] - exports[i][res])
-            reserve = RESERVE_TURNS * float(needs[i].get(res, 0.0))
-            offer[i] = max(0.0, float(e["stock"].get(res, 0.0)) + bal[i] - reserve)
-        demand = {i: max(0.0, -(bal[i] + float(state["npc"][i]["stock"].get(res, 0.0))))
-                  for i in npcs}
+            need = float(needs[i].get(res, 0.0))
+            bal = supply_of(state, i, res) - need + imports[i][res] - exports[i][res]
+            stock = float(e["stock"].get(res, 0.0))
+            reserve = RESERVE_TURNS * need
+            offer[i] = max(0.0, stock + bal - reserve)
+            d_flow[i] = max(0.0, -bal)
+            d_refill[i] = (max(0.0, reserve - stock)
+                           if float(e["wealth"]) > REFILL_MIN_WEALTH else 0.0)
 
         pairs = []
-        for seller in sellers:
+        for seller in traders:
             if offer[seller] <= 0:
                 continue
             if seller in ("A", "B"):
-                buyers = npcs
+                buyers = list(npcs)
             else:
-                buyers = [b for b in neighbours(npcdata, seller) if b in state["npc"]]
+                buyers = [b for b in neighbours(npcdata, seller) if b in state["npc"]] + ["A", "B"]
             for buyer in buyers:
-                if buyer == seller or demand.get(buyer, 0.0) <= 0:
+                if buyer == seller:
+                    continue
+                dem = d_flow[buyer] + d_refill[buyer]
+                if dem <= 0:
                     continue
                 key = tuple(sorted((seller, buyer)))
                 if seller in ("A", "B"):
                     same_sphere = state["npc"][buyer]["status"] == "sphere_%s" % seller
+                elif buyer in ("A", "B"):
+                    same_sphere = state["npc"][seller]["status"] == "sphere_%s" % buyer
                 else:
                     st_s = state["npc"][seller]["status"]
                     same_sphere = (st_s == state["npc"][buyer]["status"]
@@ -747,31 +777,41 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 pairs.append((
                     0 if key in last_pairs else 1,
                     0 if same_sphere else 1,
-                    -demand[buyer],
+                    -dem,
                     seller, buyer,
                 ))
         pairs.sort()
 
         for _, _, _, seller, buyer in pairs:
-            qty = min(offer[seller], demand[buyer])
             price = market_price(state, res)
             if is_npc(seller) and is_fallen(state, seller):
-                price *= 1.3  # 7a (v1.3): padla rise prodava za 1.3x
-            if price > 0:
-                qty = min(qty, max(0.0, float(state["npc"][buyer]["wealth"])) / price)
+                price *= 1.3  # 7a: padla rise prodava za 1.3x
+            if price <= 0 or offer[seller] <= 1e-9:
+                continue
+            be = ent(state, buyer)
+            q_flow = min(offer[seller], d_flow[buyer], max(0.0, float(be["wealth"])) / price)
+            q_flow = max(0.0, q_flow)
+            wealth_after = float(be["wealth"]) - q_flow * price
+            q_ref = min(offer[seller] - q_flow, d_refill[buyer],
+                        max(0.0, wealth_after - REFILL_MIN_WEALTH) / price)
+            q_ref = max(0.0, q_ref)
+            qty = q_flow + q_ref
             if qty <= 1e-9:
                 continue
             value = qty * price
             se = ent(state, seller)
             se["wealth"] = float(se["wealth"]) + value
-            state["npc"][buyer]["wealth"] = float(state["npc"][buyer]["wealth"]) - value
+            be["wealth"] = float(be["wealth"]) - value
             exports[seller][res] += qty
             imports[buyer][res] += qty
             offer[seller] -= qty
-            demand[buyer] -= qty
+            d_flow[buyer] -= q_flow
+            d_refill[buyer] -= q_ref
             if seller in ("A", "B"):
                 vol_players[seller] += value
-            else:
+            if buyer in ("A", "B"):
+                vol_players[buyer] += value
+            if is_npc(seller) and is_npc(buyer):
                 vol_npc += value
             if res == GOODS:
                 goods_volume += value
@@ -780,8 +820,8 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 new_pairs.append(pair)
             trace.add("4.1a automaticky trh",
                       {"prodejce": seller, "kupec": buyer, "res": res},
-                      {"qty": round(qty, 3), "cena": round(price, 3),
-                       "objem": round(value, 3)})
+                      {"qty": round(qty, 3), "z_toho_doplneni": round(q_ref, 3),
+                       "cena": round(price, 3), "objem": round(value, 3)})
 
     return vol_npc, vol_players, goods_volume, new_pairs
 
@@ -1036,6 +1076,10 @@ def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
             continue
         if not (float(n["wealth"]) > 40.0 and float(n["law"]) >= 5.0):
             continue
+        # 4.2a (v1.4): jen NPC, jehoz wealth za posledni 3 tahy vzrostlo (K4)
+        hist = n.get("wealth_history") or []
+        if len(hist) < 3 or float(n["wealth"]) <= float(hist[0]):
+            continue
         if do_tech:
             n["wealth"] = float(n["wealth"]) - COST["invest_tech"]
             before = float(n["tech"])
@@ -1054,10 +1098,10 @@ def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
 
 
 def step_income(state, trace: Trace) -> None:
-    """4.2b: maly neformalni prijem wealth += pop / 100 za tah."""
+    """4.2b (v1.4): neformalni prijem wealth += pop / 60 za tah."""
     for i in world_ids(state):
         e = ent(state, i)
-        gain = float(e.get("pop") or 0.0) / 100.0
+        gain = float(e.get("pop") or 0.0) / INCOME_POP_DIVISOR
         e["wealth"] = float(e["wealth"]) + gain
         trace.add("4.2b neformalni prijem", {"stat": i}, {"prijem": round(gain, 3)})
 
@@ -1075,7 +1119,7 @@ def step_industry(state, grain_deficit, trace: Trace) -> None:
         else:
             continue
         # 4.2c (v1.3): industry hracu a beznych NPC nikdy neklesne pod 0.5
-        floor = 0.0 if is_fallen(state, i) else INDUSTRY_FLOOR
+        floor = INDUSTRY_FLOOR  # 4.2c (v1.4): dno plati i pro padle rise
         e["industry"] = clamp(after, floor, 10.0)
         trace.add("4.2c rust prumyslu", {"stat": i, "coverage": e.get("coverage")},
                   {"industry": round(e["industry"], 3), "from": before})
@@ -1129,7 +1173,12 @@ def step_poverty(state, npcdata, grain_deficit, trace: Trace, events: list) -> N
             C["members"] = [x for x in C["members"] if x != i]
             events.append({"kind": "union_exit", "npc": i, "to": "prevrat"})
         if i in C["candidates"]:
-            C["candidates"] = [x for x in C["candidates"] if x != i]
+            # 4.3 a 7.4 (v1.4): kandidatura prezije, pokud stat dal sousedi s clenem (K7)
+            if any(mm in neighbours(npcdata, i) for mm in C["members"]):
+                e["status"] = "candidate"
+            else:
+                C["candidates"] = [x for x in C["candidates"] if x != i]
+                events.append({"kind": "union_candidacy_lost", "npc": i})
         events.append({"kind": "coup", "stat": i, "coups": e["coups"]})
         trace.add("4.3 pad vlady", {"stat": i},
                   {"coups": e["coups"], "status": "independent", "zruseno": cancelled})
@@ -1960,6 +2009,8 @@ def build_views(state, npcdata) -> dict:
             mine["law"] = round(float(me["law"]), 3)
             mine["tech"] = round(float(me["tech"]), 3)
             mine["occupied"] = list(me.get("occupied", []))
+            # 2 (v1.4): hrac vidi vlastni zasoby, cizi ne
+            mine["stock"] = {k: round(float(v), 3) for k, v in (me.get("stock") or {}).items()}
         else:
             mine["members"] = list(C["members"])
             mine["candidates"] = list(C["candidates"])
@@ -2017,6 +2068,10 @@ def apply_turn(state, npcdata, actions):
     trace.add("kontrola pop", {"pred": round(pop_before, 3)},
               {"po": round(pop_after, 3), "rozdil": round(pop_after - pop_before, 3)})
 
+    for n_id, n_e in st["npc"].items():
+        hist = list(n_e.get("wealth_history") or [])
+        hist.append(round(float(n_e["wealth"]), 4))
+        n_e["wealth_history"] = hist[-3:]
     st.pop("_trade", None)
     st.pop("_poverty", None)
     st.pop("_npc_trade_volume", None)

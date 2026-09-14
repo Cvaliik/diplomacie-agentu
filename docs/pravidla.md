@@ -1,4 +1,12 @@
-# Pravidla světa Ardan (v1.3)
+# Pravidla světa Ardan (v1.4)
+
+Verze v1.4 zapracovává rozhodnutí Adama z 15. 9. 2026: hráči na automatickém trhu i nakupují (4.1a),
+nedotknutelná rezerva tří tahů spotřeby (4.1c), automatické investice jen při rostoucím bohatství
+(4.2a), neformální příjem `pop / 60` (4.2b), silnější produkce chudých NPC, výroba `goods`
+vztažená k `pop_start` (4.0), hráč vidí vlastní zásoby (2), dno průmyslu i pro padlé říše (4.2c),
+Unie orit neprodává (4.1a), zánik paktu při nulové síle (3.2), pojistka cyklu 8 tahů (5)
+a kandidatura přežívající převrat (4.3, 7.4). Potvrzené výklady I2 až I7, I10 a I12
+z `docs/OPEN_QUESTIONS.md` jsou nově závazným textem.
 
 Verze v1.3 zapracovává rozhodnutí Adama ze 14. 9. 2026: hráči A a B prodávají přebytky
 na automatickém trhu a orit se automaticky neobchoduje (4.1a), zásoby (nová 4.1c), padlé říše
@@ -49,9 +57,9 @@ Každý stát (hráč i NPC) má:
 | `coups` | 0+ | ano | počet pádů vlády |
 | `kind` | normal / fallen | ano | padlá říše má zvláštní pravidla (7a) |
 | `pop` / `pop_start` | 0+ | ano | obyvatelstvo; `pop_start` je výchozí obyvatelstvo státu (4.0), k němu se vztahuje efektivní produkce |
-| `stock` | 0+ | neurčeno | zásoby `grain`, `oil`, `metal`, `goods` a `orit` (4.1c) |
+| `stock` | 0+ | jen vlastní | zásoby `grain`, `oil`, `metal`, `goods` a `orit` (4.1c) |
 
-Hráči vidí u NPC: `wealth + paper_wealth` (jako jedno číslo "bohatství"), `power`, `prod`, `need`, `industry`, výrobu, potřebu a bilanci `goods`, `status`, `pop`, a svou vlastní `influence` a své pohledávky. Nevidí `law`, `tech`, cizí vliv, cizí pohledávky.
+Hráči vidí u NPC: `wealth + paper_wealth` (jako jedno číslo "bohatství"), `power`, `prod`, `need`, `industry`, výrobu, potřebu a bilanci `goods`, `status`, `pop`, a svou vlastní `influence` a své pohledávky. Nevidí `law`, `tech`, cizí vliv, cizí pohledávky ani cizí zásoby. Vlastní `stock` hráč vidí.
 
 `status` má jen NPC. Hráči A a B status nemají, hodnoty jako `sphere_X` nebo `candidate` se na ně nevztahují.
 
@@ -105,6 +113,8 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí | žádný |
 | `union_fund` | jen Unie: `target` člen, `amount` | převod ze společného fondu členovi | fond |
 
+**Zánik paktu:** pakt `protect` zaniká, když `power` ochránce klesne na 0. Engine k tomu vydá událost pro rozhodčího: „X stahuje posádky z N“.
+
 ### 3.3 Dobývání
 
 - Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče (jinak jde o válku: oba hráči ztrácejí 10 power/tah, dokud jeden neustoupí; NPC mezitím −5 wealth/tah).
@@ -125,9 +135,9 @@ Každý stát má vedle surovin i průmysl. Průmysl vyrábí produkt `goods`, k
 
 **Výroba za tah:**
 
-`goods_out = industry × (pop / 100) × (1 + tech / 10) × coverage`
+`goods_out = industry × (pop / pop_start) × (1 + tech / 10) × coverage`
 
-Na jednotku `goods` jsou potřeba vstupy `oil 0.5` a `metal 0.3`. `coverage` je podíl průmyslových vstupů, které má stát k dispozici (0 až 1): nejmenší z poměrů dostupné ropy k průmyslové potřebě ropy a dostupných kovů k průmyslové potřebě kovů. Chybí-li jeden vstup, továrny stojí, i když druhého je dost. Domácnosti mají na zdroje přednost (obilí a základní spotřeba), průmysl bere až zbytek. Bez ropy továrny stojí.
+Na jednotku `goods` jsou potřeba vstupy `oil 0.5` a `metal 0.3`. `coverage` je podíl průmyslových vstupů, které má stát k dispozici (0 až 1): nejmenší z poměrů dostupné ropy k průmyslové potřebě ropy a dostupných kovů k průmyslové potřebě kovů. Chybí-li jeden vstup, továrny stojí, i když druhého je dost. Do dostupných vstupů se počítá i zásoba (4.1c); domácnosti mají na zdroje dál přednost. Domácnosti mají na zdroje přednost (obilí a základní spotřeba), průmysl bere až zbytek. Bez ropy továrny stojí.
 
 **Potřeby** se nezadávají a nejsou uložené v `npc.json` ani ve `state.json`. Engine je počítá každý tah a zapisuje do snímku:
 
@@ -150,7 +160,7 @@ Na jednotku `goods` jsou potřeba vstupy `oil 0.5` a `metal 0.3`. `coverage` je 
 | | | N9 Tarsk | 60 |
 | | | N11 Aurelie | 50 |
 
-Efektivní produkce surovin se vztahuje k výchozímu obyvatelstvu: `prod × (1 + tech/20) × pop / pop_start` (4.1, 10.2). Potřeby se dál počítají z `pop` podle vzorců výše.
+Efektivní produkce surovin se vztahuje k výchozímu obyvatelstvu: `prod × (1 + tech/20) × pop / pop_start` (4.1, 10.2). Výroba `goods` se k `pop_start` vztahuje také (vzorec výše). Potřeby se dál počítají z `pop`.
 
 **Orit.** Každá spotřebovaná jednotka dává `tech +0.1` a `power +1` (beze změny). Technologie se promítá do výroby přes vzorec výše. Nic dalšího orit nedělá.
 
@@ -162,19 +172,20 @@ Efektivní produkce surovin se vztahuje k výchozímu obyvatelstvu: `prod × (1 
 
 ### 4.1a Automatický trh
 
-Po vyhodnocení obchodů hráčů spáruje engine zbylé přebytky se zbylými deficity. Prodávají NPC a hráči A a B, nakupují NPC. Deterministicky, bez zásahu rozhodčího.
+Po vyhodnocení obchodů hráčů spáruje engine zbylé přebytky se zbylými deficity. Prodávají i nakupují NPC a hráči A a B. Deterministicky, bez zásahu rozhodčího.
 
 **Pořadí v tahu:** nejdřív obchody hráčů, pak vnitřní trh Unie zdarma mezi členy (7.2), pak placené párování podle tohoto pravidla na tom, co zbylo.
 
 - Páruje se **jen mezi sousedy** podle `adjacency`. Hráči A a B jsou pro tento účel sousedy všech NPC (loďstvo a obchodní síť). Unie (C) na trhu neprodává, nemá vlastní výrobu.
-- Pořadí párování: (1) dvojice, které spolu obchodovaly minulý tah, (2) dvojice ve stejné sféře, (3) největší deficit; při shodě rozhoduje pořadí ID.
-- Prodejce nabízí přebytek nad zásobu na **3 tahy spotřeby** (4.1c).
-- Obchoduje se `grain`, `oil`, `metal` a `goods`. **Orit se automaticky neobchoduje:** NPC ho získá jen akcí `trade_offer` od hráče nebo Unie, nebo vlastním nálezem. Poptávka NPC po oritu se od `euphoria` projevuje žádostmi o půjčku (část 5).
-- Hráči prodávají za tržní cenu. Automatický prodej nedává `influence` a pro 4.4 se nepočítá jako obchod s hráčem. Cíleným obchodem s vlivem a vlastní cenou zůstává `trade_offer`.
+- Pořadí párování: (1) dvojice, které spolu obchodovaly minulý tah, (2) dvojice ve stejné sféře, (3) největší poptávka; při shodě rozhoduje pořadí ID. Hráč a NPC v jeho sféře (`sphere_A` pro A, `sphere_B` pro B) jsou ve stejné sféře.
+- Prodejce nabízí vše nad rezervu **3 tahů spotřeby**: zásobu plus bilanci tahu minus trojnásobek spotřeby (4.1c).
+- Kupec poptává deficit toku tohoto tahu a doplnění rezervy zpět na 3 tahy spotřeby; doplnění jen při `wealth > 10` (4.1c).
+- Obchoduje se `grain`, `oil`, `metal` a `goods`. **Orit se automaticky neobchoduje:** NPC ho získá jen akcí `trade_offer` od hráče A nebo B, nebo vlastním nálezem. Unie orit neprodává. Poptávka NPC po oritu se od `euphoria` projevuje žádostmi o půjčku (část 5).
+- Hráči prodávají i nakupují za tržní cenu. Automatický obchod hráče nedává `influence` a pro 4.4 se nepočítá jako obchod s hráčem. Cíleným obchodem s vlivem a vlastní cenou zůstává `trade_offer`.
 - Padlé říše obchodují oběma směry: nakupují za tržní cenu, prodávají za 1.3násobek (7a).
 - Půjčky mezi NPC neexistují. Úvěr dávají jen hráči A, B a C.
 
-Objem obchodu NPC s NPC se počítá do světového objemu obchodu v metrice A jako obchod, kde není stranou ani A, ani B. Automatický prodej hráče se počítá jako obchod, kde je hráč stranou.
+Objem obchodu NPC s NPC se počítá do světového objemu obchodu v metrice A jako obchod, kde není stranou ani A, ani B. Automatický prodej i nákup hráče se počítá jako obchod, kde je hráč stranou.
 
 ### 4.1b Dynamická cena
 
@@ -190,11 +201,12 @@ U oritu se dynamika **přičítá** k pohybu ceny z části 5: nejdřív se upla
 
 Každý stát (hráči A, B a NPC) má zásoby `stock[res]` pro `grain`, `oil`, `metal`, `goods` a `orit`.
 
-- Deficit se kryje nejdřív ze zásoby. Pokuta `wealth −1` padá jen za jednotku, na kterou zásoba nestačí.
-- Neprodaný přebytek a nevyužité průmyslové vstupy jdou do zásoby.
-- Strop zásoby je 10násobek spotřeby za tah, u oritu 20 jednotek.
-- Automatický trh 4.1a nabízí jen přebytek nad zásobu na 3 tahy spotřeby.
-- Výchozí zásoby: padlé říše 12 tahů spotřeby, NPC s `wealth ≥ 40` 8 tahů, s `wealth` 25 až 39 5 tahů, pod 25 2 tahy, hráči 6 tahů. Orit 0.
+- **Rezerva:** každý stát drží nedotknutelnou rezervu 3 tahů spotřeby každého statku.
+- Spotřeba tahu se kryje z toku, tedy z vlastní výroby a nákupu tohoto tahu. Rezerva se čerpá jen tehdy, když tok nestačí, a v dalším tahu se doplňuje nákupem zpět na 3 tahy spotřeby, pokud má stát `wealth > 10`.
+- Pokuta `wealth −1` padá jen za jednotku, kterou nepokryje ani zásoba.
+- Neprodaný přebytek a nevyužité průmyslové vstupy jdou do zásoby. Zásoba nad rezervu je na prodej (4.1a).
+- Strop zásoby je 10násobek spotřeby za tah, u oritu 20 jednotek. Strop omezuje jen přidávání; zásoba nad stropem se nekrátí a spotřebovává se normálně.
+- Výchozí zásoby: padlé říše 12 tahů spotřeby, NPC s `wealth ≥ 40` 8 tahů, s `wealth` 25 až 39 5 tahů, pod 25 2 tahy, hráči 6 tahů. Orit 0. Spotřebou za tah se pro výchozí zásoby rozumí potřeby podle 4.0 při výrobě jen z vlastních surovin, bez obchodu a bez zásob.
 
 ### 4.2 Růst
 - Autonomní růst bohatství je zrušený. Bohatství se mění jen příjmy z prodeje, výdaji za dovoz a investice, půjčkami a splátkami a neformálním příjmem podle 4.2b.
@@ -203,22 +215,22 @@ Každý stát (hráči A, B a NPC) má zásoby `stock[res]` pro `grain`, `oil`, 
 
 ### 4.2a Automatika NPC
 
-Běžné NPC s `wealth > 40` a `law ≥ 5` provede každý třetí tah (tah dělitelný třemi) jednu investici, střídavě `invest_tech` za 8 wealth a `invest_industry` za 10 wealth. Padlé říše ne. Střídá se podle čísla tahu pro všechna NPC najednou: tahy 3, 9, 15 a dál jsou `invest_tech`, tahy 6, 12, 18 a dál `invest_industry`.
+Běžné NPC s `wealth > 40` a `law ≥ 5`, jehož `wealth` za poslední 3 tahy vzrostlo, provede každý třetí tah (tah dělitelný třemi) jednu investici, střídavě `invest_tech` za 8 wealth a `invest_industry` za 10 wealth. Padlé říše ne. Střídá se podle čísla tahu pro všechna NPC najednou: tahy 3, 9, 15 a dál jsou `invest_tech`, tahy 6, 12, 18 a dál `invest_industry`.
 
 ### 4.2b Neformální příjem
 
-Každý stát dostane za tah malý neformální příjem `wealth += pop / 100`.
+Každý stát dostane za tah malý neformální příjem `wealth += pop / 60`.
 
 ### 4.2c Růst průmyslu
 
 - `industry += 0.1` za tah, pokud `law ≥ 6` a `tech ≥ 5` a `coverage ≥ 0.8`.
 - V bídě `industry −0.1` za tah.
-- Meze 0 až 10. `industry` hráčů a běžných NPC nikdy neklesne pod 0.5.
+- Meze 0 až 10. `industry` žádného státu, hráčů, běžných NPC ani padlých říší, nikdy neklesne pod 0.5.
 
 ### 4.3 Bída
-- Stát je v bídě, když `wealth < 15` nebo když deficit obilí ≥ 3 jednotky. `wealth` má dno 0; stát nikdy nezaniká. Tatáž definice platí pro počet `n_bída` v indexu prosperity (část 8).
+- Stát je v bídě, když `wealth < 15` nebo když deficit obilí ≥ 3 jednotky; deficit obilí se měří až po čerpání zásoby. `wealth` má dno 0; stát nikdy nezaniká. Tatáž definice platí pro počet `n_bída` v indexu prosperity (část 8).
 - V bídě: `pop −3/tah`, `power −1/tah`, zpráva viz 6. Tah s `wealth = 0` se počítá jako tah bídy do `poverty_streak`; sám o sobě vládu nesvrhne.
-- **Převrat:** po třech tazích bídy v řadě vláda padá. Převrat ruší pakty, sankce a vliv (`influence` obou hráčů na 0); obchody a dluhy zůstávají. `coups +1`, `status` = independent. Členství v Unii i kandidatura převratem zanikají, stát se může ucházet znovu podle 7.4. Stát pokračuje jako slabé NPC.
+- **Převrat:** po třech tazích bídy v řadě vláda padá. Převrat ruší pakty, sankce a vliv (`influence` obou hráčů na 0); obchody a dluhy zůstávají. `coups +1`, `status` = independent. Členství v Unii převratem zaniká. Kandidatura zůstává, pokud stát dál sousedí s členem Unie; jinak zaniká také. Stát se může ucházet znovu podle 7.4. Stát pokračuje jako slabé NPC.
 - **Imunita:** po převratu má stát 6 tahů imunitu, během ní mu vláda znovu padnout nemůže. `poverty_streak` během imunity běží dál; je-li po jejím skončení aspoň 3, převrat přijde v prvním tahu po ní.
 - **Pád vlády se týká jen NPC.** Hráč v bídě nese `pop −3/tah` a `power −1/tah` a počítá se do `n_bída`, ale vláda mu nepadá.
 
@@ -258,7 +270,7 @@ Pole `phase` a `minsky` v `state.json`. Rozhodčí posouvá fázi jen podle prah
 
 Pokud do tahu 45 nenastane `boom` (nikdo nepůjčil), engine vynutí `boom` a rozhodčí vydá zprávu, že N6 zahájilo těžbu s dluhem u soukromých bank (dluh vůči nikomu, ale roste). Bublina musí přijít.
 
-**Pojistka cyklu:** fáze od `boom` dál, která trvá déle než 10 tahů bez splnění svého prahu, se posune o krok. Engine k tomu vydá událost pro rozhodčího: soukromé banky v NPC s nejvyšším `prod.orit` půjčují na spekulaci. Pojistka se netýká `depression` a `recovery`.
+**Pojistka cyklu:** fáze od `boom` dál, která trvá déle než 8 tahů bez splnění svého prahu, se posune o krok. Engine k tomu vydá událost pro rozhodčího: soukromé banky v NPC s nejvyšším `prod.orit` půjčují na spekulaci. Pojistka se netýká `depression` a `recovery`.
 
 **Strop ceny oritu:** cena oritu nepřekročí 200. Strop platí pro Minskyho cenu i pro výslednou tržní cenu po dynamice 4.1b.
 
@@ -294,7 +306,7 @@ Zakladatelé musí tvořit **souvislé území** podle `adjacency`. Rozpadnou-li
 
 ### 7.2 Unie jako hráč (C)
 - Fond (`wealth` C) = 10 % `wealth` každého člena při vstupu (odvedeno členem).
-- Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma.
+- Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma. Sdílí se jen tok tahu, ne zásoby, a vnitřní trh zahrnuje i orit; výjimka pro orit v 4.1a se ho netýká.
 - `union_fund`: převod z fondu členovi nebo kandidátovi. `invest_law`, `invest_tech` a `invest_industry` na členy a kandidáty za poloviční cenu.
 - Členy nelze napadnout bez války s celou Unií. V prvním tahu takové války brání Unie polovinou součtu `power` členů, od druhého tahu plným součtem.
 - Nikdy si nepůjčuje (akce `loan` s `target = C` je neplatná). Sama půjčovat nezávislým NPC a kandidátům může; platí běžná pravidla půjčky včetně vlivu a eroze práva dlužníka.
@@ -310,6 +322,7 @@ Zakladatelé musí tvořit **souvislé území** podle `adjacency`. Rozpadnou-li
 - **Strop členů:** Unie má nejvýš **7 členů** celkem.
 - **Strop kandidátů:** nejvýš **3 kandidáti** najednou. Další zájemce je odmítnut se zprávou "Přihláška N odmítnuta." a může se ucházet znovu, až se místo uvolní.
 - **Tah založení:** v tahu, kdy Unie vznikla, do ní nikdo další nevstupuje. Vstupy přitažlivostí i bolestí a přijetí kandidátů jsou možné až od následujícího tahu.
+- **Převrat kandidáta:** kandidatura převrat přežije, pokud stát dál sousedí s členem Unie (4.3).
 
 ### 7.5 Odchod
 Člen odejde do sféry velmoci X, když `influence[X] ≥ 15`. Vliv u členů roste jen obchodem za ≥ 1.3× tržní cenu nebo půjčkou (kterou člen smí přijmout jen proti vůli Unie: Unie může půjčku členovi zrušit akcí `cancel` v následujícím tahu).
@@ -358,3 +371,8 @@ Národní cíle (`secrets/`) se vyhodnotí také a zveřejní, ale nemají vliv 
 8. **Týdenní kronika:** herní dny 7, 14, 21, 28 (ne kalendářní neděle).
 9. **Velikost stavu:** `state.json.log` drží jen posledních 9 tahů; plný log je v `history/`.
 10. **Vznik Unie:** C je založena v přepočtu tahu `crash` a poprvé táhne až v tahu následujícím.
+
+## 11. Výklad testovacích kritérií (`BUILD.md` část 8)
+
+- „Do tahu X nejvýš N NPC v bídě“ s krátkým horizontem (tah 15) znamená počet různých NPC, která byla v bídě v kterémkoli tahu 1 až X. Stejně se čte výčet států, které v bídě být nesmějí.
+- „Do tahu 90 nejvýš N NPC v bídě“ znamená nejvyšší počet NPC v bídě v jednom tahu.

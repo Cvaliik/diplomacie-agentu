@@ -126,6 +126,8 @@ def validate_views(state, views) -> list[str]:
                 errors.append(f"pohled {pid} vidi cele debt u {nid}")
             if "paper_wealth" in item:
                 errors.append(f"pohled {pid} vidi paper_wealth u {nid} zvlast")
+            if "stock" in item:
+                errors.append(f"pohled {pid} vidi cizi stock u {nid}")
             if "poverty_streak" in item or "wealth_peak" in item:
                 errors.append(f"pohled {pid} vidi interni pole u {nid}")
         if "metrics" in view:

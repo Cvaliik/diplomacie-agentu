@@ -270,7 +270,7 @@
       "prod": {
         "oil": 0,
         "grain": 2,
-        "metal": 1
+        "metal": 2
       },
       "stock": {
         "grain": 5.4,
@@ -339,7 +339,7 @@
       "industry": 1,
       "prod": {
         "oil": 0,
-        "grain": 3,
+        "grain": 4,
         "metal": 0
       },
       "stock": {
@@ -373,7 +373,7 @@
       "tech": 1,
       "industry": 1,
       "prod": {
-        "oil": 1,
+        "oil": 2,
         "grain": 2,
         "metal": 0
       },
@@ -410,7 +410,7 @@
       "prod": {
         "oil": 0,
         "grain": 3,
-        "metal": 1
+        "metal": 2
       },
       "stock": {
         "grain": 12.75,

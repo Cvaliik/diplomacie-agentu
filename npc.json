@@ -151,7 +151,7 @@
       "prod": {
         "oil": 0,
         "grain": 2,
-        "metal": 1
+        "metal": 2
       },
       "pop": 90,
       "pop_start": 90,
@@ -190,7 +190,7 @@
       "industry": 1,
       "prod": {
         "oil": 0,
-        "grain": 3,
+        "grain": 4,
         "metal": 0
       },
       "pop": 80,
@@ -209,7 +209,7 @@
       "tech": 1,
       "industry": 1,
       "prod": {
-        "oil": 1,
+        "oil": 2,
         "grain": 2,
         "metal": 0
       },
@@ -231,7 +231,7 @@
       "prod": {
         "oil": 0,
         "grain": 3,
-        "metal": 1
+        "metal": 2
       },
       "pop": 85,
       "pop_start": 85,
