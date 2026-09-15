@@ -813,11 +813,13 @@ def step_wars(state, trace, events) -> None:
     turn = int(state["meta"]["turn"])
     for war in list(state.get("wars", [])):
         a, d = war["aggressor"], war["defender"]
-        stale = [p for p, t in (war.get("cancel") or {}).items() if int(t) < turn]
-        if stale:
-            # cancel z minuleho tahu bez odpovedi druhe strany: ustup (3.3a)
-            _end_war(state, war, "ustup", stale[0], None, events, trace)
-            continue
+        # 3.3a (1b): nabidka primeri bez odpovedi do nasledujiciho tahu propadne, valka pokracuje
+        for p, t in list((war.get("cancel") or {}).items()):
+            if int(t) < turn:
+                del war["cancel"][p]
+                events.append({"kind": "war_cancel_expired", "player": p, "war_id": war["id"]})
+                trace.add("3.3a nabidka primeri propadla", {"player": p, "war_id": war["id"], "z_tahu": int(t)},
+                          {"valka": "pokracuje"})
         before = {x: (float(state["players"][x]["power"]), float(state["players"][x]["wealth"])) for x in (a, d)}
         for x in (a, d):
             p = state["players"][x]
@@ -1326,7 +1328,11 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                         if w["id"] == did and pid in (w["aggressor"], w["defender"])), None)
             if war is not None:
                 # 3.3a (v1.10 dodatek): cancel od obou ve stejnem tahu nebo v tazich po sobe = primeri;
-                # samotny cancel je nabidka, bez odpovedi do dalsiho tahu se z nej stane ustup
+                # samotny cancel je nabidka; neprijata propadne bez nasledku (1b).
+                # Ustup jen vyslovne: cancel s "retreat": true, valka konci okamzite.
+                if act.get("retreat") is True or str(act.get("retreat")).lower() == "true":
+                    _end_war(state, war, "ustup", pid, None, events, trace)
+                    continue
                 turn_now = int(state["meta"]["turn"])
                 other = war["defender"] if pid == war["aggressor"] else war["aggressor"]
                 pend = war.setdefault("cancel", {})
@@ -3172,13 +3178,16 @@ def _wars_view(state, pid: str) -> list[dict]:
                     "od": other, "prijmi_v_tahu": int(offers[other]) + 1,
                     "jak": {"type": "cancel", "deal_id": w["id"]},
                     "vysvetleni": "Druhá strana nabízí příměří. Pošli v tomto tahu cancel s deal_id této války: "
-                                  "válka skončí příměřím a oba ztratíte jen 10 % vlivu. Neodpovíš-li, válka skončí "
-                                  "ústupem druhé strany (ztratí 30 % vlivu)."}
+                                  "válka skončí příměřím a oba ztratíte jen 10 % vlivu. Neodpovíš-li, nabídka "
+                                  "propadne bez následku a válka pokračuje."}
             if pid in offers:
                 item["tvoje_nabidka_primeri"] = {
                     "z_tahu": int(offers[pid]), "ceka_do_tahu": int(offers[pid]) + 1,
                     "vysvetleni": "Nabídl jsi příměří. Pošle-li druhá strana cancel v tomto tahu, je to příměří "
-                                  "(−10 % vlivu oběma); jinak se tvá nabídka změní v ústup (−30 % vlivu tobě)."}
+                                  "(−10 % vlivu oběma); jinak nabídka propadne bez následku a válka pokračuje."}
+            # ustup je jen vyslovny
+            item["ustup"] = {"jak": {"type": "cancel", "deal_id": w["id"], "retreat": True},
+                             "vysvetleni": "Ústup ukončí válku okamžitě a stojí tě 30 % vlivu u všech států."}
         out.append(item)
     return out
 

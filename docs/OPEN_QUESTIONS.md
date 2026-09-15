@@ -4554,3 +4554,15 @@ B má pakty od tahu 3 (N6; N2 pakt v tahu 3 odmítlo hodem, proto N6) a od tahu 
 | tah 14: `cancel` A, příměří, vliv −10 % oběma | ano | součet vlivu A 26.6 → 23.94, B 39.2 → 35.28 (poměr 0.900 u obou); ústup 30 % neuplatněn |
 | asymetrie ztráty vlivu | ano | tahy 10 až 13: nezávislá NPC ubrala A (vyhlásil) 2.0 za tah, B 0.0, protože B má vliv jen u N4 a N6 ve své sféře |
 | validate | ano | 0 chyb |
+
+### 1b. Nabídka příměří bez následku, ústup výslovně (nahrazuje výklad V14)
+
+Nepřijatá nabídka příměří propadne na začátku přepočtu války v tahu po nabídce, bez ztráty vlivu, a válka pokračuje
+i se ztrátami tahu. Ústup je jen `cancel` s `"retreat": true`: −30 % vlivu a válka končí okamžitě, bez ztrát toho tahu.
+Rozhodčí má parametr `retreat` při překladu zachovat. Scénář (k) má 15 tahů.
+
+| bod | výsledek | čísla |
+|---|---|---|
+| tah 13: B nabídne příměří | ano | nabídka zapsána, válka po tahu 13 trvá |
+| tah 14: A neodpoví | ano | nabídka propadla bez následku, válka trvá, ztráty tahu 14: A power 70.0 → 60.0, B 14.0 → 4.0 |
+| tah 15: A `retreat` | ano | ústup A, součet vlivu A 28.2 → 19.74 (poměr 0.700), ztráty tahu 15 žádné, válka skončila |

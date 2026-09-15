@@ -93,10 +93,21 @@ Cílem je jen NPC; druhého hráče dobýt nelze. Útok na NPC pod paktem druhé
 ### `declare_war`: vyhlášení války druhému hráči
 
 Cílem je `A` nebo `B`. Každý tah války stojí obě strany 10 síly a 5 % bohatství, přeruší váš vzájemný
-automatický obchod a oslabí obchod se státy ve sféře druhého. Válka končí ústupem (`cancel` s `deal_id`
-války ze seznamu `valky`, stojí 30 % vlivu u všech států) nebo vyčerpáním síly (kapitulace). V tazích
-1 až 9 a 88 až 90 válku vyhlásit nelze. Pošlete-li `cancel` na válku oba ve stejném tahu nebo v tazích po sobě,
-je to příměří za 10 % vlivu každému. Kdo válku vyhlásí, ztrácí vliv u nezávislých států dvakrát rychleji.
+automatický obchod a oslabí obchod se státy ve sféře druhého. V tazích 1 až 9 a 88 až 90 válku vyhlásit nelze.
+Kdo válku vyhlásí, ztrácí vliv u nezávislých států dvakrát rychleji.
+
+Válka končí třemi způsoby:
+- **příměří:** `cancel` s `deal_id` války ze seznamu `valky` je nabídka příměří; pošle-li druhá strana `cancel`
+  v tomtéž nebo v příštím tahu, válka končí a oba ztratíte 10 % vlivu. Nepřijatá nabídka propadne bez následku;
+- **ústup:** `cancel` s `"retreat": true` ukončí válku okamžitě a stojí tě 30 % vlivu u všech států;
+- **kapitulace:** klesne-li ti síla na 0.
+
+```json
+{ "type": "cancel", "deal_id": "w1" }
+```
+```json
+{ "type": "cancel", "deal_id": "w1", "retreat": true }
+```
 
 ```json
 { "type": "declare_war", "target": "B" }
@@ -165,8 +176,8 @@ Jen vlastní stát. Utratíš `amount` bohatství (nejvýš 40) a síla vzroste 
 
 ### `cancel`: zrušení obchodu, paktu, sankce nebo invaze
 
-`deal_id` najdeš ve svém pohledu v seznamu `deals`. U invaze přidej `target`. Válku ukončíš ústupem:
-`cancel` s `deal_id` války ze seznamu `valky`.
+`deal_id` najdeš ve svém pohledu v seznamu `deals`. U invaze přidej `target`. U války je `cancel` nabídka příměří,
+`cancel` s `"retreat": true` ústup (viz `declare_war`).
 
 ```json
 { "type": "cancel", "deal_id": "d7" }

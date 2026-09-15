@@ -123,7 +123,7 @@ def scenario_b(turn: int, state) -> list[dict]:
     return acts
 
 
-TURNS_K = 14
+TURNS_K = 15
 
 
 def scenario_k(turn: int, state) -> list[dict]:
@@ -155,9 +155,10 @@ def scenario_k(turn: int, state) -> list[dict]:
     if turn == 13:
         war = next((w for w in state.get("wars", []) if "B" in (w["aggressor"], w["defender"])), None)
         acts.append({"player": "B", "type": "cancel", "deal_id": war["id"] if war else "w?"})
-    if turn == 14:
+    if turn == 15:
+        # 1b: tah 14 A neodpovi (nabidka propadne), tah 15 A vyslovne ustoupi
         war = next((w for w in state.get("wars", []) if "A" in (w["aggressor"], w["defender"])), None)
-        acts.append({"player": "A", "type": "cancel", "deal_id": war["id"] if war else "w?"})
+        acts.append({"player": "A", "type": "cancel", "deal_id": war["id"] if war else "w?", "retreat": True})
     return acts
 
 
@@ -236,21 +237,27 @@ def analyza_k(res) -> list[tuple[str, bool, str]]:
                 "vliv B %s; pakty B po tahu 9: %s" % ({k: round(v, 1) for k, v in inf9.items()},
                                                     [nid for nid, o in R[9]["protect_n"].items() if "B" in o])))
     offer = ev(13, "war_cancel_offered", player="B")
-    out.append(("tah 13: cancel B, válka trvá", bool(offer) and bool(R[13]["wars"]) and not rules(13, "3.3a konec valky"),
-                "nabídka %s; válka po tahu 13: %s; ztráty tahu 13: %s" % (
-                    "ano" if offer else "ne", "trvá" if R[13]["wars"] else "skončila",
-                    [a["outputs"] for a in rules(13, "3.3a valka")] and "power −10 obema" or "žádné")))
-    end = rules(14, "3.3a konec valky")
+    out.append(("tah 13: B nabídne příměří, válka trvá", bool(offer) and bool(R[13]["wars"]) and not rules(13, "3.3a konec valky"),
+                "nabídka %s; válka po tahu 13: %s" % ("ano" if offer else "ne", "trvá" if R[13]["wars"] else "skončila")))
+    exp = ev(14, "war_cancel_expired", player="B")
+    loss14 = rules(14, "3.3a valka")
+    ok = bool(exp) and bool(R[14]["wars"]) and bool(loss14) and not rules(14, "3.3a konec valky")
+    detail = "nabídka propadla: %s; válka po tahu 14: %s; ztráty tahu 14: %s; ústup ani příměří: %s" % (
+        "ano" if exp else "ne", "trvá" if R[14]["wars"] else "skončila",
+        ("A power %.1f→%.1f, B power %.1f→%.1f" % (loss14[0]["outputs"]["A"]["power_pred"], loss14[0]["outputs"]["A"]["power_po"],
+                                                   loss14[0]["outputs"]["B"]["power_pred"], loss14[0]["outputs"]["B"]["power_po"])) if loss14 else "žádné",
+        "ne" if not rules(14, "3.3a konec valky") else "ano")
+    out.append(("tah 14: A neodpoví, nabídka propadne bez následku, válka trvá", ok, detail))
+    end = rules(15, "3.3a konec valky")
     o = end[0]["outputs"] if end else {}
-    ratios = {p: (o["vliv_po"][p] / o["vliv_pred"][p]) if o.get("vliv_pred", {}).get(p) else None for p in ("A", "B")}
-    ok = bool(end) and o.get("jak") == "primeri" and not R[14]["wars"] and \
-        all(r is not None and abs(r - 0.9) < 1e-6 for r in ratios.values())
-    out.append(("tah 14: cancel A, příměří, vliv −10 % oběma", ok,
-                "%s; A %s → %s, B %s → %s; poměry %s; ústup 30 %% neuplatněn: %s" % (
-                    o.get("jak", "-"), o.get("vliv_pred", {}).get("A"), o.get("vliv_po", {}).get("A"),
-                    o.get("vliv_pred", {}).get("B"), o.get("vliv_po", {}).get("B"),
-                    {p: (round(r, 3) if r is not None else None) for p, r in ratios.items()},
-                    "ano" if not any(x["outputs"].get("jak") == "ustup" for t in (13, 14) for x in rules(t, "3.3a konec valky")) else "ne")))
+    ratio = (o["vliv_po"] / o["vliv_pred"]) if end and o.get("vliv_pred") else None
+    ok = bool(end) and o.get("jak") == "ustup" and o.get("porazeny") == "A" and ratio is not None \
+        and abs(ratio - 0.7) < 1e-6 and not rules(15, "3.3a valka") and not R[15]["wars"]
+    out.append(("tah 15: A retreat, vliv A −30 %, válka končí okamžitě", ok,
+                "%s, ustoupil %s; součet vlivu A %s → %s (poměr %s); ztráty tahu 15: %s; válka po tahu 15: %s" % (
+                    o.get("jak", "-"), o.get("porazeny", "-"), o.get("vliv_pred"), o.get("vliv_po"),
+                    ("%.3f" % ratio) if ratio is not None else "-", "ano" if rules(15, "3.3a valka") else "žádné",
+                    "trvá" if R[15]["wars"] else "skončila")))
     return out
 
 

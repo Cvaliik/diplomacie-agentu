@@ -142,7 +142,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci | `amount` wealth |
 | `declare_war` | `target` A nebo B | vyhlášení války druhému hráči, viz 3.3a | viz 3.3a |
 | `admit` | jen Unie: `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
-| `cancel` | `deal_id` | zruší obchod, pakt nebo sankci; `cancel` na válku je ústup (3.3a) | žádný |
+| `cancel` | `deal_id` | zruší obchod, pakt nebo sankci; `cancel` na válku je nabídka příměří, `cancel` s `"retreat": true` ústup (3.3a) | žádný |
 | `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí | žádný |
 | `union_fund` | jen Unie: `target` člen, `amount` | převod ze společného fondu členovi | fond |
 | `set_tariff` | jen Unie: `rate` 0 až 0.20 po 0.05 | sazba cla celní unie od dalšího tahu, viz 7.2 | žádný |
@@ -164,8 +164,8 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 - **Vyhlášení:** akce `declare_war` s `target` A nebo B. Útok na NPC pod paktem druhého hráče vyhlásí válku automaticky. Válku nelze vyhlásit v tazích 1 až 9 ani 88 až 90; v těchto tazích se `declare_war` i útok na NPC pod paktem druhého vyřadí.
 - **Každý tah války, od tahu vyhlášení:** oba hráči `power` −10 a `wealth` −5 %; automatický obchod mezi nimi je přerušen; obchod každého z nich s NPC ve sféře druhého se násobí 0.5; všechna nezávislá NPC snižují `influence` u toho, kdo válku vyhlásil, o 2 a u napadeného o 1.
 - **Unie:** po dobu války platí ten, kdo válku vyhlásil, clo celní unie navíc o 0.10. Členové Unie do války nevstupují.
-- **Konec ústupem:** `cancel` na válku, na který druhá strana neodpoví vlastním `cancel` ve stejném ani v následujícím tahu; válka do té doby trvá. Kdo ustoupí, ztrácí 30 % vlivu u všech NPC.
-- **Příměří:** `cancel` na válku od obou stran ve stejném tahu nebo v tazích po sobě. Oba ztrácejí 10 % vlivu u všech NPC místo 30 %.
+- **Konec ústupem:** jen výslovně, `cancel` s `deal_id` války a `"retreat": true`. Kdo ustoupí, ztrácí 30 % vlivu u všech NPC a válka končí okamžitě.
+- **Příměří:** `cancel` na válku bez `retreat` je nabídka příměří. Pošle-li druhá strana `cancel` ve stejném nebo v následujícím tahu, válka končí příměřím a oba ztrácejí 10 % vlivu u všech NPC. Nepřijatá nabídka propadne bez následku a válka pokračuje.
 - **Konec kapitulací:** klesne-li hráči `power` na 0, kapituluje: ztrácí všechny pakty, 50 % vlivu u všech NPC a 20 % svého `wealth`, které jde vítězi.
 - Hráče nelze dobýt ani okupovat. Vyhlášení války i její konec jsou události pro Zprávy světa.
 
@@ -468,7 +468,7 @@ Národní cíle (`secrets/`) se vyhodnotí také a zveřejní, ale nemají vliv 
 1. **Okupované NPC:** platí si vlastní deficit z vlastního `wealth`; okupant dostává jeho přebytky zdarma (počítají se do jeho produkce a metrik). Okupované NPC v bídě je pro okupanta břemeno (uprchlíci, revolta), ne zisk.
 2. **Populace:** efektivní produkce každého zdroje = `prod × pop / pop_start`. Migrace tedy reálně přesouvá výrobu.
 3. **Papírové bohatství věřitelů:** `paper_wealth` hráče = součet nesplacených půjček státům s `prod.orit > 0` × (cena oritu / 10). Ve fázi `panic` jde na 0 jako všude.
-4. **Konec války hráčů:** platí 3.3a (v1.10): ústup je `cancel` na válku a stojí 30 % vlivu u všech NPC; kapitulace při `power` 0.
+4. **Konec války hráčů:** platí 3.3a (v1.10): ústup je `cancel` na válku s `"retreat": true` a stojí 30 % vlivu u všech NPC; příměří je `cancel` od obou stran; kapitulace při `power` 0.
 5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu; obchody s oritem 2×.
 6. **Neplatný výstup hráče:** až 2 opakování volání; poté hráč v tomto tahu mlčí: žádné akce, `public_statement` = "Vláda nevydala prohlášení.", zapsáno do snímku s příznakem `silent: true`.
 7. **Kronika:** píše se jen, pokud existují všechny tři snímky dne; jinak se přeskočí a doplní po opravě.
