@@ -4538,10 +4538,9 @@ tří pokusů v tahu 1 z v1.9 se tím zjistit nepodařilo; neúspěšné pokusy 
 
 ### V14. Jednostranný `cancel` na válku
 
-Příměří vzniká z `cancel` obou stran ve stejném tahu nebo v tazích po sobě. **Výklad enginu:** samotný `cancel` je proto
-nabídka, válka trvá dál (včetně ztrát tahu). Pošle-li druhá strana `cancel` v tomtéž nebo v následujícím tahu, je to příměří.
-Neodpoví-li, stane se z nabídky na začátku přepočtu války v následujícím tahu ústup (−30 % vlivu) a ztráty toho tahu už
-nevzniknou. Ústup je tedy o jeden tah pozdější než ve v1.10.
+**Platný stav (1b, potvrzeno 15. 9. 2026):** `cancel` na válku bez `retreat` je nabídka příměří. Pošle-li druhá strana
+`cancel` v tomtéž nebo v následujícím tahu, válka končí příměřím (−10 % vlivu oběma). Nepřijatá nabídka propadá bez
+následku a válka pokračuje. Ústup je jen výslovný `cancel` s `"retreat": true`: −30 % vlivu, válka končí okamžitě.
 
 ### T (v1.10 dodatek). Scénář (k)
 
@@ -4566,3 +4565,55 @@ Rozhodčí má parametr `retreat` při překladu zachovat. Scénář (k) má 15 
 | tah 13: B nabídne příměří | ano | nabídka zapsána, válka po tahu 13 trvá |
 | tah 14: A neodpoví | ano | nabídka propadla bez následku, válka trvá, ztráty tahu 14: A power 70.0 → 60.0, B 14.0 → 4.0 |
 | tah 15: A `retreat` | ano | ústup A, součet vlivu A 28.2 → 19.74 (poměr 0.700), ztráty tahu 15 žádné, válka skončila |
+
+---
+
+## Uzavření U a V (15. 9. 2026)
+
+Rozhodnutí Adama po tahu 1 ostrého běhu (pravidla v1.10.1 od tahu 2).
+
+**Potvrzené výklady enginu**, propsané do `docs/pravidla.md`:
+
+| otázka | kam | obsah |
+|---|---|---|
+| U3 | 7.2 | pool Unie: přebytek nad rezervu včetně zásoby, deficit toku bez doplnění rezervy |
+| U4 | 7.2 | příjem z prodeje ve fondu, nákup platí fond, členové zboží bez placení |
+| U5 | 7.2 | protistrana s opačnou bilancí, 3.4 bez vlivu, padlá říše 1.3 ×, hráč bez hodu |
+| U6 | 4.0 | spekulativní nabídka smí pod rezervu, ne pod nulu |
+| U7 | 4.1a | paušál i pro dvojici A a B (už v textu), cena pro shodu na 9 desetinných míst |
+| U8 | 7.2 | sazba veřejná jako `clo_unie`, při více `set_tariff` platí poslední platná |
+| V5 | 3.4a | skóre `invade` proti `invade`: základ, vliv, otevřenost |
+| V7 | 3.4a | remíza hodem do 50 pro dřívější akci |
+| V8 | 3.3a | sporné NPC za války bohatství neztrácí |
+| V9 | 7.4 | zóna vlivu nad 8 až 12 včetně, nad 12 zákaz |
+| V10 | 2 | pohled na 1 desetinné místo, ceny a clo na 2 |
+| V11 | 3.2 | `arm` bez parametru 8, Unie `arm` nemá |
+
+**V14** přepsáno podle platného stavu (nabídka příměří propadá bez následku, ústup jen s `retreat: true`).
+
+**Uzavřeno jako překonané:** U10 (syntetický stav Unie), U11 (ostré volání Unie proběhlo), U12 (e-mail nahrazuje červený
+běh v GitHub Actions a návod v README), V13 (neúspěšné pokusy se ukládají a v Actions nahrávají jako artefakt).
+
+**Kalibrace, ponechat a sledovat v ostrém běhu:**
+- U1: ropa a obilí na dolní mezi; revize až tehdy, kdyby ceny ležely na dně i po dni 10.
+- U2: obchod s `goods`; svět je soběstačný, nerozebírat.
+
+**v2:** V1 (bitevní mechanika), V2 (remíza obou na nule síly), V3 (strach z agresora za války), V4 (válka a Minskyho fáze) a nový:
+
+### V15. Asymetrie obchodu podle režimu (v2)
+
+A obchoduje hlavně automaticky přes trh, B jen vědomě cílenými akcemi. **Otázka pro v2:** má mít plánovaná ekonomika B
+vyšší limit akcí, aby vědomý obchod vyrovnal automatický trh A?
+
+### W1. Automatický prodej zásoby hráče při cíleném nákupu (vyřešeno)
+
+V tahu 1 hráč A cíleně koupil obilí od Velmory (3.255 jednotky) a ve stejném tahu automaticky prodal obilí Ostrogardu (2.7)
+ze zásoby. Vyřešeno v1.10.1 (4.1a): hráč na automatickém trhu prodává jen kladný přebytek toku po cílených obchodech,
+zásobu nikdy.
+
+### Diagnostika: neúspěšný pokus B v tahu 1
+
+`debug/turn_001_B_fail_1.txt` vznikl na runneru GitHub Actions a s ním zanikl (`debug/` není v gitu), obsah proto není k
+dispozici. Snímek tahu ukazuje, že první pokus skončil `end_turn` s 1 865 výstupními tokeny (druhý 1 455), tedy ne limitem
+ani odmítnutím, ale nevalidním JSON nebo chybějícím povinným polem. Workflow od v1.10.1 nahrává neúspěšné pokusy a selhaný
+tah jako artefakt `diagnostika-<run_id>`; oprava parseru nebo promptu až podle obsahu příštího selhání.

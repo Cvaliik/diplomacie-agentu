@@ -27,6 +27,9 @@ Pokud odpověď není validní JSON ani po dvou opakováních, hráč v tahu ml�
 Identifikátory států: hráči `A`, `B`, `C` (Unie), NPC `N1` až `N16`.
 Statky: `grain`, `oil`, `metal`, `goods`, od displacementu i `orit`.
 
+Blok `automaticky_obchodovano` ve tvém pohledu ukazuje, co tvůj stát v minulém tahu sám prodal a nakoupil na automatickém
+trhu (množství a průměrná cena); prodává jen přebytek výroby tahu, nikdy zásoby.
+
 ## Akce
 
 ### `trade_offer`: nabídka trvalého obchodu NPC

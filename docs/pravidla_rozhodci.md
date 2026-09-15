@@ -1,4 +1,4 @@
-# Výtah pravidel pro rozhodčího: světa Ardan (v1.10)
+# Výtah pravidel pro rozhodčího: světa Ardan (v1.10.1)
 
 Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 6, 7.2, 9 a 10).
 Neupravovat ručně; po každé změně pravidel skript spustit znovu.
@@ -51,7 +51,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `invest_industry` | vlastní stát nebo `target` v sphere/union (Unie: členové a kandidáti) | `industry` +0.3 × (law/5), jen při `law ≥ 4` cíle | 10 wealth |
 | `invest_prod` | `res`, `target` (volitelný) | `prod[res]` +1, jen pro zdroj s `prod[res] > 0` a jen při `tech ≥ 3`; orit se takto zvýšit nedá. Cílem je vlastní stát nebo NPC ve vlastní sféře, u Unie členové a kandidáti (jako `invest_industry`); `prod > 0` i `tech ≥ 3` se berou u cíle | 12 wealth |
 | `explore` | (vlastní stát) | 15 % šance na malé ložisko oritu (prod.orit +2) | 5 wealth |
-| `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci | `amount` wealth |
+| `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci; bez `amount` se bere 8 (síla +5). Unie `arm` použít nemůže, její síla je součet členů | `amount` wealth |
 | `declare_war` | `target` A nebo B | vyhlášení války druhému hráči, viz 3.3a | viz 3.3a |
 | `admit` | jen Unie: `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
 | `cancel` | `deal_id` | zruší obchod, pakt nebo sankci; `cancel` na válku je nabídka příměří, `cancel` s `"retreat": true` ústup (3.3a) | žádný |
@@ -79,7 +79,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 - **Konec ústupem:** jen výslovně, `cancel` s `deal_id` války a `"retreat": true`. Kdo ustoupí, ztrácí 30 % vlivu u všech NPC a válka končí okamžitě.
 - **Příměří:** `cancel` na válku bez `retreat` je nabídka příměří. Pošle-li druhá strana `cancel` ve stejném nebo v následujícím tahu, válka končí příměřím a oba ztrácejí 10 % vlivu u všech NPC. Nepřijatá nabídka propadne bez následku a válka pokračuje.
 - **Konec kapitulací:** klesne-li hráči `power` na 0, kapituluje: ztrácí všechny pakty, 50 % vlivu u všech NPC a 20 % svého `wealth`, které jde vítězi.
-- Hráče nelze dobýt ani okupovat. Vyhlášení války i její konec jsou události pro Zprávy světa.
+- Hráče nelze dobýt ani okupovat. NPC, o které se válčí, za války bohatství neztrácí. Vyhlášení války i její konec jsou události pro Zprávy světa.
 
 ### 3.4 Rozhodování NPC o nabídkách
 
@@ -110,7 +110,7 @@ Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde 
 
 ### 3.4a Soutěž o stejný cíl
 
-Cílené akce hráčů na totéž NPC v jednom tahu se vyhodnotí před provedením, ne v pořadí seznamu. Konfliktní dvojice jsou `trade_offer` na stejnou surovinu, `protect` proti `protect`, `invade` proti `invade` a `admit` proti `protect`. Pro každou akci dvojice se spočte skóre podle 3.4; akce s vyšším skóre jde do normálního vyhodnocení (hod, podmínka, protinávrh). Při remíze rozhodne hod d100 z `rng_seed + turn + CRC32(ID)`. Prohraná akce se neprovede a do soukromého logu prohraného se zapíše „NPC dalo přednost nabídce druhé strany“.
+Cílené akce hráčů na totéž NPC v jednom tahu se vyhodnotí před provedením, ne v pořadí seznamu. Konfliktní dvojice jsou `trade_offer` na stejnou surovinu, `protect` proti `protect`, `invade` proti `invade` a `admit` proti `protect`. Pro každou akci dvojice se spočte skóre podle 3.4; akce s vyšším skóre jde do normálního vyhodnocení (hod, podmínka, protinávrh). Pro `invade` proti `invade`, kde 3.4 nemá cenový člen ani bonusy, se počítá základ 40, vliv a otevřenost. Skóre se porovnává na 9 desetinných míst; při remíze rozhodne hod d100 z `rng_seed + turn + CRC32(ID)`: do 50 vyhrává akce, která je v seznamu akcí dřív, jinak pozdější. Prohraná akce se neprovede a do soukromého logu prohraného se zapíše „NPC dalo přednost nabídce druhé strany“.
 
 ### 3.5 Nabídky NPC hráčům
 
@@ -128,7 +128,7 @@ Nabídka jde do pohledu hráče s `offer_id` a platí 2 tahy. Akce `accept_offer
 
 ## 6. Zprávy světa
 
-Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Generují se z prahů:
+Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují jménem, nikdy ID. Generují se z prahů:
 
 - bída: "V N nepokoje." → další tah "V N hladomor." → pád vlády.
 - cena oritu > 2× výchozí: "Oritová horečka: banky v N půjčují bez záruk."
@@ -149,8 +149,8 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Generují se z 
 - Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma. Sdílí se jen tok tahu, ne zásoby, a vnitřní trh zahrnuje i orit; výjimka pro orit v 4.1a se ho netýká.
 - **Automatická solidarita:** fond pošle každý tah až 3 `wealth` nejchudšímu členovi v bídě a smí se přitom vyprázdnit až na 0. Nevyžaduje akci Unie a snímek ji zapisuje jako `union_solidarity`.
 - **Celní unie:** obchod mezi členem Unie a nečlenem (NPC i hráči, automatický i cílený) nese clo, které platí nečlen a které jde do fondu Unie; snímek ho zapisuje jako `union_tariff`. Vnitřní trh členů beze změny. Členem jsou jen `members`, kandidát je nečlen. Clo je podíl z hodnoty obchodu bez tranzitní přirážky: u automatického trhu ze základní tržní ceny, u cíleného obchodu z dohodnuté ceny. Platí-li ho kupec, zaplatí cenu i clo; platí-li ho prodejce, dostane cenu bez cla. Do objemu obchodu pro metriku A se clo nepočítá. Za války hráčů platí ten, kdo válku vyhlásil, clo navíc o 0.10 (3.3a).
-- **Sazba cla (`set_tariff`):** Unie nastavuje sazbu akcí `set_tariff` s parametrem `rate` od 0 do 0.20 po 0.05; výchozí sazba je 0.10. Nová sazba platí od dalšího tahu a počítá se do limitu 3 akcí. Sazba je veřejná.
-- **Obchod Unie za členy:** Unie smí `trade_offer` s NPC, které není členem, nebo s hráčem A či B. Nabídka se kryje z poolu členů: prodává se z přebytků členů nad rezervu 3 tahů spotřeby, nakupuje se pro deficity členů. Směr určí souhrnná bilance poolu (přebytky minus deficity). Prodané množství se odebírá členům poměrně k jejich přebytku, nakoupené se rozděluje poměrně k deficitu. Peníze jdou přes fond: kupec platí do fondu, při nákupu platí fond; kupec zaplatí nejvýš to, co má, a fond tedy nejde do mínusu. Cena musí být v pásmu 0.7 až 1.5 tržní ceny jako u hráčů, obchod nedává vliv, NPC ho vyhodnotí podle 3.4 a nečlen z něj odvádí clo.
+- **Sazba cla (`set_tariff`):** Unie nastavuje sazbu akcí `set_tariff` s parametrem `rate` od 0 do 0.20 po 0.05; výchozí sazba je 0.10. Nová sazba platí od dalšího tahu a počítá se do limitu 3 akcí. Sazba je veřejná: hráči A a B ji vidí jako `clo_unie`, Unie navíc sazbu ohlášenou na další tah. Pošle-li Unie v jednom tahu `set_tariff` víckrát, platí poslední platná.
+- **Obchod Unie za členy:** Unie smí `trade_offer` s NPC, které není členem, nebo s hráčem A či B. Nabídka se kryje z poolu členů: prodává se z přebytků členů nad rezervu 3 tahů spotřeby, nakupuje se pro deficity členů. Směr určí souhrnná bilance poolu (přebytky minus deficity). Prodané množství se odebírá členům poměrně k jejich přebytku, nakoupené se rozděluje poměrně k deficitu. Peníze jdou přes fond: kupec platí do fondu, při nákupu platí fond; kupec zaplatí nejvýš to, co má, a fond tedy nejde do mínusu. Cena musí být v pásmu 0.7 až 1.5 tržní ceny jako u hráčů, obchod nedává vliv, NPC ho vyhodnotí podle 3.4 a nečlen z něj odvádí clo. Přebytek člena je zásoba plus bilance toku minus rezerva 3 tahů spotřeby, deficit člena je deficit toku tohoto tahu bez doplnění rezervy; při podání akce se bere poslední známá potřeba, při provedení potřeba z plánované výroby a dosavadní dovozy a vývozy. Příjem z prodeje zůstává ve fondu a nákup platí fond; členové předávají a dostávají zboží bez placení, jako na vnitřním trhu. Cíl musí mít opačnou bilanci než pool a množství se ořízne na pool i na bilanci cíle. NPC nabídku Unie vyhodnotí podle 3.4 bez členu vlivu, u padlé říše platí dolní mez 1.3 × tržní ceny (7a); obchod s hráčem projde bez hodu.
 - `union_fund`: převod z fondu členovi nebo kandidátovi. `invest_law`, `invest_tech`, `invest_industry` a `invest_prod` na členy a kandidáty za poloviční cenu.
 - Členy nelze napadnout bez války s celou Unií. V prvním tahu takové války brání Unie polovinou součtu `power` členů, od druhého tahu plným součtem.
 - Nikdy si nepůjčuje (akce `loan` s `target = C` je neplatná). Sama půjčovat nezávislým NPC a kandidátům může; platí běžná pravidla půjčky včetně vlivu a eroze práva dlužníka.

@@ -104,3 +104,13 @@ jobs:
           else
             echo "kronika se nezapsala (chybí některý snímek dne, pravidla 10.7)"
           fi
+
+      - name: Neúspěšné pokusy a selhaný tah jako artefakt
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: diagnostika-${{ github.run_id }}
+          path: |
+            debug/*_fail_*.txt
+            history/failed_turn_*.json
+          if-no-files-found: ignore

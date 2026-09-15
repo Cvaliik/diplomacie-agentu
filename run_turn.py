@@ -71,7 +71,34 @@ def dump(obj) -> str:
 
 # pohled hrace: bez odsazeni, cisla na 1 desetinne misto; ceny a clo na 2, jinak by se
 # ztratila sazba po 0.05 a pasmo ceny u trade_offer (docs/OPEN_QUESTIONS.md, v1.10)
-PRECISE_KEYS = ("ceny", "clo", "clo_unie", "clo_od_pristiho_tahu", "price", "price_per_unit")
+PRECISE_KEYS = ("ceny", "clo", "clo_unie", "clo_od_pristiho_tahu", "price", "price_per_unit", "prumerna_cena")
+PLAYER_NAMES = {"A": "Kalverská federace", "B": "Lidová republika Ostrogard"}
+
+
+def names_block(state) -> str:
+    """6 (v1.10.1): mapa ID na jmena statu pro rozhodciho a Zpravy sveta."""
+    npc = json.loads(read_text(config.NPC_PATH))
+    names = dict(PLAYER_NAMES)
+    names["C"] = state["players"]["C"].get("name") or "Unie"
+    names.update({x["id"]: x.get("name") for x in npc.get("npc", [])})
+    return "\n".join(["## Jména států (ID → jméno)", "```json",
+                      json.dumps(names, ensure_ascii=False), "```",
+                      "Ve Zprávách piš jména států, nikdy ID."])
+
+
+def fill_auto_block(state, views) -> None:
+    """2 (v1.10.1): blok automaticky_obchodovano pro stav zapsany pred reformou doplni ze snimku tahu."""
+    p = history_path(int(state["meta"]["turn"]))
+    if not p.exists():
+        return
+    applied = None
+    for pid in ("A", "B"):
+        ja = (views.get(pid) or {}).get("ja")
+        if ja is None or ja.get("automaticky_obchodovano"):
+            continue
+        if applied is None:
+            applied = json.loads(read_text(p)).get("applied_rules") or []
+        ja["automaticky_obchodovano"] = engine.auto_trades_summary(applied, pid)
 
 
 def _round_view(obj, digits=1):
@@ -217,6 +244,8 @@ def referee_actions_prompt(state, moves: dict) -> str:
         "```",
         "",
         "Vrať jediný JSON objekt s poli actions, rejected, rulings. Pole news nech prázdné, zprávy píšeš ve druhé úloze.",
+        "",
+        names_block(state),
     ])
 
 
@@ -233,6 +262,8 @@ def referee_news_prompt(state_after, events: list) -> str:
         "```",
         "",
         "Vrať jediný JSON objekt {\"news\": [\"...\"]} s 1 až 3 zprávami.",
+        "",
+        names_block(state_after),
     ])
 
 
@@ -484,6 +515,7 @@ def main() -> int:
 
     # 2. pohledy
     views = engine.build_views(state, npcdata)
+    fill_auto_block(state, views)
     log = public_log(turn)
     prompts = {}
     leaks = []

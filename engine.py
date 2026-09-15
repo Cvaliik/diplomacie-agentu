@@ -1643,10 +1643,15 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
             bal = supply_of(state, i, res) - need + imports[i][res] - exports[i][res]
             stock = float(e["stock"].get(res, 0.0))
             reserve = RESERVE_TURNS * need
-            offer[i] = max(0.0, stock + bal - reserve)
+            if i in ("A", "B"):
+                # 4.1a (v1.10.1 od tahu 2): hrac prodava jen kladny prebytek toku po cilenych obchodech, zasobu nikdy
+                offer[i] = max(0.0, bal)
+            else:
+                offer[i] = max(0.0, stock + bal - reserve)
             if spec.get(i, 0.0) > 0:
-                # 4.0 a 4.1a (v1.9): spekulativni nabidka jde na trh vzdy, i pod rezervou
-                offer[i] = max(offer[i], min(spec[i], max(0.0, stock + bal)))
+                # 4.0 a 4.1a (v1.9): spekulativni nabidka jde na trh vzdy, i pod rezervou (hrac jen z toku)
+                cap = max(0.0, bal) if i in ("A", "B") else max(0.0, stock + bal)
+                offer[i] = max(offer[i], min(spec[i], cap))
             d_flow[i] = max(0.0, -bal)
             can_refill = float(e["wealth"]) >= REFILL_MIN_WEALTH  # 4.1c (v1.6): jen pri wealth >= 25
             d_refill[i] = max(0.0, reserve - stock) if can_refill else 0.0
@@ -1759,6 +1764,34 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                        "clo": round(tariff, 4), "clo_plati": payer})
 
     return vol_npc, vol_players, goods_volume, new_pairs
+
+
+def auto_trades_summary(items, pid: str) -> dict:
+    """2 (v1.10.1): souhrn automatickeho trhu hrace z trace tahu.
+
+    Pro kazdy statek prodano a nakoupeno: mnozstvi a prumerna cena (prodejce dostal zakladni cenu,
+    kupec platil cenu s prirazkou a clo, pokud ho platil). Pouziva engine i run_turn.py pro tah 1.
+    """
+    book = {}
+    for it in items or []:
+        if it.get("rule") != "4.1a automaticky trh":
+            continue
+        inp, o = it["inputs"], it["outputs"]
+        qty = float(o.get("qty") or 0.0)
+        if qty <= 0:
+            continue
+        if inp.get("prodejce") == pid:
+            side, money = "prodano", float(o.get("prodejci") or 0.0)
+        elif inp.get("kupec") == pid:
+            side, money = "nakoupeno", float(o.get("objem") or 0.0) + (
+                float(o.get("clo") or 0.0) if o.get("clo_plati") == pid else 0.0)
+        else:
+            continue
+        acc = book.setdefault(inp["res"], {}).setdefault(side, [0.0, 0.0])
+        acc[0] += qty
+        acc[1] += money
+    return {res: {side: {"mnozstvi": round(q, 3), "prumerna_cena": round(m / q, 4)}
+                  for side, (q, m) in sides.items()} for res, sides in sorted(book.items())}
 
 
 def _union_market(state, resources, needs, imports, exports, trace: Trace) -> None:
@@ -2025,6 +2058,9 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         trace.add("7.2 clo celni unie", {"platci": sorted(state["union_tariff"])},
                   {"celkem": round(sum(state["union_tariff"].values()), 4),
                    "podle_platce": state["union_tariff"]})
+    # 2 (v1.10.1): automaticke obchody hrace v tomto tahu pro pohled pristiho tahu
+    for pid in ("A", "B"):
+        state["players"][pid]["auto_last"] = auto_trades_summary(trace.items, pid)
     state["_player_imports"] = {pid: {r: round(imports[pid][r], 4) for r in TRADEABLES}
                                 for pid in ("A", "B")}
     state["_trade"] = {"volume": trade_volume, "weighted": trade_volume_weighted,
@@ -3242,6 +3278,8 @@ def build_views(state, npcdata) -> dict:
             mine["occupied"] = list(me.get("occupied", []))
             # 2 (v1.4): hrac vidi vlastni zasoby, cizi ne
             mine["stock"] = {k: round(float(v), 3) for k, v in (me.get("stock") or {}).items()}
+            # 2 (v1.10.1): co hrac minuly tah prodal a nakoupil na automatickem trhu
+            mine["automaticky_obchodovano"] = dict(me.get("auto_last") or {})
         else:
             mine["members"] = list(C["members"])
             mine["candidates"] = list(C["candidates"])
