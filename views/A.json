@@ -1,0 +1,582 @@
+{
+  "turn": 1,
+  "day": 1,
+  "slot": 1,
+  "ja": {
+    "wealth": 101.67,
+    "paper_wealth": 0.0,
+    "power": 80.0,
+    "prod": {
+      "oil": 3.0,
+      "grain": 3.0,
+      "metal": 8.0
+    },
+    "need": {
+      "grain": 6.9,
+      "goods": 6.133,
+      "oil": 5.087,
+      "metal": 3.374,
+      "orit": 0.0
+    },
+    "industry": 8.1,
+    "goods": {
+      "vyroba": 7.413,
+      "potreba": 6.133,
+      "bilance": 1.28
+    },
+    "pop": 230.0,
+    "law": 7.0,
+    "tech": 6.15,
+    "occupied": [],
+    "stock": {
+      "grain": 38.955,
+      "oil": 23.84,
+      "metal": 22.107,
+      "goods": 38.08,
+      "orit": 0.0
+    }
+  },
+  "npc": {
+    "N1": {
+      "name": "Velmora",
+      "wealth": 49.38,
+      "power": 8.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 9.0,
+        "metal": 1.0
+      },
+      "need": {
+        "grain": 5.7,
+        "goods": 3.325,
+        "oil": 2.44,
+        "metal": 1.73,
+        "orit": 0.0
+      },
+      "industry": 2.0,
+      "goods": {
+        "vyroba": 2.6,
+        "potreba": 3.325,
+        "bilance": -0.725
+      },
+      "status": "independent",
+      "pop": 190.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 1.0,
+      "dluzi_mne": 0.0
+    },
+    "N2": {
+      "name": "Sarnie",
+      "wealth": 40.63,
+      "power": 6.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 8.0,
+        "metal": 0.0
+      },
+      "need": {
+        "grain": 4.8,
+        "goods": 2.667,
+        "oil": 2.16,
+        "metal": 1.52,
+        "orit": 0.0
+      },
+      "industry": 2.0,
+      "goods": {
+        "vyroba": 2.4,
+        "potreba": 2.667,
+        "bilance": -0.267
+      },
+      "status": "independent",
+      "pop": 160.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N3": {
+      "name": "Tuluk",
+      "wealth": 69.27,
+      "power": 10.0,
+      "prod": {
+        "oil": 10.0,
+        "grain": 1.0,
+        "metal": 0.0
+      },
+      "need": {
+        "grain": 3.6,
+        "goods": 2.4,
+        "oil": 2.18,
+        "metal": 1.476,
+        "orit": 0.0
+      },
+      "industry": 4.0,
+      "goods": {
+        "vyroba": 2.92,
+        "potreba": 2.4,
+        "bilance": 0.52
+      },
+      "status": "independent",
+      "pop": 120.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 1.0,
+      "dluzi_mne": 0.0
+    },
+    "N4": {
+      "name": "Halden",
+      "wealth": 61.75,
+      "power": 9.0,
+      "prod": {
+        "oil": 9.0,
+        "grain": 2.0,
+        "metal": 0.0
+      },
+      "need": {
+        "grain": 3.3,
+        "goods": 2.108,
+        "oil": 1.994,
+        "metal": 1.351,
+        "orit": 0.0
+      },
+      "industry": 4.0,
+      "goods": {
+        "vyroba": 2.668,
+        "potreba": 2.108,
+        "bilance": 0.56
+      },
+      "status": "independent",
+      "pop": 110.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N5": {
+      "name": "Brenhold",
+      "wealth": 40.92,
+      "power": 11.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 2.0,
+        "metal": 7.0
+      },
+      "need": {
+        "grain": 3.0,
+        "goods": 1.667,
+        "oil": 1.433,
+        "metal": 1.0,
+        "orit": 0.0
+      },
+      "industry": 3.0,
+      "goods": {
+        "vyroba": 1.667,
+        "potreba": 1.667,
+        "bilance": 0.0
+      },
+      "status": "independent",
+      "pop": 100.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N6": {
+      "name": "Dorvan",
+      "wealth": 21.85,
+      "power": 3.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 2.0,
+        "metal": 2.0
+      },
+      "need": {
+        "grain": 2.7,
+        "goods": 1.23,
+        "oil": 0.848,
+        "metal": 0.634,
+        "orit": 0.0
+      },
+      "industry": 1.0,
+      "goods": {
+        "vyroba": 0.615,
+        "potreba": 1.23,
+        "bilance": -0.615
+      },
+      "status": "independent",
+      "pop": 90.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N7": {
+      "name": "Kessar",
+      "wealth": 38.39,
+      "power": 8.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 2.0,
+        "metal": 6.0
+      },
+      "need": {
+        "grain": 3.3,
+        "goods": 1.797,
+        "oil": 1.558,
+        "metal": 1.089,
+        "orit": 0.0
+      },
+      "industry": 3.0,
+      "goods": {
+        "vyroba": 1.797,
+        "potreba": 1.797,
+        "bilance": 0.0
+      },
+      "status": "independent",
+      "pop": 110.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N8": {
+      "name": "Ilme",
+      "wealth": 21.39,
+      "power": 4.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 4.0,
+        "metal": 0.0
+      },
+      "need": {
+        "grain": 2.4,
+        "goods": 1.093,
+        "oil": 0.753,
+        "metal": 0.564,
+        "orit": 0.0
+      },
+      "industry": 1.0,
+      "goods": {
+        "vyroba": 0.547,
+        "potreba": 1.093,
+        "bilance": -0.547
+      },
+      "status": "independent",
+      "pop": 80.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N9": {
+      "name": "Tarsk",
+      "wealth": 20.25,
+      "power": 5.0,
+      "prod": {
+        "oil": 3.0,
+        "grain": 2.0,
+        "metal": 0.0
+      },
+      "need": {
+        "grain": 1.8,
+        "goods": 0.8,
+        "oil": 0.56,
+        "metal": 0.42,
+        "orit": 0.0
+      },
+      "industry": 1.0,
+      "goods": {
+        "vyroba": 0.4,
+        "potreba": 0.8,
+        "bilance": -0.4
+      },
+      "status": "independent",
+      "pop": 60.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N10": {
+      "name": "Quenna",
+      "wealth": 24.77,
+      "power": 4.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 3.0,
+        "metal": 2.0
+      },
+      "need": {
+        "grain": 2.55,
+        "goods": 1.204,
+        "oil": 0.811,
+        "metal": 0.606,
+        "orit": 0.0
+      },
+      "industry": 1.0,
+      "goods": {
+        "vyroba": 0.602,
+        "potreba": 1.204,
+        "bilance": -0.602
+      },
+      "status": "independent",
+      "pop": 85.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N11": {
+      "name": "Aurelie",
+      "wealth": 98.58,
+      "power": 6.0,
+      "prod": {
+        "oil": 1.0,
+        "grain": 2.0,
+        "metal": 1.0
+      },
+      "need": {
+        "grain": 1.5,
+        "goods": 1.25,
+        "oil": 1.555,
+        "metal": 1.003,
+        "orit": 0.0
+      },
+      "industry": 7.1,
+      "goods": {
+        "vyroba": 2.51,
+        "potreba": 1.25,
+        "bilance": 1.26
+      },
+      "status": "independent",
+      "pop": 50.0,
+      "coups": 0,
+      "kind": "fallen",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N12": {
+      "name": "Ysmar",
+      "wealth": 80.6,
+      "power": 7.0,
+      "prod": {
+        "oil": 2.0,
+        "grain": 1.0,
+        "metal": 2.0
+      },
+      "need": {
+        "grain": 2.1,
+        "goods": 1.633,
+        "oil": 1.832,
+        "metal": 1.197,
+        "orit": 0.0
+      },
+      "industry": 7.1,
+      "goods": {
+        "vyroba": 2.823,
+        "potreba": 1.633,
+        "bilance": 1.19
+      },
+      "status": "independent",
+      "pop": 70.0,
+      "coups": 0,
+      "kind": "fallen",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N13": {
+      "name": "Meridia",
+      "wealth": 48.56,
+      "power": 8.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 3.0,
+        "metal": 2.0
+      },
+      "need": {
+        "grain": 3.6,
+        "goods": 2.2,
+        "oil": 2.195,
+        "metal": 1.485,
+        "orit": 0.0
+      },
+      "industry": 5.1,
+      "goods": {
+        "vyroba": 2.95,
+        "potreba": 2.2,
+        "bilance": 0.75
+      },
+      "status": "independent",
+      "pop": 120.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N14": {
+      "name": "Tavros",
+      "wealth": 41.67,
+      "power": 8.0,
+      "prod": {
+        "oil": 3.0,
+        "grain": 4.0,
+        "metal": 2.0
+      },
+      "need": {
+        "grain": 3.0,
+        "goods": 1.667,
+        "oil": 1.433,
+        "metal": 1.0,
+        "orit": 0.0
+      },
+      "industry": 3.0,
+      "goods": {
+        "vyroba": 1.667,
+        "potreba": 1.667,
+        "bilance": 0.0
+      },
+      "status": "independent",
+      "pop": 100.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N15": {
+      "name": "Kaldera",
+      "wealth": 35.73,
+      "power": 7.0,
+      "prod": {
+        "oil": 2.0,
+        "grain": 1.0,
+        "metal": 6.0
+      },
+      "need": {
+        "grain": 2.4,
+        "goods": 1.267,
+        "oil": 1.113,
+        "metal": 0.78,
+        "orit": 0.0
+      },
+      "industry": 2.0,
+      "goods": {
+        "vyroba": 1.267,
+        "potreba": 1.267,
+        "bilance": 0.0
+      },
+      "status": "independent",
+      "pop": 80.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    },
+    "N16": {
+      "name": "Elmyr",
+      "wealth": 21.22,
+      "power": 4.0,
+      "prod": {
+        "oil": 0.0,
+        "grain": 5.0,
+        "metal": 0.0
+      },
+      "need": {
+        "grain": 2.7,
+        "goods": 1.23,
+        "oil": 0.848,
+        "metal": 0.634,
+        "orit": 0.0
+      },
+      "industry": 1.0,
+      "goods": {
+        "vyroba": 0.615,
+        "potreba": 1.23,
+        "bilance": -0.615
+      },
+      "status": "independent",
+      "pop": 90.0,
+      "coups": 0,
+      "kind": "normal",
+      "influence_moje": 0.0,
+      "dluzi_mne": 0.0
+    }
+  },
+  "ceny": {
+    "grain": 0.7536,
+    "oil": 1.1389,
+    "metal": 0.9046,
+    "goods": 1.05
+  },
+  "deals": [
+    {
+      "id": "d1",
+      "type": "trade",
+      "owner": "A",
+      "target": "N3",
+      "res": "oil",
+      "qty": 5.6,
+      "price": 1.15,
+      "direction": "npc_sells",
+      "since": 1
+    },
+    {
+      "id": "d2",
+      "type": "trade",
+      "owner": "A",
+      "target": "N1",
+      "res": "grain",
+      "qty": 3.255,
+      "price": 0.95,
+      "direction": "npc_sells",
+      "since": 1
+    }
+  ],
+  "nabidky": [
+    {
+      "type": "sell",
+      "res": "grain",
+      "qty": 3.255,
+      "price": 0.7536,
+      "offer_id": "o1",
+      "player": "A",
+      "npc": "N1",
+      "created": 1,
+      "expires": 3
+    },
+    {
+      "type": "sell",
+      "res": "grain",
+      "qty": 3.255,
+      "price": 0.7536,
+      "offer_id": "o2",
+      "player": "A",
+      "npc": "N3",
+      "created": 1,
+      "expires": 3
+    }
+  ],
+  "soukromy_log": [
+    {
+      "turn": 1,
+      "npc": "N3",
+      "action": "trade_offer",
+      "outcome": "podminka",
+      "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
+      "counter": null
+    },
+    {
+      "turn": 1,
+      "npc": "N1",
+      "action": "trade_offer",
+      "outcome": "podminka",
+      "reason": "Nabídka odpovídá našim zájmům.",
+      "counter": null
+    }
+  ],
+  "news": [
+    "Kalverská federace uzavřela obchodní dohodu s Tulukem o dodávkách ropy.",
+    "Kalverská federace zahájila obchod s Velmorou v oblasti obilí.",
+    "Lidová republika Ostrogard uzavřela vojenský pakt s Brenholdem."
+  ]
+}
