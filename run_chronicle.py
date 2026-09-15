@@ -123,8 +123,29 @@ def main() -> int:
                                       % (day, system, user), encoding="utf-8")
         print("zapsano debug/%s" % name)
         return 0
-    print("ostre volani kronikare zatim neni zapojene (bez routin a bez tahu 1)")
-    return 1
+    # ostre volani kronikare (CHRONICLER_MODEL), vystup chronicle/day_NN.md
+    from run_turn import call_model
+    if day == FINAL_DAY:
+        metrics = {}
+        for d in range(1, FINAL_DAY + 1):
+            p = config.HISTORY_DIR / ("turn_%03d.json" % (3 * d))
+            if p.exists():
+                metrics[d] = json.loads(p.read_text(encoding="utf-8"))["state"].get("metrics", {})
+        system, user = chronicle_prompt(day, snaps, state_before, snaps[-1]["state"],
+                                        prev.read_text(encoding="utf-8") if prev.exists() else None,
+                                        None, metrics)
+    usage = []
+    text = call_model(config.CHRONICLER_MODEL, system, user, max_tokens=16000, usage_log=usage, label="kronikar")
+    for u in usage:
+        print("usage %s in %d, out %d, %.4f USD" % (u["model"], u["input_tokens"], u["output_tokens"], u["cost_usd"]))
+    if not text.strip():
+        print("kronikar nevratil text, kronika dne %d nezapsana" % day)
+        return 1
+    config.CHRONICLE_DIR.mkdir(exist_ok=True)
+    out = config.CHRONICLE_DIR / ("day_%02d.md" % day)
+    out.write_text(text.strip() + "\n", encoding="utf-8")
+    print("zapsano %s" % out.relative_to(config.ROOT))
+    return 0
 
 
 if __name__ == "__main__":

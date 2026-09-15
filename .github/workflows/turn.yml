@@ -1,0 +1,106 @@
+# Plánovač ostrého běhu (BUILD.md část 6).
+# Hra běží celá v letním čase (CEST = UTC+2): 07:00, 13:00 a 20:00 pražského času.
+# Klíč jde jen do proměnné prostředí kroku; žádný krok netiskne env ani secrets.
+
+name: tah
+
+on:
+  schedule:
+    - cron: "0 5 * * *"    # 07:00 Praha, slot 1
+    - cron: "0 11 * * *"   # 13:00 Praha, slot 2
+    - cron: "0 18 * * *"   # 20:00 Praha, slot 3
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "turn = ostrý tah, dry-model = jen sestavit prompty bez volání API"
+        required: true
+        default: turn
+        type: choice
+        options:
+          - turn
+          - dry-model
+
+permissions:
+  contents: write
+
+concurrency:
+  group: tah
+  cancel-in-progress: false
+
+jobs:
+  tah:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+          fetch-depth: 0
+
+      - name: Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Závislosti
+        run: pip install anthropic
+
+      - name: Suchý běh (jen prompty, bez API)
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-model'
+        run: python run_turn.py --dry-model
+
+      - name: Prompty suchého běhu jako artefakt
+        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-model'
+        uses: actions/upload-artifact@v4
+        with:
+          name: debug-prompty
+          path: debug/
+
+      - name: Tah
+        id: tah
+        if: github.event_name == 'schedule' || inputs.mode == 'turn'
+        env:
+          ARDAN_API_KEY: ${{ secrets.ARDAN_API_KEY }}
+        run: |
+          BEFORE=$(python -c "import json; print(json.load(open('state.json', encoding='utf-8'))['meta']['turn'])")
+          # meta.paused = true: skript skonci bez tahu s kodem 0 (beh zeleny, nic se necommituje)
+          # chyba API, nevalidni stav nebo hrac bez platne odpovedi: nenulovy kod, beh cerveny
+          python run_turn.py --once --no-git --fail-on-silent
+          BEFORE="$BEFORE" python -c "
+          import json, os
+          m = json.load(open('state.json', encoding='utf-8'))['meta']
+          print('played=%s' % ('true' if int(m['turn']) != int(os.environ['BEFORE']) else 'false'))
+          print('turn=%03d' % int(m['turn']))
+          print('day=%d' % int(m['day'] or 0))
+          print('slot=%s' % m['slot'])
+          " >> "$GITHUB_OUTPUT"
+
+      - name: Commit tahu
+        if: steps.tah.outputs.played == 'true'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898789+github-actions[bot]@users.noreply.github.com"
+          git add state.json history
+          if [ -f docs/rulings.md ]; then git add docs/rulings.md; fi
+          git commit -m "tah ${{ steps.tah.outputs.turn }} (den ${{ steps.tah.outputs.day }})"
+          git pull --rebase origin master
+          git push origin HEAD:master
+
+      - name: Kronika dne (po slotu 3)
+        if: steps.tah.outputs.played == 'true' && steps.tah.outputs.slot == '3'
+        env:
+          ARDAN_API_KEY: ${{ secrets.ARDAN_API_KEY }}
+        run: python run_chronicle.py
+
+      - name: Commit kroniky
+        if: steps.tah.outputs.played == 'true' && steps.tah.outputs.slot == '3'
+        run: |
+          if [ -d chronicle ] && [ -n "$(git status --porcelain chronicle)" ]; then
+            git add chronicle
+            git commit -m "kronika dne ${{ steps.tah.outputs.day }} (tah ${{ steps.tah.outputs.turn }})"
+            git pull --rebase origin master
+            git push origin HEAD:master
+          else
+            echo "kronika se nezapsala (chybí některý snímek dne, pravidla 10.7)"
+          fi

@@ -57,11 +57,19 @@ Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 1
 - Týdenní: herní dny 7, 14, 21, 28 místo denní.
 - Den 30: finále; kronikář dostane `secrets/cil_*.md` a `metrics` po dnech.
 
-## 6. Routiny (Claude Code remote routines, časová zóna Europe/Prague)
+## 6. Plánovač: GitHub Actions (změna stacku, dříve Claude Code routines)
 
-- `turn-morning` 07:00, `turn-noon` 13:00, `turn-evening` 20:00: `python run_turn.py`
-- `chronicle` 21:00: `python run_chronicle.py`
-Každá routine: pull repa, spuštění skriptu, push. Žádná jiná logika v routině; vše je ve skriptech, aby se dalo spustit i ručně.
+Ostrý běh plánuje workflow `.github/workflows/turn.yml`, ne Claude Code routines.
+
+- **Časy:** `schedule` v UTC pro 07:00, 13:00 a 20:00 pražského času. Hra běží celá v letním čase (UTC+2): `0 5 * * *`, `0 11 * * *`, `0 18 * * *`.
+- **Ruční spuštění:** `workflow_dispatch` se vstupem `mode`: `turn` (ostrý tah) nebo `dry-model` (jen prompty do artefaktu, bez API).
+- **Kroky:** checkout, Python 3.11, `pip install anthropic`, `python run_turn.py --once --no-git --fail-on-silent` s `ARDAN_API_KEY` ze `secrets.ARDAN_API_KEY`; commit `state.json`, `history/` (a `docs/rulings.md`, existuje-li) se zprávou "tah NNN (den D)", `git pull --rebase` a push na master. Po slotu 3 `python run_chronicle.py` a samostatný commit `chronicle/`, aby selhání kroniky nepřišlo o odehraný tah.
+- **Oprávnění a souběh:** `permissions: contents: write`, `concurrency` na jeden běh najednou (bez rušení běžícího).
+- **Klíč:** jen v proměnné prostředí kroku; žádný krok netiskne `env` ani `secrets`.
+- **Pauza:** je-li `meta.paused = true`, skript skončí bez tahu s kódem 0, běh je zelený a nic se necommituje.
+- **Selhání:** chyba API, nevalidní stav nebo hráč bez platné odpovědi po všech pokusech (`--fail-on-silent`) ukončí skript nenulovým kódem; tah se necommituje a běh je červený. Mimo plánovač platí dál pravidla 10.6 (hráč mlčí).
+
+Všechna logika zůstává ve skriptech, aby se dalo hrát i ručně.
 
 ## 7. web/index.html
 

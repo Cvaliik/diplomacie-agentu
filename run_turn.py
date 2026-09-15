@@ -458,6 +458,8 @@ def main() -> int:
     ap.add_argument("--state", help="vstupni stav misto state.json")
     ap.add_argument("--no-apply", action="store_true", help="nic nezapisovat do stavu, historie ani gitu")
     ap.add_argument("--no-git", action="store_true", help="bez commitu a pushe")
+    ap.add_argument("--fail-on-silent", action="store_true",
+                    help="hrac bez platne odpovedi po vsech pokusech = chyba tahu (planovac GitHub Actions)")
     ap.add_argument("--rollback", type=int, help="vratit state.json na snimek tahu N")
     args = ap.parse_args()
 
@@ -522,6 +524,10 @@ def main() -> int:
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(players)) as ex:
         futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn) for pid in players}
         moves = {pid: f.result() for pid, f in futures.items()}
+    silent = [pid for pid, m in moves.items() if m.get("silent")]
+    if args.fail_on_silent and silent and not (args.only or args.no_apply):
+        # planovac: tah se nezapise a beh selze viditelne (misto mlceni podle pravidel 10.6)
+        return fail(turn, "hrac %s bez platne odpovedi po vsech pokusech" % ", ".join(silent), {"moves": moves}, args)
 
     if args.only or args.no_apply:
         DEBUG_DIR.mkdir(exist_ok=True)
