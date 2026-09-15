@@ -1,4 +1,8 @@
-# Pravidla světa Ardan (v1.9)
+# Pravidla světa Ardan (v1.10)
+
+Verze v1.10 zapracovává rozhodnutí Adama z 15. 9. 2026: soutěž hráčů o stejný cíl (3.4a), nejvýš jeden pakt
+na NPC (3.2), pakt a invaze ve stejném tahu (3.3), válka hráčů (3.3a), `arm` s parametrem (3.2) a `admit`
+ze zóny vlivu (7.4). Tah 1 odehraný podle v1.9 se zahazuje a ostrý běh začíná znovu od tahu 0.
 
 Verze v1.9 zapracovává rozhodnutí Adama ze 14. 9. 2026: cíl automatické `invest_prod` podle ceny (4.2a),
 spekulativní nabídka velkých továren na trhu (4.0, 4.1a), párování automatického trhu podle ceny s paušálem
@@ -128,16 +132,17 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `trade_offer` | `target`, `res`, `qty`, `price_per_unit` | NPC přijme, pokud má přebytek/deficit a cena je v pásmu 0.7 až 1.5 aktuální tržní ceny podle 4.1b; vzniká trvalý obchod, dokud ho někdo nezruší. Směr určuje bilance NPC u dané suroviny: přebytek znamená, že NPC hráči prodává, deficit, že od něj nakupuje, nulová bilance je odmítnutí. Množství se ořízne na velikost bilance. NPC nabídku vyhodnotí podle 3.4. Cílem může být i druhý hráč (A nebo B); obchod mezi hráči projde bez vyhodnocení podle 3.4, má-li cíl přebytek nebo deficit a je-li cena v pásmu. Unie obchoduje za členy, viz 7.2 | žádný |
 | `loan` | `target`, `amount` | hráč převede `amount` bohatství NPC; NPC dluží `amount × 1.2`; splácí 10 % dluhu za tah z bohatství | `amount` wealth |
 | `pressure` | `target`, `demand` | sankce: přeruší obchody hráče s NPC; NPC ztrácí 3 wealth/tah, hráč 1; `influence` protivníka +1. Cílem může být i druhý hráč: sankce pak po dobu trvání přeruší vzájemný automatický obchod obou hráčů a stojí oba 1 wealth/tah; cílené obchody mezi nimi trvají dál | 1 wealth/tah |
-| `protect` | `target` | vojenský pakt: NPC `power` +2/tah, `influence[hráč]` +2/tah, `law` −0.2/tah; NPC nelze napadnout, dokud pakt trvá (útok = válka s ochráncem, viz 3.3) | 2 power/tah |
-| `invade` | `target` | viz 3.3 | 10 wealth + 5 power za tah |
+| `protect` | `target` | vojenský pakt: NPC `power` +2/tah, `influence[hráč]` +2/tah, `law` −0.2/tah; NPC nelze napadnout, dokud pakt trvá (útok = válka s ochráncem, viz 3.3a). NPC má nejvýš jeden aktivní pakt: `protect` na NPC s cizím paktem se vyřadí bez hodu s důvodem „NPC je pod paktem X“ | 2 power/tah |
+| `invade` | `target` | viz 3.3; cílem je jen NPC, hráče nelze dobýt ani okupovat | 10 wealth + 5 power za tah |
 | `invest_tech` | (vlastní stát nebo `target` v sphere/union) | `tech` +0.3 | 8 wealth |
 | `invest_law` | `target` v sphere/union, nebo vlastní | `law` +0.3 | 6 wealth |
 | `invest_industry` | vlastní stát nebo `target` v sphere/union (Unie: členové a kandidáti) | `industry` +0.3 × (law/5), jen při `law ≥ 4` cíle | 10 wealth |
 | `invest_prod` | `res`, `target` (volitelný) | `prod[res]` +1, jen pro zdroj s `prod[res] > 0` a jen při `tech ≥ 3`; orit se takto zvýšit nedá. Cílem je vlastní stát nebo NPC ve vlastní sféře, u Unie členové a kandidáti (jako `invest_industry`); `prod > 0` i `tech ≥ 3` se berou u cíle | 12 wealth |
 | `explore` | (vlastní stát) | 15 % šance na malé ložisko oritu (prod.orit +2) | 5 wealth |
-| `arm` | (vlastní stát) | `power` +5 | 8 wealth |
+| `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci | `amount` wealth |
+| `declare_war` | `target` A nebo B | vyhlášení války druhému hráči, viz 3.3a | viz 3.3a |
 | `admit` | jen Unie: `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
-| `cancel` | `deal_id` | zruší obchod, pakt nebo sankci | žádný |
+| `cancel` | `deal_id` | zruší obchod, pakt nebo sankci; `cancel` na válku je ústup (3.3a) | žádný |
 | `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí | žádný |
 | `union_fund` | jen Unie: `target` člen, `amount` | převod ze společného fondu členovi | fond |
 | `set_tariff` | jen Unie: `rate` 0 až 0.20 po 0.05 | sazba cla celní unie od dalšího tahu, viz 7.2 | žádný |
@@ -147,11 +152,21 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 ### 3.3 Dobývání
 
-- Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče (jinak jde o válku: oba hráči ztrácejí 10 power/tah, dokud jeden neustoupí; NPC mezitím −5 wealth/tah).
+- Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče. Útok na NPC pod paktem druhého hráče vyhlásí válku hráčů automaticky (3.3a) a invaze nepostupuje.
+- **Pakt a invaze ve stejném tahu:** míří-li v jednom tahu `protect` jednoho hráče a `invade` druhého na totéž NPC, vyhodnotí se nejdřív pakt. Přijme-li ho NPC, je invaze od tohoto tahu válkou (3.3a); odmítne-li, invaze začíná normálně.
 - Trvá 6 po sobě jdoucích tahů s akcí `invade`. Přerušení = start znovu. Paralelní invaze jsou povoleny (každá se platí zvlášť).
 - Strach z agresora: za každé okupované NPC ztrácí okupant 1 `influence`/tah u všech nezávislých NPC.
 - Výsledek: `status` = `occupied_X`, `law` −3, `wealth` −30 %, `pop` −20 % (uprchlíci jdou do nejbližšího NPC, který dostane `pop` +, `wealth` −2/tah po 3 tahy). Zdroje NPC se počítají útočníkovi.
 - Okupované NPC v bídě (viz 4.3) může v Crashi/Depresi zrevoltovat: 30 % šance/tah, vrací se na `independent` a připojí se k Unii, pokud existuje.
+
+### 3.3a Válka hráčů
+
+- **Vyhlášení:** akce `declare_war` s `target` A nebo B. Útok na NPC pod paktem druhého hráče vyhlásí válku automaticky. Válku nelze vyhlásit v tazích 1 až 9 ani 88 až 90; v těchto tazích se `declare_war` i útok na NPC pod paktem druhého vyřadí.
+- **Každý tah války, od tahu vyhlášení:** oba hráči `power` −10 a `wealth` −5 %; automatický obchod mezi nimi je přerušen; obchod každého z nich s NPC ve sféře druhého se násobí 0.5; všechna nezávislá NPC snižují `influence` u obou o 1.
+- **Unie:** po dobu války platí ten, kdo válku vyhlásil, clo celní unie navíc o 0.10. Členové Unie do války nevstupují.
+- **Konec ústupem:** `cancel` na válku. Kdo ustoupí, ztrácí 30 % vlivu u všech NPC.
+- **Konec kapitulací:** klesne-li hráči `power` na 0, kapituluje: ztrácí všechny pakty, 50 % vlivu u všech NPC a 20 % svého `wealth`, které jde vítězi.
+- Hráče nelze dobýt ani okupovat. Vyhlášení války i její konec jsou události pro Zprávy světa.
 
 ### 3.4 Rozhodování NPC o nabídkách
 
@@ -179,6 +194,10 @@ Cenový člen se hodnotí z pohledu NPC: když NPC nakupuje, počítá se s opa�
 - jinak odmítnuto.
 
 Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde do soukromého logu hráče a do snímku, do Zpráv světa ne.
+
+### 3.4a Soutěž o stejný cíl
+
+Cílené akce hráčů na totéž NPC v jednom tahu se vyhodnotí před provedením, ne v pořadí seznamu. Konfliktní dvojice jsou `trade_offer` na stejnou surovinu, `protect` proti `protect`, `invade` proti `invade` a `admit` proti `protect`. Pro každou akci dvojice se spočte skóre podle 3.4; akce s vyšším skóre jde do normálního vyhodnocení (hod, podmínka, protinávrh). Při remíze rozhodne hod d100 z `rng_seed + turn + CRC32(ID)`. Prohraná akce se neprovede a do soukromého logu prohraného se zapíše „NPC dalo přednost nabídce druhé strany“.
 
 ### 3.5 Nabídky NPC hráčům
 
@@ -387,7 +406,7 @@ Ze způsobilých států zakládá Unii největší souvislá skupina podle `adj
 - Fond (`wealth` C) = 10 % `wealth` každého člena při vstupu (odvedeno členem). Dále každý člen odvádí do fondu každý tah 2 % svého `wealth`.
 - Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma. Sdílí se jen tok tahu, ne zásoby, a vnitřní trh zahrnuje i orit; výjimka pro orit v 4.1a se ho netýká.
 - **Automatická solidarita:** fond pošle každý tah až 3 `wealth` nejchudšímu členovi v bídě a smí se přitom vyprázdnit až na 0. Nevyžaduje akci Unie a snímek ji zapisuje jako `union_solidarity`.
-- **Celní unie:** obchod mezi členem Unie a nečlenem (NPC i hráči, automatický i cílený) nese clo, které platí nečlen a které jde do fondu Unie; snímek ho zapisuje jako `union_tariff`. Vnitřní trh členů beze změny. Členem jsou jen `members`, kandidát je nečlen. Clo je podíl z hodnoty obchodu bez tranzitní přirážky: u automatického trhu ze základní tržní ceny, u cíleného obchodu z dohodnuté ceny. Platí-li ho kupec, zaplatí cenu i clo; platí-li ho prodejce, dostane cenu bez cla. Do objemu obchodu pro metriku A se clo nepočítá.
+- **Celní unie:** obchod mezi členem Unie a nečlenem (NPC i hráči, automatický i cílený) nese clo, které platí nečlen a které jde do fondu Unie; snímek ho zapisuje jako `union_tariff`. Vnitřní trh členů beze změny. Členem jsou jen `members`, kandidát je nečlen. Clo je podíl z hodnoty obchodu bez tranzitní přirážky: u automatického trhu ze základní tržní ceny, u cíleného obchodu z dohodnuté ceny. Platí-li ho kupec, zaplatí cenu i clo; platí-li ho prodejce, dostane cenu bez cla. Do objemu obchodu pro metriku A se clo nepočítá. Za války hráčů platí ten, kdo válku vyhlásil, clo navíc o 0.10 (3.3a).
 - **Sazba cla (`set_tariff`):** Unie nastavuje sazbu akcí `set_tariff` s parametrem `rate` od 0 do 0.20 po 0.05; výchozí sazba je 0.10. Nová sazba platí od dalšího tahu a počítá se do limitu 3 akcí. Sazba je veřejná.
 - **Obchod Unie za členy:** Unie smí `trade_offer` s NPC, které není členem, nebo s hráčem A či B. Nabídka se kryje z poolu členů: prodává se z přebytků členů nad rezervu 3 tahů spotřeby, nakupuje se pro deficity členů. Směr určí souhrnná bilance poolu (přebytky minus deficity). Prodané množství se odebírá členům poměrně k jejich přebytku, nakoupené se rozděluje poměrně k deficitu. Peníze jdou přes fond: kupec platí do fondu, při nákupu platí fond; kupec zaplatí nejvýš to, co má, a fond tedy nejde do mínusu. Cena musí být v pásmu 0.7 až 1.5 tržní ceny jako u hráčů, obchod nedává vliv, NPC ho vyhodnotí podle 3.4 a nečlen z něj odvádí clo.
 - `union_fund`: převod z fondu členovi nebo kandidátovi. `invest_law`, `invest_tech`, `invest_industry` a `invest_prod` na členy a kandidáty za poloviční cenu.
@@ -398,7 +417,7 @@ Ze způsobilých států zakládá Unii největší souvislá skupina podle `adj
 `law_threshold` = průměr `law` členů − 1, přepočítáno každý tah. Zveřejněno jen slovně (viz 6), číslo hráči nevidí.
 
 ### 7.4 Vstup po založení
-- **Přitažlivost:** nezávislé NPC s `law ≥ law_threshold`, průměrný růst `wealth` členů za poslední 3 tahy vyšší než růst toho NPC, a `influence[A] ≤ 8` i `influence[B] ≤ 8`. Unie musí nabídnout akcí `admit`. Podmínka `law ≥ law_threshold` je tvrdá; teprve po jejím splnění NPC nabídku vyhodnotí podle 3.4. Max jeden vstup za den.
+- **Přitažlivost:** nezávislé NPC s `law ≥ law_threshold`, průměrný růst `wealth` členů za poslední 3 tahy vyšší než růst toho NPC, a `influence[A] ≤ 8` i `influence[B] ≤ 8`. **Zóna vlivu:** `admit` je možný i na NPC s `influence[A]` nebo `influence[B]` 9 až 12, má-li NPC `law ≥ law_threshold + 1`; sféra (vliv ≥ 10 s náskokem 3) zůstává nedostupná. Unie musí nabídnout akcí `admit`. Podmínka `law ≥ law_threshold` je tvrdá; teprve po jejím splnění NPC nabídku vyhodnotí podle 3.4. Max jeden vstup za den.
 - **Bolest:** nezávislé NPC v bídě nebo po převratu požádá samo. Má-li `law ≥ law_threshold`, stává se členem; jinak `status = candidate`. Kandidát se stane členem v tahu, kdy práh splní.
 - Okupované NPC po revoltě (3.3) vstupuje jako člen, pokud sousedí s členem, jinak jako kandidát.
 - **Sousednost:** každý vstup po založení, přitažlivostí i bolestí, vyžaduje sousednost aspoň s jedním členem podle `adjacency`. Kdo nesousedí, zůstává mimo.
@@ -447,7 +466,7 @@ Národní cíle (`secrets/`) se vyhodnotí také a zveřejní, ale nemají vliv 
 1. **Okupované NPC:** platí si vlastní deficit z vlastního `wealth`; okupant dostává jeho přebytky zdarma (počítají se do jeho produkce a metrik). Okupované NPC v bídě je pro okupanta břemeno (uprchlíci, revolta), ne zisk.
 2. **Populace:** efektivní produkce každého zdroje = `prod × pop / pop_start`. Migrace tedy reálně přesouvá výrobu.
 3. **Papírové bohatství věřitelů:** `paper_wealth` hráče = součet nesplacených půjček státům s `prod.orit > 0` × (cena oritu / 10). Ve fázi `panic` jde na 0 jako všude.
-4. **Konec války hráčů:** ústup = `cancel` na vlastní probíhající invazi nebo pakt u sporného NPC; kdo ustoupí, ztrácí u něj veškerý `influence`.
+4. **Konec války hráčů:** platí 3.3a (v1.10): ústup je `cancel` na válku a stojí 30 % vlivu u všech NPC; kapitulace při `power` 0.
 5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu; obchody s oritem 2×.
 6. **Neplatný výstup hráče:** až 2 opakování volání; poté hráč v tomto tahu mlčí: žádné akce, `public_statement` = "Vláda nevydala prohlášení.", zapsáno do snímku s příznakem `silent: true`.
 7. **Kronika:** píše se jen, pokud existují všechny tři snímky dne; jinak se přeskočí a doplní po opravě.

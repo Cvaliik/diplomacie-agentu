@@ -73,6 +73,7 @@ obchod a stojí oba 1 bohatství za tah.
 
 NPC nelze napadnout, dokud pakt trvá. Stojí 2 síly za tah. Padlé říše pakt nepřijímají.
 NPC pakt vyhodnotí podle své vůle. Pakt zaniká, když ti síla klesne na 0.
+Jedno NPC má nejvýš jeden pakt; na NPC pod paktem druhého hráče akce neprojde.
 
 ```json
 { "type": "protect", "target": "N7" }
@@ -83,8 +84,21 @@ NPC pakt vyhodnotí podle své vůle. Pakt zaniká, když ti síla klesne na 0.
 Vyžaduje aspoň dvojnásobek síly cíle (u padlé říše čtyřnásobek) a 6 po sobě jdoucích tahů
 s touto akcí (u padlé říše 10). Přerušení znamená začít znovu. Stojí 10 bohatství a 5 síly za tah.
 
+Cílem je jen NPC; druhého hráče dobýt nelze. Útok na NPC pod paktem druhého hráče vyhlásí válku.
+
 ```json
 { "type": "invade", "target": "N8" }
+```
+
+### `declare_war`: vyhlášení války druhému hráči
+
+Cílem je `A` nebo `B`. Každý tah války stojí obě strany 10 síly a 5 % bohatství, přeruší váš vzájemný
+automatický obchod a oslabí obchod se státy ve sféře druhého. Válka končí ústupem (`cancel` s `deal_id`
+války ze seznamu `valky`, stojí 30 % vlivu u všech států) nebo vyčerpáním síly (kapitulace). V tazích
+1 až 9 a 88 až 90 válku vyhlásit nelze.
+
+```json
+{ "type": "declare_war", "target": "B" }
 ```
 
 ### `invest_tech`: investice do technologie
@@ -142,15 +156,16 @@ Jen vlastní stát. Stojí 5 bohatství, s šancí 15 % najde malé ložisko ori
 
 ### `arm`: zbrojení
 
-Jen vlastní stát. Stojí 8 bohatství, síla +5.
+Jen vlastní stát. Utratíš `amount` bohatství (nejvýš 40) a síla vzroste o `amount / 1.6`.
 
 ```json
-{ "type": "arm" }
+{ "type": "arm", "amount": 16 }
 ```
 
 ### `cancel`: zrušení obchodu, paktu, sankce nebo invaze
 
-`deal_id` najdeš ve svém pohledu v seznamu `deals`. U invaze přidej `target`.
+`deal_id` najdeš ve svém pohledu v seznamu `deals`. U invaze přidej `target`. Válku ukončíš ústupem:
+`cancel` s `deal_id` války ze seznamu `valky`.
 
 ```json
 { "type": "cancel", "deal_id": "d7" }
@@ -170,6 +185,7 @@ Doručena v příštím tahu. Adresát je `A`, `B` nebo `C`. Publikum ji vidí.
 ### `admit`: nabídka členství (jen Unie)
 
 Jen nezávislému NPC, které sousedí s některým členem. NPC nabídku vyhodnotí podle své vůle.
+Lze i u státu, kde má velmoc silný vliv, ale ještě ho nemá ve sféře; takový stát musí mít pevnější instituce.
 
 ```json
 { "type": "admit", "target": "N10" }

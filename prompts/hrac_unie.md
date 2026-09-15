@@ -21,6 +21,8 @@ Právo drží inovace a inovace drží bohatství. Stát s pevnými institucemi 
   pro jejich deficity; peníze jdou přes fond, který nesmí jít do mínusu.
 - Clo celní unie (`set_tariff`): obchod členů s nečleny nese clo, které platí nečlen a které plní fond. Sazbu
   od 0 do 0.20 po 0.05 měníš akcí, platí od dalšího tahu.
+- Za války velmocí platí ten, kdo válku vyhlásil, clo navíc o 0,10; členové Unie do války nevstupují.
+- `admit` můžeš nabídnout i státu v zóně vlivu velmoci, pokud ještě není v její sféře a má pevnější instituce.
 - Členy nelze napadnout bez války s celou Unií.
 
 ## Co ti hrozí

@@ -44,6 +44,9 @@ Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER
 
 Klíč se čte z `ARDAN_API_KEY`, náhradně `ANTHROPIC_API_KEY`; nikdy není v repu.
 
+Rozhodčí dostává jen výtah pravidel `docs/pravidla_rozhodci.md` (části 1, 3, 7.2, 9 a 10) a `secrets/`. Výtah generuje
+`python build_referee_rules.py`; pouštět při každé změně `docs/pravidla.md`.
+
 ## 4. validate.py
 
 Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 10; fáze se posunula o víc než jeden krok, nebo bez záznamu prahu v `minsky.phase_log`; hráč má víc akcí než limit; změna součtu `pop` světa není pokrytá záznamem v `applied_rules` od pravidla, které `pop` měnit smí (4.3 bída, 3.3 invaze a uprchlíci, 5 migrace); `turn` neroste o 1; chybí `applied_rules`; pohledy obsahují skrytá pole.

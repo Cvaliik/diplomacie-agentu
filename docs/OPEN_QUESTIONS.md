@@ -4442,3 +4442,87 @@ Instalaci balíčku a klíč musí dodat Adam.
 
 BUILD.md část 3 chce e-mail Adamovi přes Gmail konektor. Skript konektor volat nemůže; `run_turn.py` zapíše
 `history/failed_turn_NNN.json` a důvod vytiskne, e-mail musí poslat routine. Routiny zatím nevznikly.
+
+---
+
+## T (v1.10). Test scénáře (k), 14 tahů, bez modelů
+
+Scénáře (0) a (b) po změnách v1.10 prošly beze změny výsledků (crash v tahu 33, Unie N13, N8, N2, N7, validate 0 chyb).
+
+| bod | výsledek | čísla |
+|---|---|---|
+| tah 2: A i B `trade_offer` N3 ropa, provedena jedna, log prohraného | ano | skóre 36.0 proti 36.0, remíza, hod 65 pro B; nabídku B NPC vyhodnotilo podle 3.4 (protinávrh), A se neprovedla a v logu má „NPC dalo přednost nabídce druhé strany“ |
+| tah 3: A i B `protect` N1, nejvýš jeden pakt | ano | prohrál B; pakt A přijat; po tahu 3 na N1 jen pakt A |
+| tah 4: B `protect` N1 znovu, vyřazení bez hodu | ano | důvod „NPC je pod paktem A“, žádný hod |
+| tah 5: A `protect` N5 a B `invade` N5, pakt a válka v tomtéž tahu | ne | pakt se vyhodnotil před invazí a N5 ho přijalo; válka nevznikla, protože ji v tazích 1 až 9 nelze vyhlásit, invaze B byla proto vyřazena (viz V6) |
+| tahy 6 až 9: `arm` 40 → +25 power | částečně | tahy 6 až 8 +25.0 každý (power A 72 → 139); v tahu 9 vyřazen pro nedostatek wealth (A mělo 14.5) |
+| válka od tahu 10 | ano | `declare_war` A proti B v tahu 10, válka `w1` aktivní v tazích 10 až 12 |
+| ztráty za tah a přerušení obchodu | ano | tah 10: A power 126 → 116, wealth 17.3 → 16.4; B power 100 → 90, wealth 141.1 → 134.1. Tah 11 a 12 stejně −10 a −5 %. Automatický obchod A s B: tah 8 0.87, tah 9 1.13, tahy 10 až 14 0 |
+| tah 13: ústup B a −30 % vlivu | ústup ano, −30 % neověřeno | válka skončila ústupem B; B měl ve chvíli ústupu vliv 0 u všech NPC, úbytek 30 % se proto nedal změřit |
+| validate | ano | 0 chyb |
+
+---
+
+## V. Otázky pro v2 a výklady enginu v1.10
+
+### V1. Bitevní mechanika (v2)
+
+Válka hráčů je zatím jen opotřebení (−10 power a −5 % wealth za tah oběma). Chybí výsledek střetu podle síly, spojenců a
+terénu. **Otázka pro v2:** má síla rozhodovat o tom, kdo ztrácí víc?
+
+### V2. Remíza, oba power 0 (v2)
+
+**Výklad enginu:** klesne-li oběma hráčům `power` na 0 ve stejném tahu, válka končí bez vítěze a bez trestů kapitulace.
+
+### V3. Strach z agresora při válce (v2)
+
+Strach z agresora (3.3) se počítá jen z okupovaných NPC. Vyhlášení války ho nespouští; nezávislá NPC snižují vliv u obou
+stran stejně. **Otázka pro v2:** má ten, kdo válku vyhlásil, ztrácet vliv víc?
+
+### V4. Dopad války na Minskyho fázi (v2)
+
+Válka zatím fázi cyklu neovlivňuje. **Otázka pro v2:** má válka zrychlit přechod do `distress` nebo `panic`?
+
+### V5. Skóre invaze v soutěži
+
+3.4 nemá skóre pro `invade`. **Výklad enginu:** pro soutěž `invade` proti `invade` se počítá základ 40, vliv a otevřenost,
+bez cenového členu a bonusů.
+
+### V6. Pakt a invaze v tazích 1 až 9
+
+Bod 3 říká, že přijatý pakt udělá z invaze válku, bod 4 zakazuje válku v tazích 1 až 9. **Výklad enginu:** v tazích 1 až 9
+a 88 až 90 se invaze na NPC pod paktem druhého hráče vyřadí s důvodem „NPC je pod paktem X a válku nelze vyhlásit“.
+
+### V7. Remíza v soutěži
+
+**Výklad enginu:** hod d100 do 50 dává přednost akci, která je v seznamu akcí dřív, jinak pozdější. Skóre obou stran se
+porovnává přesně (na 9 desetinných míst).
+
+### V8. NPC při válce o pakt
+
+Dřívější 3.3 ubíralo spornému NPC 5 wealth za tah války. 3.3a to neuvádí. **Výklad enginu:** srážka NPC zrušena.
+
+### V9. Zóna vlivu u `admit`
+
+**Výklad enginu:** zónou je vliv velmoci nad 8 až 12 včetně. Nad 12, pokud stát není ve sféře, zůstává `admit` zakázaný
+jako dosud.
+
+### V10. Přesnost čísel v pohledu
+
+Bod 10 chce čísla na 1 desetinné místo. **Výklad:** ceny, clo a ceny v nabídkách zůstávají na 2 místa. Sazba cla jde
+po 0.05 a pásmo ceny u `trade_offer` je 0.7 až 1.5 násobku tržní ceny; při ceně zaokrouhlené na 1 místo (0.56 jako 0.6)
+by hráči posílali nabídky mimo pásmo.
+
+### V11. `arm` bez parametru a Unie
+
+**Výklad enginu:** `arm` bez `amount` znamená 8 wealth (dřívější síla +5); Unie `arm` použít nemůže, její síla je součet členů.
+
+### V12. Výtah pravidel bez části 6
+
+Výtah pro rozhodčího nemá část 6 (Zprávy světa, šablony zpráv), přestože rozhodčí zprávy píše. **Otázka:** přidat část 6
+do výtahu?
+
+### V13. Neúspěšné pokusy po resetu
+
+Dvě volání `--only A --no-apply` prošla napoprvé: vstup 8 510 tokenů, výstup 998 a 828, bez neúspěšného pokusu. Příčinu
+tří pokusů v tahu 1 z v1.9 se tím zjistit nepodařilo; neúspěšné pokusy se od v1.10 ukládají do `debug/turn_NNN_X_fail_K.txt`.

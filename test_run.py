@@ -123,10 +123,140 @@ def scenario_b(turn: int, state) -> list[dict]:
     return acts
 
 
+TURNS_K = 14
+
+
+def scenario_k(turn: int, state) -> list[dict]:
+    """(k) v1.10: soutez o cil, jeden pakt, pakt s invazi, arm, valka hracu a ustup."""
+    acts: list[dict] = []
+    if turn == 2:
+        # cena platna v tomto tahu: engine ji prepocita na zacatku tahu (4.1b), proto na kopii
+        nxt = engine.deepcopy(state)
+        engine.step_prices(nxt, engine.Trace())
+        price = round(engine.market_price(nxt, "oil"), 4)
+        for pid in ("A", "B"):
+            acts.append({"player": pid, "type": "trade_offer", "target": "N3", "res": "oil",
+                         "qty": 3, "price_per_unit": price})
+    if turn == 3:
+        acts += [{"player": "A", "type": "protect", "target": "N1"},
+                 {"player": "B", "type": "protect", "target": "N1"}]
+    if turn == 4:
+        acts.append({"player": "B", "type": "protect", "target": "N1"})
+    if turn == 5:
+        acts += [{"player": "A", "type": "protect", "target": "N5"},
+                 {"player": "B", "type": "invade", "target": "N5"}]
+    if 6 <= turn <= 9:
+        acts += [{"player": "B", "type": "invade", "target": "N5"},
+                 {"player": "A", "type": "arm", "amount": 40}]
+    if turn == 10:
+        acts.append({"player": "A", "type": "declare_war", "target": "B"})
+    if turn == 13:
+        war = next((w for w in state.get("wars", []) if "B" in (w["aggressor"], w["defender"])), None)
+        acts.append({"player": "B", "type": "cancel", "deal_id": war["id"] if war else "w?"})
+    return acts
+
+
+def analyza_k(res) -> list[tuple[str, bool, str]]:
+    """Body oddilu T (v1.10): (bod, ano/ne, cisla)."""
+    R = {r["turn"]: r for r in res["rows"]}
+
+    def ev(t, kind, **kw):
+        return [e for e in R[t]["events"] if e.get("kind") == kind and all(e.get(k) == v for k, v in kw.items())]
+
+    def rules(t, name):
+        return [a for a in R[t]["applied"] if a["rule"] == name]
+
+    out = []
+    # 1. soutez o N3 ropu
+    lost = ev(2, "competition_lost", npc="N3")
+    dec = [d for d in R[2]["decisions"] if d[1] == "trade_offer"]
+    comp = rules(2, "3.4a soutez o cil")
+    ok = len(lost) == 1 and len({d[0] for d in dec}) == 1 and lost[0]["player"] not in {d[0] for d in dec}
+    out.append(("tah 2: jedna trade_offer provedena, log prohraného", ok,
+                "soutěž %s; vyhodnoceno 3.4 jen %s (%s); log %s: „%s“" % (
+                    comp[0]["outputs"] if comp else "-", ", ".join(sorted({d[0] for d in dec})) or "nikdo",
+                    ", ".join(d[2] for d in dec), lost[0]["player"] if lost else "-",
+                    R[2]["private_log_last"].get(lost[0]["player"], "-") if lost else "-")))
+    # 2. jeden pakt N1
+    lost3 = ev(3, "competition_lost", npc="N1")
+    owners = R[3]["protect_n"].get("N1", [])
+    out.append(("tah 3: nejvýš jeden pakt na N1", len(lost3) == 1 and len(owners) <= 1,
+                "prohrál %s; výsledek vítěze %s; pakt N1 po tahu 3: %s" % (
+                    lost3[0]["player"] if lost3 else "-",
+                    [d for d in R[3]["decisions"] if d[1] == "protect"], owners or "žádný")))
+    # 3. vyrazeni B protect N1 v tahu 4
+    inv4 = ev(4, "action_invalid", player="B", type="protect")
+    holder = R[3]["protect_n"].get("N1", [])
+    expect = holder == ["A"]
+    ok = bool(inv4) and inv4[0]["reason"] == "NPC je pod paktem A" if expect else not inv4
+    out.append(("tah 4: B protect N1 vyřazen bez hodu", ok and expect,
+                "pakt N1 před tahem 4: %s; vyřazení: %s; hod B u N1: %s" % (
+                    holder or "žádný", inv4[0]["reason"] if inv4 else "ne",
+                    [d for d in R[4]["decisions"] if d[0] == "B"] or "žádný")))
+    # 4. pakt a invaze v tomtez tahu
+    dec5 = [d for d in R[5]["decisions"] if d[0] == "A" and d[1] == "protect"]
+    blk = ev(5, "invade_blocked", player="B")
+    prog = ev(5, "invade_progress", player="B")
+    war5 = ev(5, "war_declared")
+    order = [a["rule"] for a in R[5]["applied"] if a["rule"] in ("3.4 rozhodnuti NPC", "3.3 invaze", "3.2 protect")]
+    out.append(("tah 5: pakt vyhodnocen před invazí; válka v tomtéž tahu", bool(war5),
+                "pakt A u N5: %s; pořadí pravidel %s; invaze B: %s; válka: %s" % (
+                    dec5 or "-", order, (blk[0]["reason"] if blk else ("postup %d" % prog[0]["turns"] if prog else "-")),
+                    "ano" if war5 else "ne")))
+    # 5. arm 40 -> +25 power
+    gains = [a["outputs"]["gain"] for t in range(6, 10) for a in rules(t, "3.2 arm")]
+    out.append(("tahy 6 až 9: arm 40 = +25 power", len(gains) == 4 and all(abs(g - 25.0) < 1e-9 for g in gains),
+                "přírůstky %s; power A tah 5 %.1f, tah 9 %.1f" % (gains, R[5]["power"]["A"], R[9]["power"]["A"])))
+    # 6. valka od tahu 10
+    w10 = ev(10, "war_declared")
+    out.append(("válka od tahu 10", bool(w10) and all(R[t]["wars"] for t in (10, 11, 12)),
+                "%s; aktivní v tazích %s" % (w10[0] if w10 else "nevyhlášena",
+                                             [t for t in range(1, 15) if R[t]["wars"]])))
+    # 7. ztraty za tah a preruseni obchodu
+    losses = []
+    for t in (10, 11, 12):
+        for a in rules(t, "3.3a valka"):
+            o = a["outputs"]
+            losses.append("t%d A power %.1f→%.1f wealth %.1f→%.1f, B power %.1f→%.1f wealth %.1f→%.1f" % (
+                t, o["A"]["power_pred"], o["A"]["power_po"], o["A"]["wealth_pred"], o["A"]["wealth_po"],
+                o["B"]["power_pred"], o["B"]["power_po"], o["B"]["wealth_pred"], o["B"]["wealth_po"]))
+    ab = {t: sum(a["outputs"]["objem"] for a in rules(t, "4.1a automaticky trh")
+                 if {a["inputs"]["prodejce"], a["inputs"]["kupec"]} == {"A", "B"}) for t in range(8, 15)}
+    ok = len(losses) == 3 and all(ab[t] == 0 for t in (10, 11, 12))
+    out.append(("tahy 10 až 12: power −10, wealth −5 %, obchod A s B přerušen", ok,
+                "; ".join(losses) + "; objem A s B podle tahů %s" % {t: round(v, 2) for t, v in ab.items()}))
+    # 8. ustup B
+    end = rules(13, "3.3a konec valky")
+    o = end[0]["outputs"] if end else {}
+    ratio = (o["vliv_po"] / o["vliv_pred"]) if end and o.get("vliv_pred") else None
+    out.append(("tah 13: ústup B, vliv B −30 %", bool(end) and o.get("jak") == "ustup" and o.get("porazeny") == "B"
+                and ratio is not None and abs(ratio - 0.7) < 1e-6,
+                "%s; součet vlivu B %.3f → %.3f (poměr %s); válka v tahu 14: %s" % (
+                    o.get("jak", "-"), o.get("vliv_pred", 0), o.get("vliv_po", 0),
+                    ("%.3f" % ratio) if ratio is not None else "-", "ano" if R[14]["wars"] else "ne")))
+    return out
+
+
+def kriteria_k(res) -> bool:
+    print("KONTROLNI SEZNAM scenare (k)")
+    print("-" * 78)
+    ok = True
+    for bod, passed, detail in analyza_k(res):
+        ok &= passed
+        print("  [%s] %s: %s" % ("OK " if passed else "NE ", bod, detail))
+    val_ok = not res["errors"]
+    ok &= val_ok
+    print("  [%s] validate bez chyb" % ("OK " if val_ok else "NE "))
+    for t, errs in res["errors"][:5]:
+        print("        tah %d: %s" % (t, errs[0]))
+    return bool(ok)
+
+
 SCENARE = {
     "0": (scenario_0, "nikdo netahne"),
     "a": (scenario_a, "scenar ze zadani (A pujcuje N6 od tahu 8, B chrani N7)"),
     "b": (scenario_b, "realisticke pujcovani (jen kdyz NPC zada, max 1 na hrace a tah)"),
+    "k": (scenario_k, "v1.10: soutez o cil, jeden pakt, valka hracu (14 tahu)"),
 }
 
 
@@ -249,6 +379,14 @@ def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
             "invest_prod": sum(1 for e in events if e.get("kind") in ("invest_prod_done", "npc_invest_prod")),
             "balance": _balance(new_state, applied),
             "split": _trade_split(new_state, applied),
+            # v1.10: valky, pakty, sila, udalosti a posledni zaznam soukromeho logu
+            "wars": [dict(w) for w in new_state.get("wars", [])],
+            "protect_n": {nid: [d["owner"] for d in new_state["deals"] if d["type"] == "protect" and d["target"] == nid]
+                          for nid in new_state["npc"]},
+            "power": {p: float(new_state["players"][p]["power"]) for p in ("A", "B")},
+            "events": events if keep_applied else None,
+            "private_log_last": {p: (new_state.get("private_log", {}).get(p) or [{}])[-1].get("reason", "-")
+                                 for p in ("A", "B")},
             "decisions": [(d["player"], d["action"], d["outcome"]) for d in new_state.get("npc_decisions", [])],
             "offers_new": [(o["player"], o["type"]) for o in new_state.get("offers_new", [])],
             "offers_accepted": [(e["player"], e["offer"]["type"]) for e in events if e.get("kind") == "offer_accepted"],
@@ -359,9 +497,9 @@ def souhrn(res) -> None:
 
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenar", choices=["0", "a", "b", "vse"], default="vse")
+    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "vse"], default="vse")
     args = ap.parse_args()
-    klice = ["0", "a", "b"] if args.scenar == "vse" else [args.scenar]
+    klice = ["0", "a", "b", "k"] if args.scenar == "vse" else [args.scenar]
 
     vysledek = True
     for k in klice:
@@ -369,9 +507,13 @@ def main() -> int:
         print("=" * 78)
         print("SCENAR (%s): %s" % (k, popis))
         print("=" * 78)
-        res = run(TURNS, fn)
-        ok = kriteria_0(res) if k == "0" else kriteria_ab(res)
-        souhrn(res)
+        if k == "k":
+            res = run(TURNS_K, fn, keep_applied=True)
+            ok = kriteria_k(res)
+        else:
+            res = run(TURNS, fn)
+            ok = kriteria_0(res) if k == "0" else kriteria_ab(res)
+            souhrn(res)
         print()
         print("VYSLEDEK (%s): %s" % (k, "vse proslo" if ok else "cast kriterii neprosla"))
         print()

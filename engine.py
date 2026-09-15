@@ -67,6 +67,17 @@ PLAYER_FLAT_CROSSINGS = 1                   # pausal prejezdu A a B na automatic
 SPECULATIVE_SHARE = 0.1                     # spekulativni nabidka velkych tovaren (4.0, v1.9)
 # 4.1a (v1.9): parovani podle ceny. False vraci parovani v1.8 jen pro srovnani v test_run.py.
 PRICE_PAIRING = True
+WAR_POWER_LOSS = 10.0                       # valka hracu: power -10 za tah obema (3.3a, v1.10)
+WAR_WEALTH_LOSS = 0.05                      # valka hracu: wealth -5 % za tah obema
+WAR_RETREAT_INFLUENCE = 0.30                # ustup: -30 % vlivu u vsech NPC
+WAR_CAPITULATION_INFLUENCE = 0.50           # kapitulace: -50 % vlivu vsude
+WAR_CAPITULATION_WEALTH = 0.20              # kapitulace: 20 % wealth jde vitezi
+WAR_TARIFF_EXTRA = 0.10                     # clo Unie navic vuci tomu, kdo valku vyhlasil
+WAR_SPHERE_TRADE = 0.5                      # obchod s NPC ve sfere nepritele x0.5
+ARM_MAX = 40.0                              # arm: nejvys 40 wealth na akci (3.2, v1.10)
+ARM_RATIO = 1.6                             # arm: power += amount / 1.6
+ADMIT_ZONE_MIN = 8.0                        # admit ze zony vlivu: vliv nad 8 ...
+ADMIT_ZONE_MAX = 12.0                       # ... do 12 vcetne (7.4, v1.10)
 MAX_CROSSINGS = 3                           # nejvys 3 prejezdy na trhu (4.1a, v1.5)
 TRANSIT_SURCHARGE = 0.1                     # prirazka za prejezd (4.1a, v1.5)
 SOLIDARITY_MAX = 3.0                        # automaticka solidarita Unie za tah (7.2, v1.5)
@@ -300,6 +311,8 @@ def normalize(state) -> None:
     state["players"]["C"].setdefault("tariff_rate", TARIFF_RATE)
     state["players"]["C"].setdefault("tariff_next", None)
     state.setdefault("deals", [])
+    state.setdefault("wars", [])   # 3.3a (v1.10)
+    state["minsky"].setdefault("next_war_id", 1)
     state.setdefault("invasions", [])
     state.setdefault("refugees", [])
     state.setdefault("messages_pending", [])
@@ -423,13 +436,8 @@ DECISION_POSITIVE = "Nabídka odpovídá našim zájmům."
 DECISION_NEUTRAL = "Nabídku jsme po zvážení nepřijali."
 
 
-def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
-                direction=None, events=None, trace=None) -> str:
-    """3.4 (v1.6): NPC vyhodnoti cilenou nabidku.
-
-    Vraci "prijato", "podminka", "protinavrh" nebo "odmitnuto". Vysledek s vetou
-    duvodu jde do soukromeho logu hrace a do snimku (npc_decisions), ne do Zprav.
-    """
+def _npc_score(state, npcdata, pid, nid, atype, params, price_ratio=None, direction=None):
+    """3.4: faktory a skore NPC bez hodu. Pouziva ho _npc_decide i soutez o cil (3.4a)."""
     turn = int(state["meta"]["turn"])
     n = state["npc"][nid]
     f = {}
@@ -461,7 +469,18 @@ def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
             and not (0.9 <= price_ratio <= 1.2)):
         f["pravo"] = -20.0
 
-    score = 40.0 + sum(f.values())
+    return f, 40.0 + sum(f.values())
+
+
+def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
+                direction=None, events=None, trace=None) -> str:
+    """3.4 (v1.6): NPC vyhodnoti cilenou nabidku.
+
+    Vraci "prijato", "podminka", "protinavrh" nebo "odmitnuto". Vysledek s vetou
+    duvodu jde do soukromeho logu hrace a do snimku (npc_decisions), ne do Zprav.
+    """
+    turn = int(state["meta"]["turn"])
+    f, score = _npc_score(state, npcdata, pid, nid, atype, params, price_ratio, direction)
     roll = _decision_roll(state, nid)
     if roll <= score:
         outcome = "prijato"
@@ -668,7 +687,7 @@ def _union_deal_execute(state, d, needs, imports, exports, trade_mult, trace) ->
     want = float(d["qty"]) * trade_mult
     if not C.get("active") or tgt in (C.get("members") or []) or price <= 0:
         return 0.0
-    rate = tariff_rate(state)
+    rate = _tariff_for(state, tgt)
     surplus, deficit = _union_pool(state, res, needs, imports, exports)
     te = ent(state, tgt)
     shares = {}
@@ -711,6 +730,171 @@ def _union_deal_execute(state, d, needs, imports, exports, trade_mult, trace) ->
               {"qty": round(qty, 3), "objem": round(value, 3), "clo": round(tariff, 4),
                "clo_plati": tgt, "podily_clenu": shares, "fond": round(float(C["wealth"]), 4)})
     return value
+
+
+def _tariff_for(state, payer) -> float:
+    """7.2 a 3.3a (v1.10): sazba cla pro platce; kdo valku vyhlasil, plati po dobu valky +0.10."""
+    rate = tariff_rate(state)
+    if payer in ("A", "B") and any(w["aggressor"] == payer for w in state.get("wars", [])):
+        rate += WAR_TARIFF_EXTRA
+    return rate
+
+
+def _pact_holder(state, nid):
+    """3.2 (v1.10): kdo drzi pakt nad NPC (NPC ma nejvys jeden), jinak None."""
+    return next((d["owner"] for d in state["deals"] if d["type"] == "protect" and d["target"] == nid), None)
+
+
+def _war_between(state, a, b):
+    return next((w for w in state.get("wars", []) if {w["aggressor"], w["defender"]} == {a, b}), None)
+
+
+def _war_allowed(state, a, b):
+    """3.3a (v1.10): valku nelze vyhlasit v tazich 1 az 9 ani 88 az 90, ani kdyz uz probiha."""
+    turn = int(state["meta"]["turn"])
+    if turn <= 9 or 88 <= turn <= 90:
+        return False, "valku nelze vyhlasit v tazich 1 az 9 ani 88 az 90"
+    if _war_between(state, a, b):
+        return False, "valka uz probiha"
+    return True, ""
+
+
+def _declare_war(state, aggressor, defender, how, over, events, trace) -> None:
+    m = state["minsky"]
+    war = {"id": "w%d" % int(m.get("next_war_id", 1)), "aggressor": aggressor, "defender": defender,
+           "since": int(state["meta"]["turn"]), "how": how, "over": over}
+    m["next_war_id"] = int(m.get("next_war_id", 1)) + 1
+    state.setdefault("wars", []).append(war)
+    events.append({"kind": "war_declared", "war_id": war["id"], "aggressor": aggressor,
+                   "defender": defender, "how": how, "over": over})
+    trace.add("3.3a vyhlaseni valky", {"agresor": aggressor, "obrance": defender, "jak": how, "npc": over},
+              {"war_id": war["id"], "od_tahu": war["since"]})
+
+
+def _end_war(state, war, how, loser, winner, events, trace) -> None:
+    """3.3a (v1.10): konec valky ustupem, kapitulaci nebo remizou (oba power 0)."""
+    state["wars"] = [w for w in state.get("wars", []) if w["id"] != war["id"]]
+    out = {"war_id": war["id"], "jak": how, "porazeny": loser, "vitez": winner}
+    if how == "ustup":
+        before = sum(float(x["influence"].get(loser, 0.0)) for x in state["npc"].values())
+        for x in state["npc"].values():
+            x["influence"][loser] = float(x["influence"].get(loser, 0.0)) * (1.0 - WAR_RETREAT_INFLUENCE)
+        out.update({"vliv_pred": round(before, 3), "vliv_po": round(
+            sum(float(x["influence"].get(loser, 0.0)) for x in state["npc"].values()), 3)})
+    elif how == "kapitulace":
+        pacts = [d["id"] for d in state["deals"] if d["type"] == "protect" and d["owner"] == loser]
+        state["deals"] = [d for d in state["deals"] if d["id"] not in pacts]
+        for x in state["npc"].values():
+            x["influence"][loser] = float(x["influence"].get(loser, 0.0)) * (1.0 - WAR_CAPITULATION_INFLUENCE)
+        lp, wp = state["players"][loser], state["players"][winner]
+        take = float(lp["wealth"]) * WAR_CAPITULATION_WEALTH
+        lp["wealth"] = float(lp["wealth"]) - take
+        wp["wealth"] = float(wp["wealth"]) + take
+        out.update({"zrusene_pakty": pacts, "wealth_vitezi": round(take, 3)})
+    events.append({"kind": "war_end", "war_id": war["id"], "how": how, "loser": loser, "winner": winner,
+                   "between": [war["aggressor"], war["defender"]]})
+    trace.add("3.3a konec valky", {"agresor": war["aggressor"], "obrance": war["defender"]}, out)
+
+
+def step_wars(state, trace, events) -> None:
+    """3.3a (v1.10): za kazdy tah valky oba power -10 a wealth -5 %, nezavisla NPC vliv -1 u obou;
+    power 0 znamena kapitulaci (oba 0: remiza bez vitaze)."""
+    for war in list(state.get("wars", [])):
+        a, d = war["aggressor"], war["defender"]
+        before = {x: (float(state["players"][x]["power"]), float(state["players"][x]["wealth"])) for x in (a, d)}
+        for x in (a, d):
+            p = state["players"][x]
+            p["power"] = max(0.0, float(p["power"]) - WAR_POWER_LOSS)
+            p["wealth"] = float(p["wealth"]) * (1.0 - WAR_WEALTH_LOSS)
+        for nn in state["npc"].values():
+            if nn["status"] == "independent":
+                for x in (a, d):
+                    nn["influence"][x] = max(0.0, float(nn["influence"].get(x, 0.0)) - 1.0)
+        trace.add("3.3a valka", {"war_id": war["id"], "agresor": a, "obrance": d},
+                  {x: {"power_pred": round(before[x][0], 3), "power_po": round(float(state["players"][x]["power"]), 3),
+                       "wealth_pred": round(before[x][1], 3), "wealth_po": round(float(state["players"][x]["wealth"]), 3)}
+                   for x in (a, d)})
+        pa, pd = float(state["players"][a]["power"]), float(state["players"][d]["power"])
+        if pa <= 0 and pd <= 0:
+            _end_war(state, war, "remiza", None, None, events, trace)
+        elif pa <= 0:
+            _end_war(state, war, "kapitulace", a, d, events, trace)
+        elif pd <= 0:
+            _end_war(state, war, "kapitulace", d, a, events, trace)
+
+
+def _war_trade_mult(state, a, b) -> float:
+    """3.3a (v1.10): za valky obchod hrace s NPC ve sfere nepritele x0.5."""
+    for x, y in ((a, b), (b, a)):
+        if x in ("A", "B") and y in state["npc"]:
+            enemy = "B" if x == "A" else "A"
+            if _war_between(state, x, enemy) and state["npc"][y]["status"] == "sphere_%s" % enemy:
+                return WAR_SPHERE_TRADE
+    return 1.0
+
+
+COMPETING = {("trade_offer", "trade_offer"), ("protect", "protect"), ("invade", "invade"),
+             ("admit", "protect"), ("protect", "admit")}
+COMPETITION_REASON = "NPC dalo přednost nabídce druhé strany"
+
+
+def _competition_score(state, npcdata, act) -> float:
+    atype, nid, pid = act["type"], act["target"], act["player"]
+    params, ratio, direction = {}, None, None
+    if atype == "trade_offer" and act.get("res") in TRADEABLES:
+        mp = market_price(state, act["res"])
+        price = float(act.get("price_per_unit") or 0.0)
+        ratio = price / mp if mp > 0 else 1.0
+        direction = "npc_sells" if _npc_balance_for_trade(state, nid, act["res"]) > 0 else "npc_buys"
+        params = {"res": act["res"], "qty": act.get("qty"), "price": price}
+    return _npc_score(state, npcdata, pid, nid, atype, params, ratio, direction)[1]
+
+
+def _competition(state, npcdata, actions, valid, events, trace) -> set:
+    """3.4a (v1.10): soutez hracu o totez NPC v jednom tahu. Vraci indexy prohranych akci.
+
+    Konfliktni dvojice: trade_offer na stejnou surovinu, protect proti protect, invade proti invade,
+    admit proti protect. Vyssi skore podle 3.4 jde do normalniho vyhodnoceni; pri remize hod d100
+    z rng_seed + turn + CRC32(ID): do 50 vyhrava akce drive v seznamu, jinak pozdejsi.
+    """
+    turn = int(state["meta"]["turn"])
+    losers = set()
+    by_target = {}
+    for i in valid:
+        act = actions[i]
+        if act.get("target") in state["npc"] and act.get("type") in ("trade_offer", "protect", "invade", "admit"):
+            by_target.setdefault(act["target"], []).append(i)
+    for nid in sorted(by_target, key=_npc_key):
+        idxs = by_target[nid]
+        for x in range(len(idxs)):
+            for y in range(x + 1, len(idxs)):
+                i, j = idxs[x], idxs[y]
+                if i in losers or j in losers:
+                    continue
+                a, b = actions[i], actions[j]
+                if a["player"] == b["player"] or (a["type"], b["type"]) not in COMPETING:
+                    continue
+                if a["type"] == "trade_offer" and a.get("res") != b.get("res"):
+                    continue
+                sa, sb = _competition_score(state, npcdata, a), _competition_score(state, npcdata, b)
+                if abs(sa - sb) < 1e-9:
+                    roll = _decision_roll(state, nid)
+                    win, how = (i if roll <= 50 else j), "remiza, hod %d" % roll
+                else:
+                    win, how = (i if sa > sb else j), "skore"
+                lose = j if win == i else i
+                losers.add(lose)
+                la = actions[lose]
+                state.setdefault("private_log", {"A": [], "B": [], "C": []}).setdefault(la["player"], []).append(
+                    {"turn": turn, "npc": nid, "action": la["type"], "outcome": "prednost_druhe_strany",
+                     "reason": COMPETITION_REASON, "counter": None})
+                events.append({"kind": "competition_lost", "private": True, "player": la["player"],
+                               "npc": nid, "action": la["type"], "winner": actions[win]["player"]})
+                trace.add("3.4a soutez o cil", {"npc": nid, "akce": [a["player"] + " " + a["type"],
+                                                                     b["player"] + " " + b["type"]]},
+                          {"skore": [round(sa, 2), round(sb, 2)], "rozhodl": how,
+                           "vitez": actions[win]["player"], "prohral": la["player"], "log": COMPETITION_REASON})
+    return losers
 
 
 def _loan_counter_match(state, pid, nid, amount) -> bool:
@@ -772,7 +956,7 @@ def _accept_offer(state, npcdata, pid, oid, events, trace) -> None:
             return
         _do_loan(state, pid, nid, float(offer["amount"]), events, trace)
     elif offer["type"] == "protect_request":
-        if pid not in ("A", "B") or _active_deal(state, pid, nid, "protect"):
+        if pid not in ("A", "B") or _pact_holder(state, nid) is not None:
             events.append({"kind": "action_invalid", "player": pid, "type": "accept_offer",
                            "reason": "pakt nelze uzavrit"})
             return
@@ -819,15 +1003,33 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
     events: list[dict] = []
     counts: dict[str, int] = {}
 
-    for act in actions:
+    # limit akci predem; do souteze o cil (3.4a) vstupuji jen akce v limitu
+    valid = []
+    for idx, act in enumerate(actions):
         pid = act.get("player")
-        atype = act.get("type")
         if pid not in ("A", "B", "C"):
             continue
         counts[pid] = counts.get(pid, 0) + 1
         if counts[pid] > ACTION_LIMIT[pid]:
-            events.append({"kind": "action_over_limit", "player": pid, "type": atype})
+            events.append({"kind": "action_over_limit", "player": pid, "type": act.get("type")})
             continue
+        valid.append(idx)
+    losers = _competition(state, npcdata, actions, valid, events, trace)
+    # 3.3 (v1.10): invaze na NPC, o jehoz pakt se tento tah uchazi druhy hrac, az po paktech
+    protect_by = {(actions[i]["player"], actions[i].get("target")) for i in valid
+                  if actions[i].get("type") == "protect" and i not in losers}
+
+    def deferred(i):
+        act = actions[i]
+        other = "B" if act["player"] == "A" else "A"
+        return 1 if act.get("type") == "invade" and (other, act.get("target")) in protect_by else 0
+
+    for idx in sorted(valid, key=lambda i: (deferred(i), i)):
+        if idx in losers:
+            continue
+        act = actions[idx]
+        pid = act["player"]
+        atype = act.get("type")
         player = state["players"][pid]
         target = act.get("target")
 
@@ -948,6 +1150,12 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                                "reason": "padla rise neprijima pakt"})
                 continue
             if _active_deal(state, pid, target, "protect"):
+                continue
+            holder = _pact_holder(state, target)
+            if holder is not None:
+                # 3.2 (v1.10): NPC ma nejvys jeden pakt, cizi pakt = vyrazeni bez hodu
+                events.append({"kind": "action_invalid", "player": pid, "type": atype, "target": target,
+                               "reason": "NPC je pod paktem %s" % holder})
                 continue
             if pid in ("A", "B"):
                 outcome = _npc_decide(state, npcdata, pid, target, "protect", {},
@@ -1070,16 +1278,34 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
 
         # --- arm ---------------------------------------------------------------
         elif atype == "arm":
-            if float(player["wealth"]) < COST["arm"]:
+            # 3.2 (v1.10): arm s parametrem amount, power += amount / 1.6, nejvys 40 wealth
+            try:
+                amount = float(act.get("amount", COST["arm"]))
+            except (TypeError, ValueError):
+                amount = -1.0
+            if pid == "C" or not (0.0 < amount <= ARM_MAX):
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "arm jen A a B, amount od 0 do 40"})
                 continue
-            player["wealth"] = float(player["wealth"]) - COST["arm"]
-            player["power"] = float(player["power"]) + 5.0
+            if float(player["wealth"]) < amount:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "nedostatek wealth"})
+                continue
+            before = float(player["power"])
+            player["wealth"] = float(player["wealth"]) - amount
+            player["power"] = before + amount / ARM_RATIO
             events.append({"kind": "arm", "player": pid, "power": player["power"]})
-            trace.add("3.2 arm", {"player": pid}, {"power": player["power"]})
+            trace.add("3.2 arm", {"player": pid, "amount": amount},
+                      {"power": player["power"], "from": before, "gain": round(amount / ARM_RATIO, 4)})
 
         # --- cancel -------------------------------------------------------------
         elif atype == "cancel":
             did = act.get("deal_id")
+            war = next((w for w in state.get("wars", [])
+                        if w["id"] == did and pid in (w["aggressor"], w["defender"])), None)
+            if war is not None:
+                _end_war(state, war, "ustup", pid, None, events, trace)   # 3.3a (v1.10)
+                continue
             before = len(state["deals"])
             state["deals"] = [d for d in state["deals"]
                               if not (d["id"] == did and d["owner"] in (pid, "C"))]
@@ -1113,6 +1339,18 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
         # --- accept_offer (3.5, v1.6) -------------------------------------------------
         elif atype == "accept_offer":
             _accept_offer(state, npcdata, pid, act.get("offer_id"), events, trace)
+
+        # --- declare_war (3.3a, v1.10) -----------------------------------------------
+        elif atype == "declare_war":
+            if pid not in ("A", "B") or target not in ("A", "B") or target == pid:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "valku lze vyhlasit jen druhemu hraci"})
+                continue
+            ok, reason = _war_allowed(state, pid, target)
+            if not ok:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype, "reason": reason})
+                continue
+            _declare_war(state, pid, target, "vyhlaseni", None, events, trace)
 
         # --- set_tariff (jen Unie, 7.2, v1.9) ---------------------------------------
         elif atype == "set_tariff":
@@ -1165,6 +1403,10 @@ def _mark_fallen_touched(state, target) -> None:
 
 def _register_invasion(state, npcdata, pid, target, events, trace) -> None:
     """Pravidlo 3.3. Podminky, valka s ochrancem, pocitadlo tahu."""
+    if target in ("A", "B", "C"):
+        events.append({"kind": "action_invalid", "player": pid, "type": "invade",
+                       "reason": "hrace nelze dobyt ani okupovat"})
+        return
     if target not in state["npc"] or pid == "C":
         return
     n = state["npc"][target]
@@ -1181,15 +1423,19 @@ def _register_invasion(state, npcdata, pid, target, events, trace) -> None:
         events.append({"kind": "invade_blocked", "player": pid, "target": target,
                        "reason": f"power pod {ratio}x cile"})
         return
-    # pakt druheho hrace => valka, ne invaze
+    # 3.3a (v1.10): utok na NPC pod paktem druheho hrace vyhlasi valku automaticky, invaze nepostupuje
     other = "B" if pid == "A" else "A"
     if _active_deal(state, other, target, "protect"):
-        player["power"] = max(0.0, float(player["power"]) - 10.0)
-        state["players"][other]["power"] = max(0.0, float(state["players"][other]["power"]) - 10.0)
-        n["wealth"] = max(0.0, float(n["wealth"]) - 5.0)
-        events.append({"kind": "war", "between": [pid, other], "over": target})
-        trace.add("3.3 valka hracu", {"attacker": pid, "defender": other, "npc": target},
-                  {"power_loss_each": 10.0, "npc_wealth": n["wealth"]})
+        if _war_between(state, pid, other) is None:
+            ok, reason = _war_allowed(state, pid, other)
+            if not ok:
+                events.append({"kind": "invade_blocked", "player": pid, "target": target,
+                               "reason": "NPC je pod paktem %s a %s" % (other, reason)})
+                return
+            _declare_war(state, pid, other, "utok na NPC pod paktem", target, events, trace)
+        else:
+            events.append({"kind": "invade_blocked", "player": pid, "target": target,
+                           "reason": "NPC je pod paktem %s, valka probiha" % other})
         return
     # Unie brani cleny (pravidlo 7.2)
     C = state["players"]["C"]
@@ -1375,7 +1621,7 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 if buyer == seller:
                     continue
                 both_players = seller in ("A", "B") and buyer in ("A", "B")
-                if both_players and _players_sanctioned(state):
+                if both_players and (_players_sanctioned(state) or _war_between(state, "A", "B")):
                     continue  # 3.2 (v1.6): sankce mezi hraci prerusi jejich automaticky obchod
                 dem = d_flow[buyer] + d_refill[buyer]
                 if dem <= 0:
@@ -1406,7 +1652,7 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                     # 4.1a (v1.9): od nejlevnejsi efektivni ceny pro kupce, dosavadni kriteria pri shode
                     mp = market_price(state, res)
                     payer = _tariff_payer(state, seller, buyer)
-                    eff = mp * (1.0 + TRANSIT_SURCHARGE * k) + (rate * mp if payer == buyer else 0.0)
+                    eff = mp * (1.0 + TRANSIT_SURCHARGE * k) + (_tariff_for(state, payer) * mp if payer == buyer else 0.0)
                     order = (round(eff, 9), last, sphere, -dem) + ids
                 else:
                     order = (last, sphere, -dem, k) + ids   # parovani v1.8
@@ -1420,13 +1666,15 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 continue
             # 7.2 (v1.8, v1.9): clo celni unie ze zakladni ceny podle platne sazby, plati necleen (S3)
             payer = _tariff_payer(state, seller, buyer)
-            unit_tariff = rate * base if payer is not None else 0.0
+            unit_tariff = _tariff_for(state, payer) * base if payer is not None else 0.0
             buyer_price = price + (unit_tariff if payer == buyer else 0.0)
             be = ent(state, buyer)
             q_flow = max(0.0, min(offer[seller], d_flow[buyer], max(0.0, float(be["wealth"])) / buyer_price))
             wealth_after = float(be["wealth"]) - q_flow * buyer_price
             q_ref = max(0.0, min(offer[seller] - q_flow, d_refill[buyer],
                                  max(0.0, wealth_after - REFILL_MIN_WEALTH) / buyer_price))
+            war_mult = _war_trade_mult(state, seller, buyer)   # 3.3a (v1.10)
+            q_flow, q_ref = q_flow * war_mult, q_ref * war_mult
             qty = q_flow + q_ref
             if qty <= 1e-9:
                 continue
@@ -1565,6 +1813,7 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         price = float(d["price"])
         if (tgt not in state["npc"] and tgt not in ("A", "B")) or res not in TRADEABLES:
             continue
+        qty *= _war_trade_mult(state, owner, tgt)   # 3.3a (v1.10)
         if owner == "C":
             # 7.2 (v1.9): obchod Unie za cleny z poolu clenu
             value = _union_deal_execute(state, d, needs, imports, exports, trade_mult, trace)
@@ -1587,7 +1836,7 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         be = ent(state, buyer)
         # 7.2 (v1.8): clo celni unie 10 % z hodnoty obchodu, plati necleen (S3)
         payer = _tariff_payer(state, seller, buyer)
-        rate = tariff_rate(state)
+        rate = _tariff_for(state, payer)
         unit_buyer = price * (1.0 + rate) if payer == buyer else price
         if unit_buyer > 0:
             qty = min(qty, max(0.0, float(be["wealth"])) / unit_buyer)
@@ -2643,8 +2892,14 @@ def _union_admit(state, npcdata, target, events, trace) -> None:
         events.append({"kind": "union_rejected", "npc": target,
                        "reason": "nesousedi s zadnym clenem"})
         return
-    if float(n["influence"]["A"]) > 8 or float(n["influence"]["B"]) > 8:
+    # 7.4 (v1.10): admit i ze zony vlivu (vliv nad 8 do 12), ma-li NPC law >= law_threshold + 1
+    top = max(float(n["influence"]["A"]), float(n["influence"]["B"]))
+    if top > ADMIT_ZONE_MAX:
         events.append({"kind": "union_rejected", "npc": target, "reason": "vliv velmoci"})
+        return
+    if top > ADMIT_ZONE_MIN and (C["law_threshold"] is None
+                                 or float(n["law"]) < float(C["law_threshold"]) + 1.0):
+        events.append({"kind": "union_rejected", "npc": target, "reason": "zona vlivu velmoci, law pod prahem + 1"})
         return
     # 7.4 (v1.7): law >= law_threshold je tvrda podminka pritazlivosti
     if C["law_threshold"] is not None and float(n["law"]) < float(C["law_threshold"]):
@@ -2744,7 +2999,7 @@ def step_offers(state, npcdata, trace: Trace, events: list) -> None:
                 hist = nn.get("influence_history") or []
                 rise = inf_r - float(hist[0].get(rival, 0.0)) if len(hist) >= 3 else 0.0
                 threatened = any(nb in invaded for nb in neighbours(npcdata, nid))
-                if inf_p > inf_r and (threatened or rise >= 4.0) and not _active_deal(state, pid, nid, "protect"):
+                if inf_p > inf_r and (threatened or rise >= 4.0) and _pact_holder(state, nid) is None:
                     other = {"type": "protect_request"}
             if other is not None:
                 others.append((-infl, _npc_key(nid), nid, other))
@@ -2937,6 +3192,7 @@ def build_views(state, npcdata) -> dict:
             "nabidky": [o for o in state.get("offers", []) if o["player"] == pid],
             "soukromy_log": list(state.get("private_log", {}).get(pid, [])),
             "news": list(state.get("news", [])),
+            "valky": [dict(w) for w in state.get("wars", [])],   # 3.3a (v1.10): valky jsou verejne
         }
         if C["active"]:
             views[pid]["clo_unie"] = tariff_rate(state)   # 7.2 (v1.9): verejna sazba cla
@@ -2968,6 +3224,7 @@ def apply_turn(state, npcdata, actions):
     step_prices(st, trace)
     events = apply_actions(st, npcdata, actions, rng, trace)
     upkeep_deals(st, trace, events)
+    step_wars(st, trace, events)   # 3.3a (v1.10)
     grain_deficit = step_resources(st, npcdata, trace, events)
     step_growth(st, grain_deficit, trace)
     step_npc_auto_invest(st, trace, events)

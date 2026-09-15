@@ -46,6 +46,7 @@ import engine
 from validate import validate, validate_views
 
 DEBUG_DIR = config.ROOT / "debug"
+REFEREE_RULES_PATH = config.DOCS_DIR / "pravidla_rozhodci.md"
 PROMPT_FILES = {"A": "hrac_A.md", "B": "hrac_B.md", "C": "hrac_unie.md"}
 SECRET_FILES = {"A": "cil_A.md", "B": "cil_B.md", "C": "cil_C.md"}
 SILENT_STATEMENT = "Vláda nevydala prohlášení."
@@ -66,6 +67,25 @@ def read_text(path: Path) -> str:
 
 def dump(obj) -> str:
     return json.dumps(obj, ensure_ascii=False, indent=2)
+
+
+# pohled hrace: bez odsazeni, cisla na 1 desetinne misto; ceny a clo na 2, jinak by se
+# ztratila sazba po 0.05 a pasmo ceny u trade_offer (docs/OPEN_QUESTIONS.md, v1.10)
+PRECISE_KEYS = ("ceny", "clo", "clo_unie", "clo_od_pristiho_tahu", "price", "price_per_unit")
+
+
+def _round_view(obj, digits=1):
+    if isinstance(obj, float):
+        return round(obj, digits)
+    if isinstance(obj, dict):
+        return {k: _round_view(v, 2 if k in PRECISE_KEYS else digits) for k, v in obj.items()}
+    if isinstance(obj, list):
+        return [_round_view(v, digits) for v in obj]
+    return obj
+
+
+def dump_view(view) -> str:
+    return json.dumps(_round_view(view), ensure_ascii=False, separators=(",", ":"))
 
 
 def load_state(path: Path):
@@ -142,7 +162,7 @@ def player_prompt(state, views, pid: str) -> tuple[str, str]:
         "",
         "## Tvůj pohled na svět",
         "```json",
-        dump(views[pid]),
+        dump_view(views[pid]),
         "```",
         "",
         "## Veřejný log posledních %d tahů" % config.PUBLIC_LOG_TURNS,
@@ -161,8 +181,11 @@ def player_prompt(state, views, pid: str) -> tuple[str, str]:
 
 
 def referee_system() -> str:
+    # rozhodci dostava jen vytah pravidel (build_referee_rules.py) a secrets
+    if not REFEREE_RULES_PATH.exists():
+        raise SystemExit("chybi docs/pravidla_rozhodci.md, spust python build_referee_rules.py")
     parts = [read_text(config.PROMPTS_DIR / "rozhodci.md").strip(),
-             "# docs/pravidla.md\n\n" + read_text(config.RULES_PATH).strip()]
+             "# docs/pravidla_rozhodci.md\n\n" + read_text(REFEREE_RULES_PATH).strip()]
     if config.RULINGS_PATH.exists():
         parts.append("# docs/rulings.md (trvalá rozhodnutí, jsi jimi vázán)\n\n"
                      + read_text(config.RULINGS_PATH).strip())
@@ -323,7 +346,16 @@ def valid_move(obj) -> bool:
             and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list))
 
 
-def play(pid: str, system: str, user: str, retries: int) -> dict:
+def save_fail(turn: int, pid: str, k: int, raw: str, reason: str, usage: list) -> None:
+    """Neuspesny pokus o parsovani do debug/turn_NNN_X_fail_K.txt (v1.10)."""
+    DEBUG_DIR.mkdir(exist_ok=True)
+    last = usage[-1] if usage else {}
+    head = "# tah %d, hrac %s, pokus %d: %s; stop_reason %s, output_tokens %s\n\n" % (
+        turn, pid, k, reason, last.get("stop_reason"), last.get("output_tokens"))
+    (DEBUG_DIR / ("turn_%03d_%s_fail_%d.txt" % (turn, pid, k))).write_text(head + raw, encoding="utf-8")
+
+
+def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
     """Tah hrace s opakovanim; po vycerpani mlceni podle pravidel 10.6."""
     attempts = []
     usage = []
@@ -332,7 +364,11 @@ def play(pid: str, system: str, user: str, retries: int) -> dict:
         attempts.append(raw)
         try:
             move = parse_json(raw)
-        except (ValueError, json.JSONDecodeError):
+        except (ValueError, json.JSONDecodeError) as err:
+            save_fail(turn, pid, attempt + 1, raw, "neplatny JSON: %s" % err, usage)
+            continue
+        if not valid_move(move):
+            save_fail(turn, pid, attempt + 1, raw, "JSON bez public_statement, private_reasoning nebo actions", usage)
             continue
         if valid_move(move):
             move["silent"] = False
@@ -484,7 +520,7 @@ def main() -> int:
     # 3. hraci paralelne
     retries = 0 if args.only else config.PLAYER_RETRIES   # --only: jedno volani na hrace
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(players)) as ex:
-        futures = {pid: ex.submit(play, pid, *prompts[pid], retries) for pid in players}
+        futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn) for pid in players}
         moves = {pid: f.result() for pid, f in futures.items()}
 
     if args.only or args.no_apply:
@@ -549,7 +585,7 @@ def main() -> int:
     write_index()
     config.STATE_PATH.write_text(dump(new_state) + "\n", encoding="utf-8")
     for pid, v in new_views.items():
-        (config.VIEWS_DIR / ("%s.json" % pid)).write_text(dump(v) + "\n", encoding="utf-8")
+        (config.VIEWS_DIR / ("%s.json" % pid)).write_text(dump_view(v) + "\n", encoding="utf-8")
     append_rulings(turn, ref.get("rulings"))
     if not args.no_git:
         commit_and_push("tah %03d (den %d)" % (turn, engine.day_of(turn)),
