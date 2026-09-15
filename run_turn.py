@@ -269,10 +269,23 @@ def client():
     return _client
 
 
-def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usage_log: list | None = None) -> str:
+# ceny v USD za milion tokenu (vstup, vystup); zapis do cache 1.25x vstupu, cteni 0.1x vstupu
+PRICES = {"claude-opus-5": (5.0, 25.0), "claude-sonnet-5": (2.0, 10.0), "claude-opus-4-8": (5.0, 25.0)}
+
+
+def call_cost(u: dict) -> float:
+    pin, pout = PRICES.get(u["model"], (5.0, 25.0))
+    return (u["input_tokens"] * pin + u["cache_creation_input_tokens"] * pin * 1.25
+            + u["cache_read_input_tokens"] * pin * 0.1 + u["output_tokens"] * pout) / 1e6
+
+
+def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usage_log: list | None = None,
+               cache: bool = False, label: str = "") -> str:
     """Jedno volani Messages API. Vraci text odpovedi; pri odmitnuti prazdny retezec.
     Skutecne usage (input_tokens, output_tokens) se pripise do usage_log."""
-    kwargs = dict(model=model, max_tokens=max_tokens, system=system,
+    # prompt caching jen tam, kde se stejny system opakuje v kratke dobe (dve volani rozhodciho v tahu)
+    sys_block = [{"type": "text", "text": system, **({"cache_control": {"type": "ephemeral"}} if cache else {})}]
+    kwargs = dict(model=model, max_tokens=max_tokens, system=sys_block,
                   messages=[{"role": "user", "content": user}],
                   thinking={"type": "adaptive"})
     if model in (config.PLAYER_MODEL, config.CHRONICLER_MODEL) and model.startswith("claude-opus-5"):
@@ -282,8 +295,12 @@ def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usag
     else:
         resp = client().messages.create(**kwargs)
     if usage_log is not None:
-        usage_log.append({"model": resp.model, "input_tokens": resp.usage.input_tokens,
-                          "output_tokens": resp.usage.output_tokens, "stop_reason": resp.stop_reason})
+        u = {"call": label, "model": resp.model, "input_tokens": resp.usage.input_tokens,
+             "cache_creation_input_tokens": getattr(resp.usage, "cache_creation_input_tokens", 0) or 0,
+             "cache_read_input_tokens": getattr(resp.usage, "cache_read_input_tokens", 0) or 0,
+             "output_tokens": resp.usage.output_tokens, "stop_reason": resp.stop_reason}
+        u["cost_usd"] = round(call_cost(u), 5)
+        usage_log.append(u)
     if resp.stop_reason == "refusal":
         return ""
     return "".join(b.text for b in resp.content if b.type == "text")
@@ -311,7 +328,7 @@ def play(pid: str, system: str, user: str, retries: int) -> dict:
     attempts = []
     usage = []
     for attempt in range(retries + 1):
-        raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage)
+        raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage, label="hrac %s" % pid)
         attempts.append(raw)
         try:
             move = parse_json(raw)
@@ -482,7 +499,9 @@ def main() -> int:
     # 4. rozhodci: preklad tahu
     public_moves = {pid: {k: m[k] for k in ("public_statement", "private_reasoning", "actions")}
                     for pid, m in moves.items()}
-    ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves))
+    ref_usage = []
+    ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
+                         usage_log=ref_usage, cache=True, label="rozhodci akce")
     try:
         ref = parse_json(ref_raw)
     except (ValueError, json.JSONDecodeError) as err:
@@ -499,7 +518,8 @@ def main() -> int:
     new_state, events, applied = engine.apply_turn(work, npcdata, actions)
 
     # 6. rozhodci: Zpravy sveta
-    news_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_news_prompt(new_state, events))
+    news_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_news_prompt(new_state, events),
+                          usage_log=ref_usage, cache=True, label="rozhodci zpravy")
     try:
         news = list(parse_json(news_raw).get("news") or [])[:3]
     except (ValueError, json.JSONDecodeError):
@@ -513,7 +533,8 @@ def main() -> int:
     errors = validate(state, new_state, applied, actions=actions, views=new_views)
     snapshot = {"turn": turn, "state": new_state, "turns": moves, "actions": actions,
                 "rejected": ref.get("rejected") or [], "rulings": ref.get("rulings") or [],
-                "news": news, "events": events, "delivered_messages": delivered, "applied_rules": applied}
+                "news": news, "events": events, "delivered_messages": delivered, "applied_rules": applied,
+                "usage": [u for m in moves.values() for u in m.get("usage", [])] + ref_usage}
     if errors:
         return fail(turn, "validate: %s" % "; ".join(errors[:5]), snapshot, args)
     if args.no_apply:
@@ -533,6 +554,11 @@ def main() -> int:
     if not args.no_git:
         commit_and_push("tah %03d (den %d)" % (turn, engine.day_of(turn)),
                         ["state.json", "history", "views"] + (["docs/rulings.md"] if config.RULINGS_PATH.exists() else []))
+    for u in snapshot["usage"]:
+        print("usage %-16s %s in %d, cache_write %d, cache_read %d, out %d, %.4f USD" % (
+            u["call"], u["model"], u["input_tokens"], u["cache_creation_input_tokens"],
+            u["cache_read_input_tokens"], u["output_tokens"], u["cost_usd"]))
+    print("cena tahu %.4f USD" % sum(u["cost_usd"] for u in snapshot["usage"]))
     print("tah %d zapsan" % turn)
     return 0
 

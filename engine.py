@@ -2872,12 +2872,15 @@ def build_views(state, npcdata) -> dict:
     views = {}
     C = state["players"]["C"]
     orit_on = state["phase"] in ORIT_PHASES
+    # jmena NPC z npc.json, aby hraci nepletli ID a jmena ve svych textech
+    names = {x["id"]: x.get("name") for x in npcdata.get("npc", [])}
     for pid in ("A", "B", "C"):
         if pid == "C" and not C["active"]:
             continue
         npc_view = {}
         for i, nn in state["npc"].items():
             item = {
+                "name": names.get(i),
                 "wealth": round(float(nn["wealth"]) + float(nn.get("paper_wealth", 0.0)), 2),
                 "power": round(float(nn["power"]), 2),
                 "prod": {k: round(float(v), 3) for k, v in nn["prod"].items()},
