@@ -392,6 +392,7 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Generují se z 
 - orit: od displacementu každý tah aspoň jedna zpráva o krocích soupeře s oritem, i když jsou malé.
 - Unie: při vzniku "Unie zveřejnila přístupová kritéria: nezávislé soudy, vymahatelnost smluv."; při růstu prahu "Unie zpřísnila kritéria."; při investici do kandidáta "N zahájilo reformu soudů."; při odmítnutí "Přihláška N odmítnuta."
 - invaze: "Uprchlíci z N míří do M."
+- válka hráčů (3.3a): vyhlášení, nabídka příměří (jednostranný `cancel`), příměří, ústup i kapitulace vždy jako zpráva, např. "Ostrogard nabízí Kalveře příměří."
 - tech: NPC s `tech ≥ 6`: "V N vzniká nová továrna." (bez vysvětlení).
 - šum: každý 4. tah jedna zpráva bez důsledku ("Sucho v N zatím bez dopadu.", "V M zvolen nový starosta hlavního města.").
 - Unie: od vzniku "Unie oznamuje ..." pro veřejné akce.

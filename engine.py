@@ -3155,6 +3155,34 @@ def _goods_view(e: dict) -> dict:
             "bilance": round(out - need, 3)}
 
 
+def _wars_view(state, pid: str) -> list[dict]:
+    """3.3a (v1.10, V14): valky v pohledu. Ucastnik vidi nabidku primeri druhe strany s navodem,
+    jak ji prijmout, a vlastni cekajici nabidku."""
+    turn = int(state["meta"]["turn"])
+    out = []
+    for w in state.get("wars", []):
+        item = {k: w[k] for k in ("id", "aggressor", "defender", "since", "how", "over")}
+        offers = w.get("cancel") or {}
+        for who, since in offers.items():
+            item.setdefault("nabidky_primeri", []).append({"od": who, "z_tahu": int(since)})
+        if pid in (w["aggressor"], w["defender"]):
+            other = w["defender"] if pid == w["aggressor"] else w["aggressor"]
+            if other in offers:
+                item["nabidka_primeri_pro_tebe"] = {
+                    "od": other, "prijmi_v_tahu": int(offers[other]) + 1,
+                    "jak": {"type": "cancel", "deal_id": w["id"]},
+                    "vysvetleni": "Druhá strana nabízí příměří. Pošli v tomto tahu cancel s deal_id této války: "
+                                  "válka skončí příměřím a oba ztratíte jen 10 % vlivu. Neodpovíš-li, válka skončí "
+                                  "ústupem druhé strany (ztratí 30 % vlivu)."}
+            if pid in offers:
+                item["tvoje_nabidka_primeri"] = {
+                    "z_tahu": int(offers[pid]), "ceka_do_tahu": int(offers[pid]) + 1,
+                    "vysvetleni": "Nabídl jsi příměří. Pošle-li druhá strana cancel v tomto tahu, je to příměří "
+                                  "(−10 % vlivu oběma); jinak se tvá nabídka změní v ústup (−30 % vlivu tobě)."}
+        out.append(item)
+    return out
+
+
 def build_views(state, npcdata) -> dict:
     views = {}
     C = state["players"]["C"]
@@ -3224,7 +3252,7 @@ def build_views(state, npcdata) -> dict:
             "nabidky": [o for o in state.get("offers", []) if o["player"] == pid],
             "soukromy_log": list(state.get("private_log", {}).get(pid, [])),
             "news": list(state.get("news", [])),
-            "valky": [dict(w) for w in state.get("wars", [])],   # 3.3a (v1.10): valky jsou verejne
+            "valky": _wars_view(state, pid),   # 3.3a (v1.10): valky verejne, nabidka primeri (V14)
         }
         if C["active"]:
             views[pid]["clo_unie"] = tariff_rate(state)   # 7.2 (v1.9): verejna sazba cla
