@@ -181,6 +181,12 @@ def step_prices(state, trace: "Trace") -> None:
     trace.add("4.1b dynamicka cena", {"faze": state["phase"]}, detail)
 
 
+def precompute_prices(state, trace=None) -> None:
+    """4.1b (v1.10.2): cena pristiho tahu ze stavu na konci tohoto tahu (pro pohledy a pasmo trade_offer)."""
+    step_prices(state, trace if trace is not None else Trace())
+    state["prices_turn"] = int(state["meta"]["turn"]) + 1
+
+
 def eff_prod(e: dict, res: str) -> float:
     """Efektivni produkce: prod x (1 + tech/20) x pop/pop_start (4.1 a 10.2, v1.3)."""
     base = float(e.get("prod", {}).get(res, 0.0))
@@ -262,7 +268,8 @@ def current_need(state, sid: str) -> dict:
     need = e.get("need")
     if isinstance(need, dict) and GOODS in need:
         return need
-    return compute_need(state, sid, goods_potential(e))
+    # 4.1b (v1.10.2): pred prvnim prepoctem z planu vyroby jako ostatni tahy, ne z plne kapacity
+    return compute_need(state, sid, planned_goods(state, sid, goods_potential(e)))
 
 
 def supply_of(state, sid: str, res: str) -> float:
@@ -271,7 +278,7 @@ def supply_of(state, sid: str, res: str) -> float:
     if res == GOODS:
         if e.get("goods_out") is not None:
             return float(e["goods_out"])
-        return goods_potential(e)
+        return planned_goods(state, sid, goods_potential(e))   # 4.1b (v1.10.2)
     return eff_prod(e, res)
 
 
@@ -1428,7 +1435,27 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
             trace.add("7.2 union_fund", {"target": target, "amount": amount},
                       {"fund": C["wealth"]})
 
+    _log_rejections(state, events)
     return events
+
+
+REJECTION_KINDS = ("trade_rejected", "action_invalid", "invade_blocked", "action_over_limit", "union_rejected")
+
+
+def _log_rejections(state, events) -> None:
+    """3.4 (v1.10.2): kazde vyrazeni akce enginem jde do soukromeho logu hrace s duvodem."""
+    turn = int(state["meta"]["turn"])
+    plog = state.setdefault("private_log", {"A": [], "B": [], "C": []})
+    for e in events:
+        if e.get("kind") not in REJECTION_KINDS:
+            continue
+        pid = e.get("player") or ("C" if e.get("kind") == "union_rejected" else None)
+        if pid not in ("A", "B", "C"):
+            continue
+        plog.setdefault(pid, []).append({
+            "turn": turn, "npc": e.get("target") or e.get("npc"),
+            "action": e.get("type") or ("admit" if e.get("kind") == "union_rejected" else e.get("kind")),
+            "outcome": "vyrazeno", "reason": e.get("reason") or e.get("kind"), "counter": None})
 
 
 def _mark_fallen_touched(state, target) -> None:
@@ -1644,13 +1671,15 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
             stock = float(e["stock"].get(res, 0.0))
             reserve = RESERVE_TURNS * need
             if i in ("A", "B"):
-                # 4.1a (v1.10.1 od tahu 2): hrac prodava jen kladny prebytek toku po cilenych obchodech, zasobu nikdy
-                offer[i] = max(0.0, bal)
+                # 4.1a (v1.10.2): hrac prodava jen kladny rozdil vlastni efektivni produkce a potreby;
+                # cileny dovoz ani zasoba se neprodavaji, uz cilene prodane mnozstvi se odecita
+                own = max(0.0, supply_of(state, i, res) - need - exports[i][res])
+                offer[i] = own
             else:
                 offer[i] = max(0.0, stock + bal - reserve)
             if spec.get(i, 0.0) > 0:
-                # 4.0 a 4.1a (v1.9): spekulativni nabidka jde na trh vzdy, i pod rezervou (hrac jen z toku)
-                cap = max(0.0, bal) if i in ("A", "B") else max(0.0, stock + bal)
+                # 4.0 a 4.1a (v1.9): spekulativni nabidka jde na trh vzdy, i pod rezervou (hrac jen z vlastni vyroby)
+                cap = own if i in ("A", "B") else max(0.0, stock + bal)
                 offer[i] = max(offer[i], min(spec[i], cap))
             d_flow[i] = max(0.0, -bal)
             can_refill = float(e["wealth"]) >= REFILL_MIN_WEALTH  # 4.1c (v1.6): jen pri wealth >= 25
@@ -3328,7 +3357,12 @@ def apply_turn(state, npcdata, actions):
 
     st["npc_decisions"] = []
     st["counter_offers"] = [c for c in st.get("counter_offers", []) if int(c["expires"]) >= turn]
-    step_prices(st, trace)
+    # 4.1b (v1.10.2): cena tahu je spocitana uz na konci minuleho tahu a hraci ji videli v pohledu
+    if int(st.get("prices_turn") or 0) == turn and st.get("prices"):
+        trace.add("4.1b cena tahu z pohledu", {"tah": turn}, dict(st["prices"]))
+    else:
+        step_prices(st, trace)
+        st["prices_turn"] = turn
     events = apply_actions(st, npcdata, actions, rng, trace)
     upkeep_deals(st, trace, events)
     step_wars(st, trace, events)   # 3.3a (v1.10)
@@ -3383,4 +3417,6 @@ def apply_turn(state, npcdata, actions):
         st["players"]["C"]["tariff_next"] = None
     st["players"]["C"]["fund"] = st["players"]["C"]["wealth"]
     st["log"] = (st.get("log", []) + [{"turn": turn, "events": events}])[-9:]
+    # 4.1b (v1.10.2): cena pristiho tahu predem, aby ji pohled ukazal a trade_offer se hodnotil proti ni
+    precompute_prices(st, trace)
     return st, events, trace.items

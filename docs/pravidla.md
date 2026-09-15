@@ -1,4 +1,8 @@
-# Pravidla světa Ardan (v1.10.1)
+# Pravidla světa Ardan (v1.10.2)
+
+v1.10.2, platí od tahu 1 (restart 15. 9. 2026): hráči A a B na automatickém trhu prodávají jen vlastní produkci nad
+potřebu (4.1a), cena tahu se počítá před pohledy hráčů a pásmo `trade_offer` se hodnotí proti ní (4.1b), každé
+vyřazení akce enginem jde do soukromého logu hráče (3.4). Tahy 1 a 2 odehrané podle v1.10 a v1.10.1 se zahazují.
 
 Verze v1.10.1 od tahu 2 (reforma během ostrého běhu, stav po tahu 1 se nemění): hráči A a B na automatickém trhu
 neprodávají zásobu (4.1a), pohled hráče ukazuje jeho automatické obchody minulého tahu (2), Zprávy světa jmenují
@@ -198,7 +202,7 @@ Cenový člen se hodnotí z pohledu NPC: když NPC nakupuje, počítá se s opa�
 - hod ≤ skóre + 35: protinávrh (NPC vrátí parametry jako soukromou zprávu hráči; u `trade_offer` posune cenu o 10 % ve prospěch NPC při stejném objemu; `trade_offer` se shodnými parametry v dalších 3 tazích projde bez hodu; stejně projde `loan` s částkou podle protinávrhu na totéž NPC v dalších 3 tazích);
 - jinak odmítnuto.
 
-Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde do soukromého logu hráče a do snímku, do Zpráv světa ne.
+Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde do soukromého logu hráče a do snímku, do Zpráv světa ne. Stejně jde do soukromého logu každé vyřazení akce enginem (cena mimo pásmo, neplatný cíl, blokovaná invaze, překročený limit akcí a podobně) s důvodem, takže ho hráč v dalším tahu vidí v pohledu.
 
 ### 3.4a Soutěž o stejný cíl
 
@@ -234,7 +238,7 @@ Každý stát má vedle surovin i průmysl. Průmysl vyrábí produkt `goods`, k
 
 **Výroba podle poptávky:** stát vyrábí jen do výše `plánovaná výroba = min(kapacita, vlastní potřeba goods + 1.2 × goods prodané v minulém tahu + doplnění rezervy goods)`; zbytek kapacity továren stojí. Prodaným množstvím se rozumí `goods` prodané na automatickém trhu a cílenými obchody, bez vnitřního trhu Unie. Doplnění rezervy `goods` je 3 tahy spotřeby minus zásoba; doplňuje se vlastní výrobou, a proto se na něj práh `wealth ≥ 25` nevztahuje.
 
-**Komparativní výhoda:** stát s `industry < 2` plánuje výrobu `goods` nejvýš na 50 % vlastní potřeby a zbytek dováží (malé továrny jsou drahé). Strop 50 % vlastní potřeby platí pro celý plán, tedy i pro prodej minulého tahu a doplnění rezervy. Svůj deficit `goods` včetně doplnění rezervy malé továrny nakupují na automatickém trhu jako u ostatních statků (4.1a, 4.1c). Stát s `industry ≥ 4` plánuje navíc export: vlastní potřeba + prodané minulý tah × 1.2 + doplnění rezervy `goods` + 10 % kapacity jako spekulativní nabídka na trh. **Spekulativní nabídka** (10 % kapacity, nejvýš letošní výroba) jde na automatický trh vždy, i když zásoba `goods` po výrobě nedosahuje rezervy 3 tahů spotřeby; do zásoby jde jen to, co se neprodá. Zásoba `goods` tím smí klesnout pod rezervu, ne však pod nulu; hráči A a B nabízejí nejvýš kladný přebytek toku (4.1a). Ostatní státy plánují podle vzorce výše.
+**Komparativní výhoda:** stát s `industry < 2` plánuje výrobu `goods` nejvýš na 50 % vlastní potřeby a zbytek dováží (malé továrny jsou drahé). Strop 50 % vlastní potřeby platí pro celý plán, tedy i pro prodej minulého tahu a doplnění rezervy. Svůj deficit `goods` včetně doplnění rezervy malé továrny nakupují na automatickém trhu jako u ostatních statků (4.1a, 4.1c). Stát s `industry ≥ 4` plánuje navíc export: vlastní potřeba + prodané minulý tah × 1.2 + doplnění rezervy `goods` + 10 % kapacity jako spekulativní nabídka na trh. **Spekulativní nabídka** (10 % kapacity, nejvýš letošní výroba) jde na automatický trh vždy, i když zásoba `goods` po výrobě nedosahuje rezervy 3 tahů spotřeby; do zásoby jde jen to, co se neprodá. Zásoba `goods` tím smí klesnout pod rezervu, ne však pod nulu; hráči A a B nabízejí nejvýš vlastní produkci nad potřebu (4.1a). Ostatní státy plánují podle vzorce výše.
 
 `goods_out = plánovaná výroba × coverage`
 
@@ -287,7 +291,7 @@ Po vyhodnocení obchodů hráčů spáruje engine zbylé přebytky se zbylými d
 - Prodejce nabízí vše nad rezervu **3 tahů spotřeby**: zásobu plus bilanci tahu minus trojnásobek spotřeby (4.1c). U `goods` nabízí stát s `industry ≥ 4` aspoň spekulativní nabídku podle 4.0, nejvýš však zásobu plus bilanci tahu.
 - Kupec poptává deficit toku tohoto tahu a doplnění rezervy zpět na 3 tahy spotřeby; doplnění jen u státu s `wealth ≥ 25` (4.1c) a platí se jen z bohatství nad 25; deficit toku smí stát pokrýt celým bohatstvím.
 - Obchoduje se `grain`, `oil`, `metal` a `goods`. **Orit se automaticky neobchoduje:** NPC ho získá jen akcí `trade_offer` od hráče A nebo B, nebo vlastním nálezem. Unie orit neprodává. Poptávka NPC po oritu se od `euphoria` projevuje žádostmi o půjčku (část 5).
-- **Hráči A a B (v1.10.1 od tahu 2):** na automatickém trhu prodávají jen kladný přebytek toku (efektivní produkce minus potřeba, po cílených obchodech tahu), zásobu nikdy. Nákup beze změny: deficit toku po cílených obchodech a doplnění rezervy podle 4.1c. Nabídka nad rezervu 3 tahů spotřeby platí pro NPC.
+- **Hráči A a B (v1.10.2):** na automatickém trhu prodávají jen kladný rozdíl vlastní efektivní produkce a potřeby daného statku, zmenšený o to, co už v tahu prodali cíleně. Cílený dovoz ani zásoba se na automatickém trhu neprodávají nikdy. Nákup beze změny: deficit toku po cílených obchodech a doplnění rezervy podle 4.1c. Nabídka nad rezervu 3 tahů spotřeby platí pro NPC.
 - Hráči prodávají i nakupují za tržní cenu. Automatický obchod hráče nedává `influence` a pro 4.4 se nepočítá jako obchod s hráčem. Cíleným obchodem s vlivem a vlastní cenou zůstává `trade_offer`.
 - Padlé říše na automatickém trhu nakupují i prodávají za tržní cenu (7a).
 - Půjčky mezi NPC neexistují. Úvěr dávají jen hráči A, B a C.
@@ -300,7 +304,7 @@ Tržní cena každého zdroje se přepočítá na začátku každého tahu:
 
 `cena[res] = základ[res] × clamp(světová poptávka / světová nabídka, 0.7, 1.5)`
 
-Světová poptávka je součet `need[res]` všech států, nabídka součet efektivní produkce podle 4.1. Potřeby a výroba `goods` vznikají až v přepočtu tahu (4.0), proto se použijí hodnoty z minulého tahu; v prvním tahu předběžný odhad při plném využití továren. Cena platí pro NPC i hráče a pásmo 0.7 až 1.5 u `trade_offer` se vztahuje k této aktuální ceně, ne k základu.
+Světová poptávka je součet `need[res]` všech států, nabídka součet efektivní produkce podle 4.1. Potřeby a výroba `goods` vznikají až v přepočtu tahu (4.0), proto se použijí hodnoty z minulého tahu; v prvním tahu z plánované výroby podle 4.0, stejně jako v ostatních tazích. **Cena tahu se spočítá před sestavením pohledů hráčů** (na konci přepočtu minulého tahu, pro tah 1 ve výchozím stavu): pohled ukazuje tuto cenu, tah ji použije beze změny a pásmo 0.7 až 1.5 u `trade_offer` se hodnotí proti ní, ne proti ceně minulého tahu ani proti základu. Cena platí pro NPC i hráče.
 
 U oritu se dynamika **přičítá** k pohybu ceny z části 5: nejdřív se uplatní Minskyho násobek fáze, výsledek je nový základ oritu a na něj se pak použije poměr poptávky a nabídky.
 

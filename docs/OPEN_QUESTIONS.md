@@ -4611,6 +4611,17 @@ V tahu 1 hráč A cíleně koupil obilí od Velmory (3.255 jednotky) a ve stejn�
 ze zásoby. Vyřešeno v1.10.1 (4.1a): hráč na automatickém trhu prodává jen kladný přebytek toku po cílených obchodech,
 zásobu nikdy.
 
+**Doplněk v1.10.2:** oprava v1.10.1 počítala přebytek toku včetně cíleného dovozu, takže hráč mohl cíleně nakoupený statek
+hned automaticky prodat dál (reexport). v1.10.2 to opravuje: hráč na automatickém trhu prodává jen kladný rozdíl vlastní
+efektivní produkce a potřeby, zmenšený o cíleně prodané množství; cílený dovoz ani zásoba se neprodávají nikdy.
+
+### W2. Pohled ukazoval cenu minulého tahu (vyřešeno)
+
+Engine přepočítával cenu až na začátku tahu, pohled hráče ale ukazoval cenu minulého tahu. V tahu 2 tak hráč A nabídl
+ropu Haldenu za 1,30 podle ceny v pohledu, zatímco engine hodnotil pásmo proti nové ceně 0,70 (horní mez 1,05) a akci
+vyřadil; hráč o akci přišel a důvod neviděl. Vyřešeno v1.10.2 (4.1b): cena tahu se počítá před sestavením pohledů a tah
+ji použije beze změny; každé vyřazení enginem jde do soukromého logu hráče (3.4).
+
 ### Diagnostika: neúspěšný pokus B v tahu 1
 
 `debug/turn_001_B_fail_1.txt` vznikl na runneru GitHub Actions a s ním zanikl (`debug/` není v gitu), obsah proto není k

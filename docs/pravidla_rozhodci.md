@@ -1,4 +1,4 @@
-# Výtah pravidel pro rozhodčího: světa Ardan (v1.10.1)
+# Výtah pravidel pro rozhodčího: světa Ardan (v1.10.2)
 
 Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 6, 7.2, 9 a 10).
 Neupravovat ručně; po každé změně pravidel skript spustit znovu.
@@ -106,7 +106,7 @@ Cenový člen se hodnotí z pohledu NPC: když NPC nakupuje, počítá se s opa�
 - hod ≤ skóre + 35: protinávrh (NPC vrátí parametry jako soukromou zprávu hráči; u `trade_offer` posune cenu o 10 % ve prospěch NPC při stejném objemu; `trade_offer` se shodnými parametry v dalších 3 tazích projde bez hodu; stejně projde `loan` s částkou podle protinávrhu na totéž NPC v dalších 3 tazích);
 - jinak odmítnuto.
 
-Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde do soukromého logu hráče a do snímku, do Zpráv světa ne.
+Výsledek s jednou větou důvodu (z faktoru, který skóre nejvíc srazil) jde do soukromého logu hráče a do snímku, do Zpráv světa ne. Stejně jde do soukromého logu každé vyřazení akce enginem (cena mimo pásmo, neplatný cíl, blokovaná invaze, překročený limit akcí a podobně) s důvodem, takže ho hráč v dalším tahu vidí v pohledu.
 
 ### 3.4a Soutěž o stejný cíl
 
