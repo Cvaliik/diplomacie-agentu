@@ -4526,3 +4526,31 @@ do výtahu?
 
 Dvě volání `--only A --no-apply` prošla napoprvé: vstup 8 510 tokenů, výstup 998 a 828, bez neúspěšného pokusu. Příčinu
 tří pokusů v tahu 1 z v1.9 se tím zjistit nepodařilo; neúspěšné pokusy se od v1.10 ukládají do `debug/turn_NNN_X_fail_K.txt`.
+
+---
+
+## v1.10 dodatek (rozhodnutí z 15. 9. 2026)
+
+**V6 potvrzeno** a zapsáno do 3.3: invaze na NPC pod paktem druhého hráče se v tazích 1 až 9 a 88 až 90 vyřadí bez války.
+
+**V12 vyřešeno:** výtah pro rozhodčího obsahuje i část 6. Výtah 16 206 → 17 688 znaků; prompt rozhodčího pro akce
+9 092 → 9 462 tokenů, pro Zprávy světa 5 064 → 5 435 tokenů (odhad `len/4`, skutečnost zhruba dvojnásobná).
+
+### V14. Jednostranný `cancel` na válku
+
+Příměří vzniká z `cancel` obou stran ve stejném tahu nebo v tazích po sobě. **Výklad enginu:** samotný `cancel` je proto
+nabídka, válka trvá dál (včetně ztrát tahu). Pošle-li druhá strana `cancel` v tomtéž nebo v následujícím tahu, je to příměří.
+Neodpoví-li, stane se z nabídky na začátku přepočtu války v následujícím tahu ústup (−30 % vlivu) a ztráty toho tahu už
+nevzniknou. Ústup je tedy o jeden tah pozdější než ve v1.10.
+
+### T (v1.10 dodatek). Scénář (k)
+
+B má pakty od tahu 3 (N6; N2 pakt v tahu 3 odmítlo hodem, proto N6) a od tahu 4 (N4). Ostatní řádky scénáře beze změny.
+
+| bod | výsledek | čísla |
+|---|---|---|
+| vliv B u dvou NPC před válkou | ano | tah 9: N4 10.2, N6 13.0; pakty B u N4 a N6 |
+| tah 13: `cancel` B, válka trvá | ano | nabídka příměří zapsána, válka po tahu 13 trvá, ztráty tahu 13 power −10 oběma |
+| tah 14: `cancel` A, příměří, vliv −10 % oběma | ano | součet vlivu A 26.6 → 23.94, B 39.2 → 35.28 (poměr 0.900 u obou); ústup 30 % neuplatněn |
+| asymetrie ztráty vlivu | ano | tahy 10 až 13: nezávislá NPC ubrala A (vyhlásil) 2.0 za tah, B 0.0, protože B má vliv jen u N4 a N6 ve své sféře |
+| validate | ano | 0 chyb |

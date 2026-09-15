@@ -95,7 +95,8 @@ Cílem je jen NPC; druhého hráče dobýt nelze. Útok na NPC pod paktem druhé
 Cílem je `A` nebo `B`. Každý tah války stojí obě strany 10 síly a 5 % bohatství, přeruší váš vzájemný
 automatický obchod a oslabí obchod se státy ve sféře druhého. Válka končí ústupem (`cancel` s `deal_id`
 války ze seznamu `valky`, stojí 30 % vlivu u všech států) nebo vyčerpáním síly (kapitulace). V tazích
-1 až 9 a 88 až 90 válku vyhlásit nelze.
+1 až 9 a 88 až 90 válku vyhlásit nelze. Pošlete-li `cancel` na válku oba ve stejném tahu nebo v tazích po sobě,
+je to příměří za 10 % vlivu každému. Kdo válku vyhlásí, ztrácí vliv u nezávislých států dvakrát rychleji.
 
 ```json
 { "type": "declare_war", "target": "B" }

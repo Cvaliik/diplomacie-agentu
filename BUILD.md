@@ -44,7 +44,7 @@ Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER
 
 Klíč se čte z `ARDAN_API_KEY`, náhradně `ANTHROPIC_API_KEY`; nikdy není v repu.
 
-Rozhodčí dostává jen výtah pravidel `docs/pravidla_rozhodci.md` (části 1, 3, 7.2, 9 a 10) a `secrets/`. Výtah generuje
+Rozhodčí dostává jen výtah pravidel `docs/pravidla_rozhodci.md` (části 1, 3, 6, 7.2, 9 a 10) a `secrets/`. Výtah generuje
 `python build_referee_rules.py`; pouštět při každé změně `docs/pravidla.md`.
 
 ## 4. validate.py

@@ -139,9 +139,11 @@ def scenario_k(turn: int, state) -> list[dict]:
                          "qty": 3, "price_per_unit": price})
     if turn == 3:
         acts += [{"player": "A", "type": "protect", "target": "N1"},
-                 {"player": "B", "type": "protect", "target": "N1"}]
+                 {"player": "B", "type": "protect", "target": "N1"},
+                 {"player": "B", "type": "protect", "target": "N6"}]   # B ziska vliv pred valkou (N2 pakt odmitne hodem)
     if turn == 4:
-        acts.append({"player": "B", "type": "protect", "target": "N1"})
+        acts += [{"player": "B", "type": "protect", "target": "N1"},
+                 {"player": "B", "type": "protect", "target": "N4"}]
     if turn == 5:
         acts += [{"player": "A", "type": "protect", "target": "N5"},
                  {"player": "B", "type": "invade", "target": "N5"}]
@@ -153,6 +155,9 @@ def scenario_k(turn: int, state) -> list[dict]:
     if turn == 13:
         war = next((w for w in state.get("wars", []) if "B" in (w["aggressor"], w["defender"])), None)
         acts.append({"player": "B", "type": "cancel", "deal_id": war["id"] if war else "w?"})
+    if turn == 14:
+        war = next((w for w in state.get("wars", []) if "A" in (w["aggressor"], w["defender"])), None)
+        acts.append({"player": "A", "type": "cancel", "deal_id": war["id"] if war else "w?"})
     return acts
 
 
@@ -225,15 +230,27 @@ def analyza_k(res) -> list[tuple[str, bool, str]]:
     ok = len(losses) == 3 and all(ab[t] == 0 for t in (10, 11, 12))
     out.append(("tahy 10 až 12: power −10, wealth −5 %, obchod A s B přerušen", ok,
                 "; ".join(losses) + "; objem A s B podle tahů %s" % {t: round(v, 2) for t, v in ab.items()}))
-    # 8. ustup B
-    end = rules(13, "3.3a konec valky")
+    # 8. primeri (v1.10 dodatek)
+    inf9 = {nid: v for nid, v in R[9]["influence"]["B"].items() if v > 0}
+    out.append(("vliv B u dvou NPC před válkou (tah 9)", len(inf9) >= 2,
+                "vliv B %s; pakty B po tahu 9: %s" % ({k: round(v, 1) for k, v in inf9.items()},
+                                                    [nid for nid, o in R[9]["protect_n"].items() if "B" in o])))
+    offer = ev(13, "war_cancel_offered", player="B")
+    out.append(("tah 13: cancel B, válka trvá", bool(offer) and bool(R[13]["wars"]) and not rules(13, "3.3a konec valky"),
+                "nabídka %s; válka po tahu 13: %s; ztráty tahu 13: %s" % (
+                    "ano" if offer else "ne", "trvá" if R[13]["wars"] else "skončila",
+                    [a["outputs"] for a in rules(13, "3.3a valka")] and "power −10 obema" or "žádné")))
+    end = rules(14, "3.3a konec valky")
     o = end[0]["outputs"] if end else {}
-    ratio = (o["vliv_po"] / o["vliv_pred"]) if end and o.get("vliv_pred") else None
-    out.append(("tah 13: ústup B, vliv B −30 %", bool(end) and o.get("jak") == "ustup" and o.get("porazeny") == "B"
-                and ratio is not None and abs(ratio - 0.7) < 1e-6,
-                "%s; součet vlivu B %.3f → %.3f (poměr %s); válka v tahu 14: %s" % (
-                    o.get("jak", "-"), o.get("vliv_pred", 0), o.get("vliv_po", 0),
-                    ("%.3f" % ratio) if ratio is not None else "-", "ano" if R[14]["wars"] else "ne")))
+    ratios = {p: (o["vliv_po"][p] / o["vliv_pred"][p]) if o.get("vliv_pred", {}).get(p) else None for p in ("A", "B")}
+    ok = bool(end) and o.get("jak") == "primeri" and not R[14]["wars"] and \
+        all(r is not None and abs(r - 0.9) < 1e-6 for r in ratios.values())
+    out.append(("tah 14: cancel A, příměří, vliv −10 % oběma", ok,
+                "%s; A %s → %s, B %s → %s; poměry %s; ústup 30 %% neuplatněn: %s" % (
+                    o.get("jak", "-"), o.get("vliv_pred", {}).get("A"), o.get("vliv_po", {}).get("A"),
+                    o.get("vliv_pred", {}).get("B"), o.get("vliv_po", {}).get("B"),
+                    {p: (round(r, 3) if r is not None else None) for p, r in ratios.items()},
+                    "ano" if not any(x["outputs"].get("jak") == "ustup" for t in (13, 14) for x in rules(t, "3.3a konec valky")) else "ne")))
     return out
 
 
@@ -384,6 +401,8 @@ def run(turns: int, action_fn, state=None, npcdata=None, keep_applied=False):
             "protect_n": {nid: [d["owner"] for d in new_state["deals"] if d["type"] == "protect" and d["target"] == nid]
                           for nid in new_state["npc"]},
             "power": {p: float(new_state["players"][p]["power"]) for p in ("A", "B")},
+            "influence": {p: {nid: float(x["influence"].get(p, 0.0)) for nid, x in new_state["npc"].items()}
+                          for p in ("A", "B")},
             "events": events if keep_applied else None,
             "private_log_last": {p: (new_state.get("private_log", {}).get(p) or [{}])[-1].get("reason", "-")
                                  for p in ("A", "B")},

@@ -1,6 +1,6 @@
 # Výtah pravidel pro rozhodčího: světa Ardan (v1.10)
 
-Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 7.2, 9 a 10).
+Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 6, 7.2, 9 a 10).
 Neupravovat ručně; po každé změně pravidel skript spustit znovu.
 
 ## 1. Aktéři
@@ -64,7 +64,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 ### 3.3 Dobývání
 
-- Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče. Útok na NPC pod paktem druhého hráče vyhlásí válku hráčů automaticky (3.3a) a invaze nepostupuje.
+- Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče. Útok na NPC pod paktem druhého hráče vyhlásí válku hráčů automaticky (3.3a) a invaze nepostupuje. V tazích 1 až 9 a 88 až 90, kdy válku vyhlásit nelze, se invaze na NPC pod paktem druhého hráče vyřadí bez války.
 - **Pakt a invaze ve stejném tahu:** míří-li v jednom tahu `protect` jednoho hráče a `invade` druhého na totéž NPC, vyhodnotí se nejdřív pakt. Přijme-li ho NPC, je invaze od tohoto tahu válkou (3.3a); odmítne-li, invaze začíná normálně.
 - Trvá 6 po sobě jdoucích tahů s akcí `invade`. Přerušení = start znovu. Paralelní invaze jsou povoleny (každá se platí zvlášť).
 - Strach z agresora: za každé okupované NPC ztrácí okupant 1 `influence`/tah u všech nezávislých NPC.
@@ -74,9 +74,10 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 ### 3.3a Válka hráčů
 
 - **Vyhlášení:** akce `declare_war` s `target` A nebo B. Útok na NPC pod paktem druhého hráče vyhlásí válku automaticky. Válku nelze vyhlásit v tazích 1 až 9 ani 88 až 90; v těchto tazích se `declare_war` i útok na NPC pod paktem druhého vyřadí.
-- **Každý tah války, od tahu vyhlášení:** oba hráči `power` −10 a `wealth` −5 %; automatický obchod mezi nimi je přerušen; obchod každého z nich s NPC ve sféře druhého se násobí 0.5; všechna nezávislá NPC snižují `influence` u obou o 1.
+- **Každý tah války, od tahu vyhlášení:** oba hráči `power` −10 a `wealth` −5 %; automatický obchod mezi nimi je přerušen; obchod každého z nich s NPC ve sféře druhého se násobí 0.5; všechna nezávislá NPC snižují `influence` u toho, kdo válku vyhlásil, o 2 a u napadeného o 1.
 - **Unie:** po dobu války platí ten, kdo válku vyhlásil, clo celní unie navíc o 0.10. Členové Unie do války nevstupují.
-- **Konec ústupem:** `cancel` na válku. Kdo ustoupí, ztrácí 30 % vlivu u všech NPC.
+- **Konec ústupem:** `cancel` na válku, na který druhá strana neodpoví vlastním `cancel` ve stejném ani v následujícím tahu; válka do té doby trvá. Kdo ustoupí, ztrácí 30 % vlivu u všech NPC.
+- **Příměří:** `cancel` na válku od obou stran ve stejném tahu nebo v tazích po sobě. Oba ztrácejí 10 % vlivu u všech NPC místo 30 %.
 - **Konec kapitulací:** klesne-li hráči `power` na 0, kapituluje: ztrácí všechny pakty, 50 % vlivu u všech NPC a 20 % svého `wealth`, které jde vítězi.
 - Hráče nelze dobýt ani okupovat. Vyhlášení války i její konec jsou události pro Zprávy světa.
 
@@ -124,6 +125,22 @@ Nabídka jde do pohledu hráče s `offer_id` a platí 2 tahy. Akce `accept_offer
 **Rozdělení míst:** z dvou míst na hráče a tah je nejvýš jedno `sell`; druhé dostane `loan_request` nebo `protect_request` s nejvyšším vlivem, a jen když žádná není, druhé `sell`. Když žádná `sell` není, dostanou obě místa `loan_request` nebo `protect_request` s nejvyšším vlivem. Jedno NPC dá hráči nejvýš jednu nabídku daného druhu a u jednoho NPC má `loan_request` přednost před `protect_request`.
 
 **Platnost:** nabídku z tahu t lze přijmout v tazích t+1 a t+2; nepřijatá propadne na konci tahu t+2 a počítá se jako ignorovaná. Po třetí ignorované v řadě klesne vliv o 1 a počítadlo se nuluje; Unie vliv nemá. Přijatá nabídka `sell` je jednorázový obchod v tomtéž tahu a jako cílený obchod s hráčem přidá v 4.4 vliv +1.
+
+## 6. Zprávy světa
+
+Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Generují se z prahů:
+
+- bída: "V N nepokoje." → další tah "V N hladomor." → pád vlády.
+- cena oritu > 2× výchozí: "Oritová horečka: banky v N půjčují bez záruk."
+- NPC splácí novým dluhem: "N splácí staré půjčky novými."
+- první nesplácení: vždy zpráva s jménem NPC a věřitele.
+- koncentrace: hráč drží > 50 % obchodu nebo zdrojů: "Menší státy se tiše radí o společném postupu."
+- orit: od displacementu každý tah aspoň jedna zpráva o krocích soupeře s oritem, i když jsou malé.
+- Unie: při vzniku "Unie zveřejnila přístupová kritéria: nezávislé soudy, vymahatelnost smluv."; při růstu prahu "Unie zpřísnila kritéria."; při investici do kandidáta "N zahájilo reformu soudů."; při odmítnutí "Přihláška N odmítnuta."
+- invaze: "Uprchlíci z N míří do M."
+- tech: NPC s `tech ≥ 6`: "V N vzniká nová továrna." (bez vysvětlení).
+- šum: každý 4. tah jedna zpráva bez důsledku ("Sucho v N zatím bez dopadu.", "V M zvolen nový starosta hlavního města.").
+- Unie: od vzniku "Unie oznamuje ..." pro veřejné akce.
 
 ## 7. Unie
 ### 7.2 Unie jako hráč (C)

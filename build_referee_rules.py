@@ -1,7 +1,7 @@
 """build_referee_rules.py
 
 Vytah pravidel pro rozhodciho: z docs/pravidla.md vybere casti 1, 3 (vcetne 3.3a, 3.4, 3.4a, 3.5),
-7.2, 9 a 10 a zapise docs/pravidla_rozhodci.md. Poustet pri kazde zmene docs/pravidla.md
+6, 7.2, 9 a 10 a zapise docs/pravidla_rozhodci.md. Poustet pri kazde zmene docs/pravidla.md
 (BUILD.md cast 3).
 
     python build_referee_rules.py
@@ -14,7 +14,7 @@ import sys
 
 import config
 
-KEEP_PARTS = ("1", "3", "9", "10")   # cele casti
+KEEP_PARTS = ("1", "3", "6", "9", "10")   # cele casti (6 Zpravy sveta od v1.10 dodatku)
 KEEP_SUB = ("7.2",)                  # jednotlive podkapitoly
 OUT = config.DOCS_DIR / "pravidla_rozhodci.md"
 
@@ -38,7 +38,7 @@ def extract(text: str) -> str:
         if part in KEEP_PARTS or (sub in KEEP_SUB and part is not None):
             out.append(line)
     head = [title.replace("# Pravidla", "# Výtah pravidel pro rozhodčího:"), "",
-            "Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 7.2, 9 a 10).",
+            "Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 6, 7.2, 9 a 10).",
             "Neupravovat ručně; po každé změně pravidel skript spustit znovu.", ""]
     return "\n".join(head + out).rstrip() + "\n"
 

@@ -74,6 +74,9 @@ WAR_CAPITULATION_INFLUENCE = 0.50           # kapitulace: -50 % vlivu vsude
 WAR_CAPITULATION_WEALTH = 0.20              # kapitulace: 20 % wealth jde vitezi
 WAR_TARIFF_EXTRA = 0.10                     # clo Unie navic vuci tomu, kdo valku vyhlasil
 WAR_SPHERE_TRADE = 0.5                      # obchod s NPC ve sfere nepritele x0.5
+WAR_INFLUENCE_AGGRESSOR = 2.0               # nezavisla NPC: vliv vyhlasovatele -2 za tah (v1.10 dodatek)
+WAR_INFLUENCE_DEFENDER = 1.0                # ... vliv napadeneho -1 za tah
+WAR_CEASEFIRE_INFLUENCE = 0.10              # primeri: -10 % vlivu obema misto 30 % ustupu
 ARM_MAX = 40.0                              # arm: nejvys 40 wealth na akci (3.2, v1.10)
 ARM_RATIO = 1.6                             # arm: power += amount / 1.6
 ADMIT_ZONE_MIN = 8.0                        # admit ze zony vlivu: vliv nad 8 ...
@@ -775,7 +778,15 @@ def _end_war(state, war, how, loser, winner, events, trace) -> None:
     """3.3a (v1.10): konec valky ustupem, kapitulaci nebo remizou (oba power 0)."""
     state["wars"] = [w for w in state.get("wars", []) if w["id"] != war["id"]]
     out = {"war_id": war["id"], "jak": how, "porazeny": loser, "vitez": winner}
-    if how == "ustup":
+    if how == "primeri":
+        pred, po = {}, {}
+        for x in (war["aggressor"], war["defender"]):
+            pred[x] = round(sum(float(nn["influence"].get(x, 0.0)) for nn in state["npc"].values()), 3)
+            for nn in state["npc"].values():
+                nn["influence"][x] = float(nn["influence"].get(x, 0.0)) * (1.0 - WAR_CEASEFIRE_INFLUENCE)
+            po[x] = round(sum(float(nn["influence"].get(x, 0.0)) for nn in state["npc"].values()), 3)
+        out.update({"vliv_pred": pred, "vliv_po": po})
+    elif how == "ustup":
         before = sum(float(x["influence"].get(loser, 0.0)) for x in state["npc"].values())
         for x in state["npc"].values():
             x["influence"][loser] = float(x["influence"].get(loser, 0.0)) * (1.0 - WAR_RETREAT_INFLUENCE)
@@ -799,18 +810,28 @@ def _end_war(state, war, how, loser, winner, events, trace) -> None:
 def step_wars(state, trace, events) -> None:
     """3.3a (v1.10): za kazdy tah valky oba power -10 a wealth -5 %, nezavisla NPC vliv -1 u obou;
     power 0 znamena kapitulaci (oba 0: remiza bez vitaze)."""
+    turn = int(state["meta"]["turn"])
     for war in list(state.get("wars", [])):
         a, d = war["aggressor"], war["defender"]
+        stale = [p for p, t in (war.get("cancel") or {}).items() if int(t) < turn]
+        if stale:
+            # cancel z minuleho tahu bez odpovedi druhe strany: ustup (3.3a)
+            _end_war(state, war, "ustup", stale[0], None, events, trace)
+            continue
         before = {x: (float(state["players"][x]["power"]), float(state["players"][x]["wealth"])) for x in (a, d)}
         for x in (a, d):
             p = state["players"][x]
             p["power"] = max(0.0, float(p["power"]) - WAR_POWER_LOSS)
             p["wealth"] = float(p["wealth"]) * (1.0 - WAR_WEALTH_LOSS)
+        loss = {a: 0.0, d: 0.0}
         for nn in state["npc"].values():
             if nn["status"] == "independent":
-                for x in (a, d):
-                    nn["influence"][x] = max(0.0, float(nn["influence"].get(x, 0.0)) - 1.0)
-        trace.add("3.3a valka", {"war_id": war["id"], "agresor": a, "obrance": d},
+                for x, drop in ((a, WAR_INFLUENCE_AGGRESSOR), (d, WAR_INFLUENCE_DEFENDER)):
+                    old = float(nn["influence"].get(x, 0.0))
+                    nn["influence"][x] = max(0.0, old - drop)
+                    loss[x] += old - nn["influence"][x]
+        trace.add("3.3a valka", {"war_id": war["id"], "agresor": a, "obrance": d,
+                                 "vliv_ubytek": {k: round(v, 3) for k, v in loss.items()}},
                   {x: {"power_pred": round(before[x][0], 3), "power_po": round(float(state["players"][x]["power"]), 3),
                        "wealth_pred": round(before[x][1], 3), "wealth_po": round(float(state["players"][x]["wealth"]), 3)}
                    for x in (a, d)})
@@ -1304,7 +1325,18 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
             war = next((w for w in state.get("wars", [])
                         if w["id"] == did and pid in (w["aggressor"], w["defender"])), None)
             if war is not None:
-                _end_war(state, war, "ustup", pid, None, events, trace)   # 3.3a (v1.10)
+                # 3.3a (v1.10 dodatek): cancel od obou ve stejnem tahu nebo v tazich po sobe = primeri;
+                # samotny cancel je nabidka, bez odpovedi do dalsiho tahu se z nej stane ustup
+                turn_now = int(state["meta"]["turn"])
+                other = war["defender"] if pid == war["aggressor"] else war["aggressor"]
+                pend = war.setdefault("cancel", {})
+                if other in pend and int(pend[other]) >= turn_now - 1:
+                    _end_war(state, war, "primeri", None, None, events, trace)
+                else:
+                    pend[pid] = turn_now
+                    events.append({"kind": "war_cancel_offered", "player": pid, "war_id": war["id"]})
+                    trace.add("3.3a cancel valky", {"player": pid, "war_id": war["id"]},
+                              {"ceka_na": other, "do_tahu": turn_now + 1})
                 continue
             before = len(state["deals"])
             state["deals"] = [d for d in state["deals"]
