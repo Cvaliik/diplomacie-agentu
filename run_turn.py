@@ -34,6 +34,7 @@ import concurrent.futures
 import copy
 import datetime
 import json
+import os
 import re
 import shutil
 import subprocess
@@ -263,12 +264,14 @@ def client():
         except ImportError:
             raise SystemExit("Chybi balicek anthropic (pip install anthropic) a prihlaseni "
                              "(ANTHROPIC_API_KEY nebo ant auth login).")
-        _client = anthropic.Anthropic()
+        # klic z ARDAN_API_KEY, nahradne ANTHROPIC_API_KEY; nikdy neni v repu
+        _client = anthropic.Anthropic(api_key=os.environ.get("ARDAN_API_KEY") or os.environ.get("ANTHROPIC_API_KEY"))
     return _client
 
 
-def call_model(model: str, system: str, user: str, max_tokens: int = 16000) -> str:
-    """Jedno volani Messages API. Vraci text odpovedi; pri odmitnuti prazdny retezec."""
+def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usage_log: list | None = None) -> str:
+    """Jedno volani Messages API. Vraci text odpovedi; pri odmitnuti prazdny retezec.
+    Skutecne usage (input_tokens, output_tokens) se pripise do usage_log."""
     kwargs = dict(model=model, max_tokens=max_tokens, system=system,
                   messages=[{"role": "user", "content": user}],
                   thinking={"type": "adaptive"})
@@ -278,6 +281,9 @@ def call_model(model: str, system: str, user: str, max_tokens: int = 16000) -> s
                                              fallbacks=[{"model": "claude-opus-4-8"}], **kwargs)
     else:
         resp = client().messages.create(**kwargs)
+    if usage_log is not None:
+        usage_log.append({"model": resp.model, "input_tokens": resp.usage.input_tokens,
+                          "output_tokens": resp.usage.output_tokens, "stop_reason": resp.stop_reason})
     if resp.stop_reason == "refusal":
         return ""
     return "".join(b.text for b in resp.content if b.type == "text")
@@ -303,8 +309,9 @@ def valid_move(obj) -> bool:
 def play(pid: str, system: str, user: str, retries: int) -> dict:
     """Tah hrace s opakovanim; po vycerpani mlceni podle pravidel 10.6."""
     attempts = []
+    usage = []
     for attempt in range(retries + 1):
-        raw = call_model(config.PLAYER_MODEL, system, user)
+        raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage)
         attempts.append(raw)
         try:
             move = parse_json(raw)
@@ -313,9 +320,10 @@ def play(pid: str, system: str, user: str, retries: int) -> dict:
         if valid_move(move):
             move["silent"] = False
             move["attempts"] = attempt + 1
+            move["usage"] = usage
             return move
     return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [],
-            "silent": True, "attempts": len(attempts), "raw": attempts}
+            "silent": True, "attempts": len(attempts), "raw": attempts, "usage": usage}
 
 
 # --------------------------------------------------------------------------

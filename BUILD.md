@@ -42,6 +42,8 @@ web/index.html       statická stránka (GitHub Pages ze složky web/)
 
 Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER_MODEL`. Výchozí: hráči a kronikář nejsilnější dostupný model (Opus), rozhodčí Sonnet. Adam může přepnout jedním commitem.
 
+Klíč se čte z `ARDAN_API_KEY`, náhradně `ANTHROPIC_API_KEY`; nikdy není v repu.
+
 ## 4. validate.py
 
 Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 10; fáze se posunula o víc než jeden krok, nebo bez záznamu prahu v `minsky.phase_log`; hráč má víc akcí než limit; změna součtu `pop` světa není pokrytá záznamem v `applied_rules` od pravidla, které `pop` měnit smí (4.3 bída, 3.3 invaze a uprchlíci, 5 migrace); `turn` neroste o 1; chybí `applied_rules`; pohledy obsahují skrytá pole.
