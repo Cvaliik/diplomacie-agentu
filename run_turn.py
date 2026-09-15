@@ -68,7 +68,9 @@ def dump(obj) -> str:
 
 
 def load_state(path: Path):
-    state = json.loads(read_text(path))
+    # debug soubory nesou na prvnim radku komentar s odhadem tokenu ("// vstup: ...")
+    text = "\n".join(l for l in read_text(path).split("\n") if not l.startswith("//"))
+    state = json.loads(text)
     npcdata = json.loads(read_text(config.NPC_PATH))
     engine.normalize(state)
     return state, npcdata
@@ -445,6 +447,12 @@ def main() -> int:
             path = DEBUG_DIR / ("turn_%03d_rozhodci.md" % turn)
             write_debug_prompt(path, "Prompt rozhodčího, tah %d, úloha 1 (tahy hráčů doplní běh)" % turn,
                                referee_system(), referee_actions_prompt(state, placeholder))
+            print("zapsano %s" % path.relative_to(config.ROOT))
+            # uloha 2: Zpravy sveta z udalosti prepoctu tahu bez akci (stav se nezapisuje)
+            after, events, _ = engine.apply_turn(state, npcdata, [])
+            path = DEBUG_DIR / ("turn_%03d_rozhodci_zpravy.md" % turn)
+            write_debug_prompt(path, "Prompt rozhodčího, tah %d, úloha 2 (události z přepočtu bez akcí)" % turn,
+                               referee_system(), referee_news_prompt(after, events))
             print("zapsano %s" % path.relative_to(config.ROOT))
         return 0
 

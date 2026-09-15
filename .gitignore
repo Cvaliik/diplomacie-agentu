@@ -13,3 +13,6 @@ desktop.ini
 # Python
 __pycache__/
 *.pyc
+
+# Ladici vystupy (prompty, odpovedi, synteticke stavy)
+debug/
