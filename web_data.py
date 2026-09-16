@@ -99,6 +99,7 @@ def turn_summary(snap) -> dict:
     for nid, n in st["npc"].items():
         states[nid] = {"wealth": _r(n.get("wealth")), "paper_wealth": _r(n.get("paper_wealth", 0)),
                        "status": n.get("status"), "kind": n.get("kind", "normal"),
+                       "influence": {k: _r((n.get("influence") or {}).get(k, 0.0)) for k in ("A", "B")},
                        "pop": _r(n.get("pop"), 1), "orit": _r((n.get("prod") or {}).get("orit", 0))}
     C = st["players"]["C"]
     migration = []
