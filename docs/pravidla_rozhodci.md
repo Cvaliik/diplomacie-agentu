@@ -38,7 +38,8 @@ Pořadí v tahu:
   "public_statement": "Diplomatický projev, vidí ho všichni. 2 až 5 vět.",
   "private_reasoning": "Skutečné zdůvodnění, vidí ho jen publikum. Upřímně, včetně lží v projevu.",
   "actions": [ { "type": "...", ... }, { "type": "...", ... } ],
-  "domestic_action": { "type": "invest_industry" }
+  "domestic_action": { "type": "invest_industry" },
+  "message": { "target": "B", "text": "..." }
 }
 ```
 
@@ -46,7 +47,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 **Domácí akce (v1.11):** hráči A a B smějí navíc jednu domácí akci v poli `domestic_action` (objekt nebo `null`). Povolené typy: `invest_tech`, `invest_law`, `invest_industry`, `invest_prod`, `arm`, `explore`, vždy na vlastní stát. Do limitu 2 akcí se nepočítá; rozhodčí ji přeloží na akci s `"slot": "domestic"` a jiný typ nebo cizí cíl vyřadí. Investice do NPC ve sféře zůstávají běžnými akcemi v limitu. Unie domácí akci nemá.
 
-**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí.
+**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí. Hráč ji zadává v poli `message` odpovědi (objekt `target`, `text`, nebo `null`); rozhodčí ji přeloží na akci `message`. Odpověď hráče i rozhodčího se kontroluje proti JSON schématu (strukturovaný výstup API).
 
 ### 3.2 Akce
 

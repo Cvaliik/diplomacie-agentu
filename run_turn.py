@@ -597,8 +597,80 @@ def call_cost(u: dict) -> float:
             + u["cache_read_input_tokens"] * pin * 0.1 + u["output_tokens"] * pout) / 1e6
 
 
+# --------------------------------------------------------------------------
+# JSON schemata odpovedi (strukturovany vystup, output_config.format)
+# --------------------------------------------------------------------------
+
+ACTION_TYPES = ("trade_offer", "loan", "pressure", "protect", "invade", "declare_war", "invest_tech", "invest_law",
+                "invest_industry", "invest_prod", "explore", "arm", "cancel", "admit", "union_fund", "set_tariff",
+                "accept_offer")
+ACTION_PARAMS = {
+    "target": {"type": "string"},
+    "res": {"type": "string", "enum": ["grain", "oil", "metal", "goods", "orit"]},
+    "qty": {"type": "number"},
+    "price_per_unit": {"type": "number"},
+    "amount": {"type": "number"},
+    "deal_id": {"type": "string"},
+    "offer_id": {"type": "string"},
+    "demand": {"type": "string"},
+    "rate": {"type": "number"},
+    "retreat": {"type": "boolean"},
+}
+MESSAGE_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["target", "text"],
+                  "properties": {"target": {"type": "string", "enum": ["A", "B", "C"]}, "text": {"type": "string"}}}
+
+
+def player_schema(pid: str) -> dict:
+    """Odpoved hrace: projev, uvaha, akce v limitu, domaci akce (A a B) a zprava."""
+    action = {"type": "object", "additionalProperties": False, "required": ["type"],
+              "properties": {"type": {"type": "string", "enum": list(ACTION_TYPES)}, **ACTION_PARAMS}}
+    props = {
+        "public_statement": {"type": "string"},
+        "private_reasoning": {"type": "string"},
+        "actions": {"type": "array", "items": action},
+        "message": {"anyOf": [{"type": "null"}, MESSAGE_SCHEMA]},
+    }
+    if pid in MEMORY_PLAYERS:
+        props["domestic_action"] = {"anyOf": [{"type": "null"}, {
+            "type": "object", "additionalProperties": False, "required": ["type"],
+            "properties": {"type": {"type": "string", "enum": list(engine.DOMESTIC_TYPES)},
+                           "amount": {"type": "number"},
+                           "res": {"type": "string", "enum": ["grain", "oil", "metal"]}}}]}
+    return {"type": "object", "additionalProperties": False, "required": list(props), "properties": props}
+
+
+def referee_schema() -> dict:
+    """Uloha 1 rozhodciho: actions, rejected, rulings, news."""
+    action = {"type": "object", "additionalProperties": False, "required": ["player", "type"],
+              "properties": {"player": {"type": "string", "enum": ["A", "B", "C"]},
+                             "type": {"type": "string", "enum": list(ACTION_TYPES) + ["message"]},
+                             "slot": {"type": "string", "enum": ["domestic"]},
+                             "text": {"type": "string"}, **ACTION_PARAMS}}
+    return {
+        "type": "object", "additionalProperties": False, "required": ["actions", "rejected", "rulings", "news"],
+        "$defs": {"action": action},
+        "properties": {
+            "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
+            "rejected": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False, "required": ["player", "action", "reason"],
+                "properties": {"player": {"type": "string", "enum": ["A", "B", "C"]},
+                               "action": {"$ref": "#/$defs/action"}, "reason": {"type": "string"}}}},
+            "rulings": {"type": "array", "items": {
+                "type": "object", "additionalProperties": False,
+                "required": ["situation", "ruling", "reason", "proposed"],
+                "properties": {"situation": {"type": "string"}, "ruling": {"type": "string"},
+                               "reason": {"type": "string"}, "proposed": {"type": "boolean"}}}},
+            "news": {"type": "array", "items": {"type": "string"}},
+        },
+    }
+
+
+NEWS_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["news"],
+               "properties": {"news": {"type": "array", "items": {"type": "string"}}}}
+
+
 def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usage_log: list | None = None,
-               cache: bool = False, label: str = "") -> str:
+               cache: bool = False, label: str = "", schema: dict | None = None) -> str:
     """Jedno volani Messages API. Vraci text odpovedi; pri odmitnuti prazdny retezec.
     Skutecne usage (input_tokens, output_tokens) se pripise do usage_log."""
     # prompt caching jen tam, kde se stejny system opakuje v kratke dobe (dve volani rozhodciho v tahu)
@@ -606,12 +678,27 @@ def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usag
     kwargs = dict(model=model, max_tokens=max_tokens, system=sys_block,
                   messages=[{"role": "user", "content": user}],
                   thinking={"type": "adaptive"})
-    if model in (config.PLAYER_MODEL, config.CHRONICLER_MODEL) and model.startswith("claude-opus-5"):
-        # pri odmitnuti bezpecnostnim filtrem dokonci pozadavek zalozni model
-        resp = client().beta.messages.create(betas=["server-side-fallback-2026-06-01"],
-                                             fallbacks=[{"model": "claude-opus-4-8"}], **kwargs)
-    else:
-        resp = client().messages.create(**kwargs)
+    if schema is not None:
+        # strukturovany vystup: odpoved je validni JSON podle schematu (parser a retry zustavaji jako pojistka)
+        kwargs["output_config"] = {"format": {"type": "json_schema", "schema": schema}}
+    import anthropic
+
+    def send(kw):
+        if model in (config.PLAYER_MODEL, config.CHRONICLER_MODEL) and model.startswith("claude-opus-5"):
+            # pri odmitnuti bezpecnostnim filtrem dokonci pozadavek zalozni model
+            return client().beta.messages.create(betas=["server-side-fallback-2026-06-01"],
+                                                 fallbacks=[{"model": "claude-opus-4-8"}], **kw)
+        return client().messages.create(**kw)
+
+    try:
+        resp = send(kwargs)
+    except anthropic.BadRequestError as err:
+        if "output_config" not in kwargs:
+            raise
+        # pojistka: API schema odmitlo, volani probehne bez strukturovaneho vystupu (parser a retry dal plati)
+        print("output_config odmitnut (%s): %s; volam bez schematu" % (label, str(err)[:200]))
+        kwargs.pop("output_config")
+        resp = send(kwargs)
     if usage_log is not None:
         u = {"call": label, "model": resp.model, "input_tokens": resp.usage.input_tokens,
              "cache_creation_input_tokens": getattr(resp.usage, "cache_creation_input_tokens", 0) or 0,
@@ -639,7 +726,8 @@ def parse_json(text: str):
 def valid_move(obj) -> bool:
     return (isinstance(obj, dict) and isinstance(obj.get("public_statement"), str)
             and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list)
-            and isinstance(obj.get("domestic_action"), (dict, type(None))))
+            and isinstance(obj.get("domestic_action"), (dict, type(None)))
+            and isinstance(obj.get("message"), (dict, type(None))))
 
 
 def mark_domestic(actions: list, moves: dict) -> list:
@@ -670,7 +758,8 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
     attempts = []
     usage = []
     for attempt in range(retries + 1):
-        raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage, label="hrac %s" % pid)
+        raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage, label="hrac %s" % pid,
+                         schema=player_schema(pid))
         attempts.append(raw)
         try:
             move = parse_json(raw)
@@ -679,16 +768,18 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
             continue
         if not valid_move(move):
             save_fail(turn, pid, attempt + 1, raw,
-                      "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action neni objekt ani null",
+                      "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action ci message "
+                      "neni objekt ani null",
                       usage)
             continue
         if valid_move(move):
             move.setdefault("domestic_action", None)
+            move.setdefault("message", None)
             move["silent"] = False
             move["attempts"] = attempt + 1
             move["usage"] = usage
             return move
-    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [], "domestic_action": None,
+    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [], "domestic_action": None, "message": None,
             "silent": True, "attempts": len(attempts), "raw": attempts, "usage": usage}
 
 
@@ -859,7 +950,8 @@ def main() -> int:
             placeholder = {pid: {"public_statement": "<odpověď hráče %s>" % pid,
                                  "private_reasoning": "<odpověď hráče %s>" % pid,
                                  "actions": ["<akce hráče %s>" % pid],
-                                 "domestic_action": ("<domácí akce hráče %s nebo null>" % pid) if pid in MEMORY_PLAYERS else None}
+                                 "domestic_action": ("<domácí akce hráče %s nebo null>" % pid) if pid in MEMORY_PLAYERS else None,
+                                 "message": "<zpráva hráče %s nebo null>" % pid}
                            for pid in players}
             path = DEBUG_DIR / ("turn_%03d_rozhodci.md" % turn)
             write_debug_prompt(path, "Prompt rozhodčího, tah %d, úloha 1 (tahy hráčů doplní běh)" % turn,
@@ -893,11 +985,12 @@ def main() -> int:
             return 0
 
     # 4. rozhodci: preklad tahu
-    public_moves = {pid: {k: m.get(k) for k in ("public_statement", "private_reasoning", "actions", "domestic_action")}
+    public_moves = {pid: {k: m.get(k) for k in ("public_statement", "private_reasoning", "actions",
+                                                "domestic_action", "message")}
                     for pid, m in moves.items()}
     ref_usage = []
     ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
-                         usage_log=ref_usage, cache=True, label="rozhodci akce")
+                         usage_log=ref_usage, cache=True, label="rozhodci akce", schema=referee_schema())
     try:
         ref = parse_json(ref_raw)
     except (ValueError, json.JSONDecodeError) as err:
@@ -916,7 +1009,7 @@ def main() -> int:
 
     # 6. rozhodci: Zpravy sveta
     news_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_news_prompt(new_state, events),
-                          usage_log=ref_usage, cache=True, label="rozhodci zpravy")
+                          usage_log=ref_usage, cache=True, label="rozhodci zpravy", schema=NEWS_SCHEMA)
     try:
         news = list(parse_json(news_raw).get("news") or [])[:3]
     except (ValueError, json.JSONDecodeError):

@@ -12,7 +12,8 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
   "actions": [
     { "type": "...", "...": "..." }
   ],
-  "domestic_action": { "type": "invest_industry" }
+  "domestic_action": { "type": "invest_industry" },
+  "message": { "target": "B", "text": "Soukromá zpráva, nebo celé pole null." }
 }
 ```
 
@@ -20,8 +21,12 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 |---|---|---|---|
 | `public_statement` | text | ano | 2 až 5 vět, vidí ho všichni |
 | `private_reasoning` | text | ano | vidí ho publikum, soupeř ne |
-| `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah; `message` se do limitu nepočítá (nejvýš 1 za tah) |
-| `domestic_action` | objekt nebo `null` | ne | jen A a B: nejvýš 1 domácí akce za tah mimo limit akcí (v1.11) |
+| `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
+| `domestic_action` | objekt nebo `null` | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); Unie pole nemá |
+| `message` | objekt nebo `null` | ano | nejvýš 1 soukromá zpráva za tah mimo limit akcí: `target` a `text` |
+
+Odpověď se kontroluje proti JSON schématu (strukturovaný výstup API): jiná pole ani jiné typy akcí projít nemohou.
+Zpráva se zadává jen v poli `message`, ne v seznamu `actions`.
 
 **Domácí akce (v1.11):** `domestic_action` je jedna z akcí `invest_tech`, `invest_law`, `invest_industry`,
 `invest_prod`, `arm`, `explore`, vždy na vlastní stát (bez `target`). Do limitu 2 akcí se nepočítá.
@@ -204,10 +209,11 @@ Jen vlastní stát. Utratíš `amount` bohatství (nejvýš 40) a síla vzroste 
 ### `message`: soukromá zpráva jinému hráči
 
 Doručena v příštím tahu. Adresát je `A`, `B` nebo `C`. Publikum ji vidí.
-Zpráva je zdarma a do limitu akcí se nepočítá; nejvýš jedna za tah (v1.11).
+Zpráva je zdarma a do limitu akcí se nepočítá; nejvýš jedna za tah (v1.11). Zadává se v poli `message` odpovědi,
+ne v seznamu `actions`.
 
 ```json
-{ "type": "message", "target": "B", "text": "Navrhuji rozdělit obchod s Kessarem." }
+"message": { "target": "B", "text": "Navrhuji rozdělit obchod s Kessarem." }
 ```
 
 ### `admit`: nabídka členství (jen Unie)
@@ -265,9 +271,9 @@ Když nabídky téhož NPC třikrát po sobě ignoruješ, ubírá ti to u něj v
   "private_reasoning": "Potřebuji obilí dřív, než ho koupí Ostrogard. Půjčka Dorvanu mi dá vliv u oritu.",
   "actions": [
     { "type": "trade_offer", "target": "N1", "res": "grain", "qty": 3, "price_per_unit": 0.8 },
-    { "type": "loan", "target": "N6", "amount": 10 },
-    { "type": "message", "target": "B", "text": "O Kessaru můžeme mluvit." }
+    { "type": "loan", "target": "N6", "amount": 10 }
   ],
-  "domestic_action": { "type": "invest_tech" }
+  "domestic_action": { "type": "invest_tech" },
+  "message": { "target": "B", "text": "O Kessaru můžeme mluvit." }
 }
 ```
