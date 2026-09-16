@@ -132,6 +132,77 @@ def active_players(state) -> list[str]:
     return ["A", "B"] + (["C"] if state["players"]["C"].get("active") else [])
 
 
+SLOT_HOURS = (7, 13, 20)   # sloty 07:00, 13:00 a 20:00 prazskeho casu (jen vypocet, ne cas spusteni)
+
+
+def prague_now() -> datetime.datetime:
+    """Prazsky cas. Hra bezi cela v letnim case, bez tzdata se proto bere UTC+2."""
+    try:
+        from zoneinfo import ZoneInfo
+        return datetime.datetime.now(ZoneInfo(config.TIMEZONE))
+    except Exception:
+        return datetime.datetime.now(datetime.timezone(datetime.timedelta(hours=2)))
+
+
+def expected_turns(state, now=None):
+    """Kolik tahu ma byt odehrano ted: 3 x (dnesek - meta.day1_date) + dnesni sloty."""
+    day1 = (state.get("meta") or {}).get("day1_date")
+    if not day1:
+        return None
+    now = now or prague_now()
+    days = (now.date() - datetime.date.fromisoformat(day1)).days
+    if days < 0:
+        return 0
+    return max(0, 3 * days + sum(1 for h in SLOT_HOURS if now.hour >= h))
+
+
+def chronicle_needed(state):
+    """Den, ktery ma odehrany slot 3 a jeste nema kroniku, jinak None."""
+    turn = int(state["meta"]["turn"])
+    if turn <= 0 or turn % 3 != 0:
+        return None
+    day = engine.day_of(turn)
+    return None if (config.CHRONICLE_DIR / ("day_%02d.md" % day)).exists() else day
+
+
+def schedule_plan(state, force=False) -> dict:
+    """Samoopravny rozvrh: co ma bezici workflow ted udelat."""
+    meta = state["meta"]
+    turn = int(meta["turn"])
+    nxt = turn + 1
+    label_turn = "tah %03d (den %d, slot %d)" % (nxt, engine.day_of(nxt), engine.slot_of(nxt))
+    den = chronicle_needed(state)
+    if meta.get("paused") and not force:
+        return {"plan": "pauza", "turns": 0, "label": "pauza", "chronicle_day": ""}
+    if force:
+        return {"plan": "hrat", "turns": 1, "label": label_turn, "chronicle_day": ""}
+    expected = expected_turns(state)
+    if expected is None:
+        return {"plan": "chyba", "turns": 0, "label": "chybi meta.day1_date", "chronicle_day": ""}
+    behind = expected - turn
+    if behind > 0:
+        return {"plan": "hrat", "turns": min(2, behind), "label": label_turn, "chronicle_day": ""}
+    if den is not None:
+        return {"plan": "kronika", "turns": 0, "label": "kronika dne %d" % den, "chronicle_day": str(den)}
+    return {"plan": "nic", "turns": 0, "label": "nic k tahu", "chronicle_day": ""}
+
+
+def gh_output(**values) -> None:
+    path = os.environ.get("GITHUB_OUTPUT")
+    if not path:
+        return
+    with open(path, "a", encoding="utf-8") as f:
+        for k, v in values.items():
+            f.write("%s=%s\n" % (k, v))
+
+
+def gh_summary(text: str) -> None:
+    path = os.environ.get("GITHUB_STEP_SUMMARY")
+    if path:
+        with open(path, "a", encoding="utf-8") as f:
+            f.write(text + "\n")
+
+
 def history_path(turn: int) -> Path:
     return config.HISTORY_DIR / ("turn_%03d.json" % turn)
 
@@ -489,6 +560,11 @@ def main() -> int:
     ap.add_argument("--state", help="vstupni stav misto state.json")
     ap.add_argument("--no-apply", action="store_true", help="nic nezapisovat do stavu, historie ani gitu")
     ap.add_argument("--no-git", action="store_true", help="bez commitu a pushe")
+    ap.add_argument("--scheduled", action="store_true",
+                    help="samoopravny rozvrh: odehraje 1 az 2 zameskane tahy, jinak skonci bez tahu")
+    ap.add_argument("--schedule-check", action="store_true",
+                    help="jen spocita rozvrh a vypise plan (bez volani modelu, pro GitHub Actions)")
+    ap.add_argument("--force", action="store_true", help="hraj bez ohledu na rozvrh (rucni spusteni)")
     ap.add_argument("--fail-on-silent", action="store_true",
                     help="hrac bez platne odpovedi po vsech pokusech = chyba tahu (planovac GitHub Actions)")
     ap.add_argument("--rollback", type=int, help="vratit state.json na snimek tahu N")
@@ -499,8 +575,38 @@ def main() -> int:
 
     state_path = Path(args.state) if args.state else config.STATE_PATH
     state, npcdata = load_state(state_path)
+    if args.schedule_check or args.scheduled:
+        plan = schedule_plan(state, force=args.force)
+        print("rozvrh: %s (%s), tahu k odehrani %d, ocekavano %s, stav tah %d" % (
+            plan["plan"], plan["label"], plan["turns"], expected_turns(state), int(state["meta"]["turn"])))
+        if args.schedule_check:
+            gh_output(**plan)
+            return 0
+        if plan["plan"] != "hrat":
+            gh_output(**plan, played="0")
+            gh_summary(plan["label"])
+            return 0
+        cmd = [sys.executable, str(Path(__file__).resolve()), "--once", "--no-git", "--fail-on-silent"]
+        if args.state:
+            cmd += ["--state", args.state]
+        for i in range(plan["turns"]):
+            code = subprocess.run(cmd, cwd=str(config.ROOT)).returncode
+            if code != 0:
+                gh_summary("tah selhal (kod %d)" % code)
+                return code
+        after, _ = load_state(state_path)
+        meta = after["meta"]
+        label = "tah %03d (den %d, slot %d)" % (int(meta["turn"]), int(meta["day"]), int(meta["slot"]))
+        den = chronicle_needed(after)
+        gh_output(plan="hrano", played=str(plan["turns"]), label=label, turn="%03d" % int(meta["turn"]),
+                  day=str(meta["day"]), slot=str(meta["slot"]), chronicle_day="" if den is None else str(den))
+        gh_summary(label + (" + kronika dne %d" % den if den is not None else ""))
+        print("odehrano tahu: %d, posledni %s" % (plan["turns"], label))
+        return 0
+
     if state["meta"].get("paused"):
         print("meta.paused = true, tah se nehraje")
+        gh_summary("pauza")
         return 0
 
     turn = next_turn(state)

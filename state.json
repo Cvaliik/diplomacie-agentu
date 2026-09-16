@@ -6,7 +6,8 @@
     "slot": 3,
     "rng_seed": 20260910,
     "started_at": "2026-09-15T14:04:12+00:00",
-    "paused": false
+    "paused": false,
+    "day1_date": "2026-09-15"
   },
   "phase": "pre",
   "minsky": {

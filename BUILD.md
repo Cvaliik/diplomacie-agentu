@@ -61,9 +61,9 @@ Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 1
 
 Ostrý běh plánuje workflow `.github/workflows/turn.yml`, ne Claude Code routines.
 
-- **Časy:** `schedule` v UTC pro 07:00, 13:00 a 20:00 pražského času. Hra běží celá v letním čase (UTC+2): `0 5 * * *`, `0 11 * * *`, `0 18 * * *`.
+- **Časy:** cron `*/30 * * * *`. Sloty 07:00, 13:00 a 20:00 pražského času jsou jen výpočet, ne čas spuštění: `run_turn.py --schedule-check` spočítá očekávaný počet tahů jako 3 x (dnešek minus `meta.day1_date`) plus dnešní sloty a rozhodne, zda se hraje. Zaostává-li stav o dva tahy, `--scheduled` odehraje v jednom běhu dva. Prázdný běh končí před `pip install`.
 - **Ruční spuštění:** `workflow_dispatch` se vstupem `mode`: `turn` (ostrý tah) nebo `dry-model` (jen prompty do artefaktu, bez API).
-- **Kroky:** checkout, Python 3.11, `pip install anthropic`, `python run_turn.py --once --no-git --fail-on-silent` s `ARDAN_API_KEY` ze `secrets.ARDAN_API_KEY`; commit `state.json`, `history/` (a `docs/rulings.md`, existuje-li) se zprávou "tah NNN (den D)", `git pull --rebase` a push na master. Po slotu 3 `python run_chronicle.py` a samostatný commit `chronicle/`, aby selhání kroniky nepřišlo o odehraný tah.
+- **Kroky:** checkout, Python 3.11, rozvrh (`--schedule-check`, bez závislostí), `pip install anthropic`, `python run_turn.py --scheduled` s `ARDAN_API_KEY` ze `secrets.ARDAN_API_KEY`; commit `state.json`, `history/` (a `docs/rulings.md`, existuje-li) se zprávou "tah NNN (den D)", `git pull --rebase` a push na master. Po slotu 3 `python run_chronicle.py` a samostatný commit `chronicle/`, aby selhání kroniky nepřišlo o odehraný tah.
 - **Oprávnění a souběh:** `permissions: contents: write`, `concurrency` na jeden běh najednou (bez rušení běžícího).
 - **Klíč:** jen v proměnné prostředí kroku; žádný krok netiskne `env` ani `secrets`.
 - **Pauza:** je-li `meta.paused = true`, skript skončí bez tahu s kódem 0, běh je zelený a nic se necommituje.
