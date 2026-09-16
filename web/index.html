@@ -510,6 +510,19 @@ async function panelStatu(id) {
       radky.push(["vliv Ostrogardu", cis(e.influence.B, 1)]);
     }
     if (e.status) radky.push(["postavení", STATUS[e.status] || e.status]);
+  }
+  // v1.11: ukazatele pro publikum u vsech statu (summary.json, pro starsi tahy ze snimku)
+  const ind = zakl && zakl.goods ? zakl : (e ? {
+    goods: { stock: (e.stock || {}).goods, vyroba: e.goods_out, potreba: (e.need || {}).goods },
+    industry: e.industry, law: e.law, tech: e.tech } : null);
+  if (ind && id !== "C") {
+    const g = ind.goods || {};
+    radky.push(["zboží (goods)", `zásoba ${cis(g.stock, 1)}, výroba ${cis(g.vyroba, 1)}, potřeba ${cis(g.potreba, 1)}`]);
+    radky.push(["průmysl", cis(ind.industry, 2)]);
+    radky.push(["právo", cis(ind.law, 2)]);
+    radky.push(["technologie", cis(ind.tech, 2)]);
+  }
+  if (e) {
     const namorni = ((hra.mapa && hra.mapa.sea_links) || []).filter((p) => p.includes(id))
       .map((p) => { const druhy = p[0] === id ? p[1] : p[0]; return druhy in KRATKE ? KRATKE[druhy] : jm(druhy); });
     if (namorni.length) radky.push(["námořní spojení", namorni.join(", ")]);
@@ -569,7 +582,7 @@ function panelTahu(snimek, t) {
       html += `<details><summary>Co si doopravdy myslel</summary><p>${esc(m.private_reasoning)}</p></details>`;
     }
     if (seznam.length) {
-      html += `<p class="popis">Akce</p><ul class="seznam">${seznam.map((a) => `<li>${esc(akce(a))}</li>`).join("")}</ul>`;
+      html += `<p class="popis">Akce</p><ul class="seznam">${seznam.map((a) => `<li>${esc(akce(a))}${a.slot === "domestic" ? " (domácí akce)" : ""}</li>`).join("")}</ul>`;
     }
     if (vyrazene.length) {
       html += `<p class="popis">Vyřazeno rozhodčím</p><ul class="seznam">${vyrazene.map((r) =>

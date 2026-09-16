@@ -11,7 +11,7 @@ zaznamem pop_delta v applied_rules. Duvod je v docs/OPEN_QUESTIONS.md C2.
 
 from __future__ import annotations
 
-from engine import PHASE_ORDER, ent, world_ids, ACTION_LIMIT
+from engine import PHASE_ORDER, ent, world_ids, ACTION_LIMIT, action_slot, slot_limit
 
 HIDDEN_IN_VIEW = ("law_threshold", "prosperity_index", "poverty_streak", "wealth_peak")
 TOLERANCE = 1e-6
@@ -75,14 +75,16 @@ def validate(prev_state, new_state, applied_rules, actions=None, views=None) -> 
 
     # --- limit akci --------------------------------------------------------
     if actions:
-        counts: dict[str, int] = {}
+        # v1.11: domaci akce A a B a jedna zprava maji vlastni limit
+        counts: dict[tuple, int] = {}
         for a in actions:
             pid = a.get("player")
             if pid in ACTION_LIMIT:
-                counts[pid] = counts.get(pid, 0) + 1
-        for pid, c in counts.items():
-            if c > ACTION_LIMIT[pid]:
-                errors.append(f"hrac {pid} ma {c} akci, limit je {ACTION_LIMIT[pid]}")
+                key = (pid, action_slot(a))
+                counts[key] = counts.get(key, 0) + 1
+        for (pid, slot), c in counts.items():
+            if c > slot_limit(pid, slot):
+                errors.append(f"hrac {pid} ma {c} akci ve slotu {slot}, limit je {slot_limit(pid, slot)}")
 
     # --- populace: kazda zmena musi byt vysvetlena -------------------------
     pop_prev = sum(float(ent(prev_state, i)["pop"]) for i in world_ids(prev_state))

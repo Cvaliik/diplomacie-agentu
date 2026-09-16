@@ -242,6 +242,164 @@ def private_messages(state, pid: str) -> list[dict]:
 
 
 # --------------------------------------------------------------------------
+# pamet hracu (v1.11, E9 az E11): jen z vlastnich uvah a dat enginu
+# --------------------------------------------------------------------------
+
+MEMORY_TURNS = 3
+MEMORY_PLAYERS = ("A", "B")
+OPPONENT = {"A": "B", "B": "A"}
+# udalosti soupere, ktere jsou verejne (bez vlivu a soukromeho logu)
+PUBLIC_EVENT_KINDS = ("protect_started", "protect_withdrawn", "trade_opened", "cancel", "pressure_started",
+                      "invade_progress", "occupied", "war_declared", "war_end", "war_cancel_offered",
+                      "war_cancel_expired", "arm", "loan_given", "offer_accepted", "sphere", "sphere_released",
+                      "invest_tech_done", "invest_law_done", "invest_industry_done", "invest_prod_done",
+                      "explore", "orit_found", "union_join", "union_candidate")
+# vlastni vysledky navic (odmitnuti a investice jsou v jinych polich bloku)
+OWN_EVENT_KINDS = PUBLIC_EVENT_KINDS + ("competition_lost", "message")
+
+
+def load_snapshot(turn: int):
+    p = history_path(turn)
+    return json.loads(read_text(p)) if turn >= 1 and p.exists() else None
+
+
+def _r(x, d=1):
+    return round(float(x or 0.0), d)
+
+
+def memory_reasoning(turn: int, pid: str) -> list[dict]:
+    """E9: vlastni private_reasoning z poslednich 3 tahu s cislem tahu, nikdy cizi."""
+    out = []
+    for t in range(max(1, turn - MEMORY_TURNS), turn):
+        snap = load_snapshot(t)
+        move = ((snap or {}).get("turns") or {}).get(pid) or {}
+        text = move.get("private_reasoning") or ""
+        if text:
+            out.append({"tah": t, "uvaha": text})
+    return out
+
+
+def _compact(obj) -> str:
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+
+
+def _public_event(e: dict, pid: str, kinds=PUBLIC_EVENT_KINDS) -> dict | None:
+    owner = e.get("player") or (e.get("deal") or {}).get("owner")
+    if e.get("private") or owner != pid or e.get("kind") not in kinds:
+        return None
+    return {k: v for k, v in e.items() if k not in ("player", "private") and "influence" not in k}
+
+
+def memory_since_last(state, pid: str) -> dict:
+    """E10: fakta od minuleho tahu hrace z dat enginu, bez hodnoceni."""
+    turn = next_turn(state)
+    last = turn - 1
+    snap = load_snapshot(last)
+    if snap is None:
+        return {"poznamka": "Toto je tvůj první tah, minulý tah neexistuje."}
+    before = (load_snapshot(last - 1) or {}).get("state")
+    first = (load_snapshot(1) or {}).get("state")
+    opp = OPPONENT[pid]
+    me_now = state["players"][pid]
+
+    def mine(st):
+        return st["players"][pid] if st else None
+
+    def change(field, digits=1):
+        row = {"ted": _r(me_now.get(field), digits)}
+        if before:
+            row["zmena_od_minuleho_tahu"] = _r(float(me_now.get(field) or 0) - float(mine(before).get(field) or 0), digits)
+        if first and last > 1:
+            row["zmena_od_tahu_1"] = _r(float(me_now.get(field) or 0) - float(mine(first).get(field) or 0), digits)
+        return row
+
+    opp_move = (snap.get("turns") or {}).get(opp) or {}
+    out = {
+        "tah": last,
+        "souper": {
+            "stat": opp,
+            "projev": opp_move.get("public_statement", SILENT_STATEMENT),
+            "akce": [{k: v for k, v in a.items() if k != "text"} for a in snap.get("actions") or []
+                     if a.get("player") == opp],
+            "vysledky": [x for x in (_public_event(e, opp) for e in snap.get("events") or []) if x],
+            "zpravy_sveta": list(snap.get("news") or []),
+        },
+        "ja": {
+            "akce": [a for a in snap.get("actions") or [] if a.get("player") == pid],
+            "vysledky": [x for x in (_public_event(e, pid, OWN_EVENT_KINDS) for e in snap.get("events") or []) if x],
+            "odmitnuto_rozhodcim": [r for r in snap.get("rejected") or []
+                                    if isinstance(r, dict) and r.get("player") == pid],
+            "odmitnuto_enginem": [{k: v for k, v in r.items() if k != "turn"}
+                                  for r in state.get("private_log", {}).get(pid, [])
+                                  if int(r.get("turn") or 0) == last and r.get("outcome") == "vyrazeno"],
+            "odlozene_investice": [{k: e.get(k) for k in ("kind", "type", "reason") if k in e}
+                                   for e in snap.get("events") or []
+                                   if e.get("player") == pid and e.get("kind") in ("investment_postponed",
+                                                                                     "investment_cancelled")],
+        },
+        "wealth": change("wealth"),
+        "power": change("power"),
+        "law": change("law", 2),
+        "tech": change("tech", 2),
+        "industry": change("industry", 2),
+    }
+    if before:
+        infl = {}
+        for nid, n in state["npc"].items():
+            a = float(n["influence"].get(pid, 0.0))
+            b = float(before["npc"][nid]["influence"].get(pid, 0.0)) if nid in before["npc"] else 0.0
+            if abs(a - b) >= 0.05:
+                infl[nid] = {"ted": _r(a), "zmena": _r(a - b)}
+        out["muj_vliv_u_npc"] = infl
+        prices = {}
+        for res, v in (state.get("prices") or {}).items():
+            old = (before.get("prices") or {}).get(res)
+            if old is not None and abs(float(v) - float(old)) >= 0.005:
+                prices[res] = {"ted": round(float(v), 3), "zmena": round(float(v) - float(old), 3)}
+        out["zmeny_cen"] = prices
+        status = {}
+        for nid, n in state["npc"].items():
+            old = before["npc"].get(nid, {}).get("status")
+            if old is not None and old != n["status"]:
+                status[nid] = {"z": old, "na": n["status"]}
+        for q in ("A", "B", "C"):
+            if bool(state["players"][q].get("active")) != bool(before["players"][q].get("active")):
+                status[q] = {"z": "aktivni" if before["players"][q].get("active") else "neaktivni",
+                             "na": "aktivni" if state["players"][q].get("active") else "neaktivni"}
+        out["zmeny_statusu"] = status
+    out["nove_nabidky_npc"] = [o for o in state.get("offers_new", []) if o.get("player") == pid]
+    return out
+
+
+def memory_contracts(state, pid: str) -> dict:
+    """E11: trvale obchody a pakty hrace s naklady nebo vynosem za tah."""
+    items = []
+    wealth = power = 0.0
+    for d in state["deals"]:
+        if d["owner"] != pid or d.get("one_shot"):
+            continue
+        if d["type"] == "trade":
+            value = float(d["qty"]) * float(d["price"])
+            w = value if d["direction"] == "npc_buys" else -value
+            items.append({"id": d["id"], "typ": "obchod", "npc": d["target"], "res": d["res"],
+                          "qty": _r(d["qty"], 2), "cena": d["price"],
+                          "smer": "prodávám" if d["direction"] == "npc_buys" else "kupuji",
+                          "od_tahu": d["since"], "wealth_za_tah": _r(w, 2), "power_za_tah": 0.0})
+        elif d["type"] == "protect":
+            items.append({"id": d["id"], "typ": "pakt", "npc": d["target"], "od_tahu": d["since"],
+                          "wealth_za_tah": 0.0, "power_za_tah": -2.0})
+        elif d["type"] == "pressure":
+            items.append({"id": d["id"], "typ": "nátlak", "cil": d["target"], "od_tahu": d["since"],
+                          "wealth_za_tah": -1.0, "power_za_tah": 0.0})
+        else:
+            continue
+        wealth += items[-1]["wealth_za_tah"]
+        power += items[-1]["power_za_tah"]
+    return {"smlouvy": items, "celkem_za_tah": {"wealth": _r(wealth, 2), "power": _r(power, 2)},
+            "poznamka": "Obchody v nominální výši smlouvy, bez cla; skutečné množství může být nižší."}
+
+
+# --------------------------------------------------------------------------
 # skladani promptu
 # --------------------------------------------------------------------------
 
@@ -255,6 +413,25 @@ def player_prompt(state, views, pid: str) -> tuple[str, str]:
     system = "\n\n".join([base.strip(), secret.strip(), fmt.strip()])
     log = public_log(turn)
     msgs = private_messages(state, pid)
+    memory = []
+    if pid in MEMORY_PLAYERS:
+        memory = [
+            "## tve_minule_uvahy (tvé vlastní úvahy z posledních %d tahů)" % MEMORY_TURNS,
+            "```json",
+            _compact(memory_reasoning(turn, pid)),
+            "```",
+            "",
+            "## od_tveho_minuleho_tahu (fakta z enginu, bez hodnocení)",
+            "```json",
+            _compact(memory_since_last(state, pid)),
+            "```",
+            "",
+            "## tve_smlouvy (trvalé obchody a pakty, náklad nebo výnos za tah)",
+            "```json",
+            _compact(memory_contracts(state, pid)),
+            "```",
+            "",
+        ]
     user = "\n".join([
         "# Tah %d, den %d" % (turn, engine.day_of(turn)),
         "",
@@ -263,6 +440,7 @@ def player_prompt(state, views, pid: str) -> tuple[str, str]:
         dump_view(views[pid]),
         "```",
         "",
+        *memory,
         "## Veřejný log posledních %d tahů" % config.PUBLIC_LOG_TURNS,
         "```json",
         dump(log) if log else "[]",
@@ -303,6 +481,8 @@ def referee_actions_prompt(state, moves: dict) -> str:
         "meta.paused = %s" % str(bool(state["meta"].get("paused"))).lower(),
         "Limity akcí: A %d, B %d, C %d. Tahy 1 až 6 nejednoznačné akce doplňuj, od tahu 7 vyřazuj." % (
             engine.ACTION_LIMIT["A"], engine.ACTION_LIMIT["B"], engine.ACTION_LIMIT["C"]),
+        "Mimo limit (v1.11): domestic_action A a B (jedna, typy %s, akce s \"slot\": \"domestic\") "
+        "a message (jedna za tah)." % ", ".join(engine.DOMESTIC_TYPES),
         "",
         "## Tahy hráčů",
         "```json",
@@ -371,6 +551,18 @@ def check_player_input(state, views, pid: str, log: list) -> list[str]:
     for where, key in _walk_keys(log, "log"):
         if key in ("private_reasoning", "openness", "prosperity_index", "metrics", "text"):
             errors.append("%s: zakazane pole %s" % (where, key))
+    return errors
+
+
+def check_foreign_reasoning(pid: str, turn: int, user: str) -> list[str]:
+    """v1.11 (E9): v promptu hrace nesmi byt cizi private_reasoning z pametovych tahu."""
+    errors = []
+    for t in range(max(1, turn - config.PUBLIC_LOG_TURNS - 1), turn):
+        snap = load_snapshot(t)
+        for q, move in ((snap or {}).get("turns") or {}).items():
+            text = (move.get("private_reasoning") or "").strip()
+            if q != pid and len(text) >= 20 and text[:200] in user:
+                errors.append("prompt obsahuje uvahu hrace %s z tahu %d" % (q, t))
     return errors
 
 
@@ -445,7 +637,22 @@ def parse_json(text: str):
 
 def valid_move(obj) -> bool:
     return (isinstance(obj, dict) and isinstance(obj.get("public_statement"), str)
-            and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list))
+            and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list)
+            and isinstance(obj.get("domestic_action"), (dict, type(None))))
+
+
+def mark_domestic(actions: list, moves: dict) -> list:
+    """v1.11 (C7): domaci akce A a B nese slot domestic; C domaci akci nema. Rozhodci ji oznaci,
+    engine ji uzna jen pro povoleny typ na vlastni stat (action_slot)."""
+    out = []
+    for a in actions:
+        a = dict(a)
+        if a.get("slot") == "domestic" and (a.get("player") not in MEMORY_PLAYERS
+                                            or a.get("type") not in engine.DOMESTIC_TYPES
+                                            or not isinstance((moves.get(a["player"]) or {}).get("domestic_action"), dict)):
+            a.pop("slot")
+        out.append(a)
+    return out
 
 
 def save_fail(turn: int, pid: str, k: int, raw: str, reason: str, usage: list) -> None:
@@ -470,14 +677,17 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
             save_fail(turn, pid, attempt + 1, raw, "neplatny JSON: %s" % err, usage)
             continue
         if not valid_move(move):
-            save_fail(turn, pid, attempt + 1, raw, "JSON bez public_statement, private_reasoning nebo actions", usage)
+            save_fail(turn, pid, attempt + 1, raw,
+                      "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action neni objekt ani null",
+                      usage)
             continue
         if valid_move(move):
+            move.setdefault("domestic_action", None)
             move["silent"] = False
             move["attempts"] = attempt + 1
             move["usage"] = usage
             return move
-    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [],
+    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [], "domestic_action": None,
             "silent": True, "attempts": len(attempts), "raw": attempts, "usage": usage}
 
 
@@ -630,6 +840,7 @@ def main() -> int:
     for pid in players:
         prompts[pid] = player_prompt(state, views, pid)
         leaks += ["%s: %s" % (pid, e) for e in check_player_input(state, views, pid, log)]
+        leaks += ["%s: %s" % (pid, e) for e in check_foreign_reasoning(pid, turn, prompts[pid][1])]
     if leaks:
         print("UNIK SKRYTYCH DAT, tah se nehraje:")
         for e in leaks:
@@ -646,7 +857,9 @@ def main() -> int:
         if not args.only:
             placeholder = {pid: {"public_statement": "<odpověď hráče %s>" % pid,
                                  "private_reasoning": "<odpověď hráče %s>" % pid,
-                                 "actions": ["<akce hráče %s>" % pid]} for pid in players}
+                                 "actions": ["<akce hráče %s>" % pid],
+                                 "domestic_action": ("<domácí akce hráče %s nebo null>" % pid) if pid in MEMORY_PLAYERS else None}
+                           for pid in players}
             path = DEBUG_DIR / ("turn_%03d_rozhodci.md" % turn)
             write_debug_prompt(path, "Prompt rozhodčího, tah %d, úloha 1 (tahy hráčů doplní běh)" % turn,
                                referee_system(), referee_actions_prompt(state, placeholder))
@@ -679,7 +892,7 @@ def main() -> int:
             return 0
 
     # 4. rozhodci: preklad tahu
-    public_moves = {pid: {k: m[k] for k in ("public_statement", "private_reasoning", "actions")}
+    public_moves = {pid: {k: m.get(k) for k in ("public_statement", "private_reasoning", "actions", "domestic_action")}
                     for pid, m in moves.items()}
     ref_usage = []
     ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
@@ -692,6 +905,7 @@ def main() -> int:
         print("rozhodci: paused")
         return 0
     actions = [a for a in ref.get("actions") or [] if isinstance(a, dict) and a.get("player") in players]
+    actions = mark_domestic(actions, moves)
 
     # 5. prepocet
     delivered = list(state.get("messages_pending", []))

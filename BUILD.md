@@ -26,14 +26,14 @@ web/index.html       statická stránka (GitHub Pages ze složky web/)
 - Aplikuje pravidla v pořadí podle `docs/pravidla.md` část 4, pak 3.3 (invaze), 4.4 (vliv), 5 (Minsky), 7 (Unie), 8 (metriky). Každý krok zapíše do `snapshot.applied_rules` záznam `{rule, inputs, outputs}`.
 - Náhoda výhradně z `random.Random(rng_seed + turn)`.
 - Vrací: nový stav, seznam událostí pro rozhodčího (`events`), pohledy hráčů.
-- Pohledy (`views/X.json`): jen to, co hráč X smí vidět podle části 2 tabulky. `wealth` NPC se ukazuje jako `wealth + paper_wealth` v jednom čísle. `law`, `tech`, cizí `influence`, cizí `debt`, `prosperity_index`, `law_threshold` se nikdy nedostanou do pohledu (C vidí `law`/`tech` jen u členů a kandidátů).
+- Pohledy (`views/X.json`): jen to, co hráč X smí vidět podle části 2 tabulky. `wealth` NPC se ukazuje jako `wealth + paper_wealth` v jednom čísle. Cizí `law` a `tech`, cizí `influence`, cizí `debt`, `prosperity_index`, `law_threshold` se nikdy nedostanou do pohledu (C vidí `law`/`tech` jen u členů a kandidátů). **Princip viditelnosti (v1.11): hodnoty vidí, dopady ne; skrytý je index a jeho vzorec.** Hráči A a B proto vidí své vlastní `law`, `tech` a `industry` a jejich změny, ne co způsobují.
 - Metriky každý tah do `state.metrics` a do snímku.
 
 ## 3. run_turn.py (jeden tah)
 
 1. Načti `state.json`. Je-li `meta.paused`, skonči bez změny.
 2. Engine vygeneruje pohledy.
-3. Paralelně zavolej hráče (A, B, a C pokud `players.C.active`). Každý hráč dostane: svůj prompt (`prompts/hrac_A.md` / `hrac_B.md` / `hrac_unie.md`), svůj tajný cíl (`secrets/cil_A.md` / `cil_B.md` / `cil_C.md`), svůj pohled, posledních 9 tahů veřejného logu (projevy, Zprávy, veřejné akce; NE cizí `private_reasoning`), soukromé zprávy adresované jemu z minulého tahu, `docs/format_tahu.md`. Odpověď musí být validní JSON; při selhání 2 opakování, pak `silent` (pravidla 10.6).
+3. Paralelně zavolej hráče (A, B, a C pokud `players.C.active`). Každý hráč dostane: svůj prompt (`prompts/hrac_A.md` / `hrac_B.md` / `hrac_unie.md`), svůj tajný cíl (`secrets/cil_A.md` / `cil_B.md` / `cil_C.md`), svůj pohled, posledních 9 tahů veřejného logu (projevy, Zprávy, veřejné akce; NE cizí `private_reasoning`), soukromé zprávy adresované jemu z minulého tahu, `docs/format_tahu.md`. Hráči A a B navíc (v1.11) bloky paměti `tve_minule_uvahy` (vlastní `private_reasoning` z posledních 3 tahů), `od_tveho_minuleho_tahu` (fakta z enginu) a `tve_smlouvy`; kontrola vstupu ověří, že v promptu není cizí úvaha. Tah A a B má volitelné pole `domestic_action`, rozhodčí ho překládá na akci se `slot: domestic`. Odpověď musí být validní JSON; při selhání 2 opakování, pak `silent` (pravidla 10.6).
 4. Zavolej rozhodčího (`prompts/rozhodci.md`) s tahy a `docs/pravidla.md`: vrátí `actions`, `rejected`, `rulings`.
 5. Engine přepočítá svět.
 6. Zavolej rozhodčího podruhé jen se seznamem `events`: vrátí `news`.
@@ -85,6 +85,7 @@ Jedna statická stránka, žádný build, žádný backend. Načítá `history/*
 - Kronika dne, ke kterému tah patří (Markdown render).
 - Grafy: cena oritu, index prosperity, tři národní ukazatele (podíl obchodu A, podíl zdrojů B, nejchudší člen C). Kurzor synchronizovaný se sliderem.
 - Hráči web nevidí, takže index je veřejný.
+- Panel státu (v1.11) ukazuje u všech států včetně A a B `goods` (zásoba, výroba, potřeba), `industry`, `law` a `tech`; data jsou v `history/summary.json`.
 
 ## 8. test_run.py (před prvním ostrým tahem)
 

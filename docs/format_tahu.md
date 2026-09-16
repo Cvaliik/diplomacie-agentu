@@ -11,7 +11,8 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
   "private_reasoning": "Skutečné uvažování, včetně toho, kde v projevu nemluvíš pravdu.",
   "actions": [
     { "type": "...", "...": "..." }
-  ]
+  ],
+  "domestic_action": { "type": "invest_industry" }
 }
 ```
 
@@ -19,7 +20,18 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 |---|---|---|---|
 | `public_statement` | text | ano | 2 až 5 vět, vidí ho všichni |
 | `private_reasoning` | text | ano | vidí ho publikum, soupeř ne |
-| `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
+| `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah; `message` se do limitu nepočítá (nejvýš 1 za tah) |
+| `domestic_action` | objekt nebo `null` | ne | jen A a B: nejvýš 1 domácí akce za tah mimo limit akcí (v1.11) |
+
+**Domácí akce (v1.11):** `domestic_action` je jedna z akcí `invest_tech`, `invest_law`, `invest_industry`,
+`invest_prod`, `arm`, `explore`, vždy na vlastní stát (bez `target`). Do limitu 2 akcí se nepočítá.
+Tytéž investice můžeš dál dávat i do `actions` (např. na NPC ve své sféře); tam zabírají slot.
+Unie domácí akci nemá.
+
+**Goods na investice (v1.11):** `invest_tech` potřebuje 4 `goods`, `invest_industry` 6, `invest_prod` 4 a `arm` 1 `goods`
+na každých započatých 8 bohatství; `invest_law` a `explore` goods nepotřebují. Goods se berou ze zásoby, chybějící se
+v tomtéž tahu koupí na automatickém trhu. Když goods ani tak nejsou, investice čeká na další tah (nejvýš 3 tahy, pak
+propadne a goods se vrátí). Odloženou investici vidíš v pohledu jako `investice_cekajici`.
 
 Neplatnou akci rozhodčí vyřadí a zapíše důvod. Zbytek tahu platí.
 Pokud odpověď není validní JSON ani po dvou opakováních, hráč v tahu mlčí (pravidla 10.6).
@@ -192,6 +204,7 @@ Jen vlastní stát. Utratíš `amount` bohatství (nejvýš 40) a síla vzroste 
 ### `message`: soukromá zpráva jinému hráči
 
 Doručena v příštím tahu. Adresát je `A`, `B` nebo `C`. Publikum ji vidí.
+Zpráva je zdarma a do limitu akcí se nepočítá; nejvýš jedna za tah (v1.11).
 
 ```json
 { "type": "message", "target": "B", "text": "Navrhuji rozdělit obchod s Kessarem." }
@@ -252,7 +265,9 @@ Když nabídky téhož NPC třikrát po sobě ignoruješ, ubírá ti to u něj v
   "private_reasoning": "Potřebuji obilí dřív, než ho koupí Ostrogard. Půjčka Dorvanu mi dá vliv u oritu.",
   "actions": [
     { "type": "trade_offer", "target": "N1", "res": "grain", "qty": 3, "price_per_unit": 0.8 },
-    { "type": "loan", "target": "N6", "amount": 10 }
-  ]
+    { "type": "loan", "target": "N6", "amount": 10 },
+    { "type": "message", "target": "B", "text": "O Kessaru můžeme mluvit." }
+  ],
+  "domestic_action": { "type": "invest_tech" }
 }
 ```

@@ -1,4 +1,4 @@
-# Výtah pravidel pro rozhodčího: světa Ardan (v1.10.2)
+# Výtah pravidel pro rozhodčího: světa Ardan (v1.11)
 
 Generováno skriptem `build_referee_rules.py` z `docs/pravidla.md` (části 1, 3, 6, 7.2, 9 a 10).
 Neupravovat ručně; po každé změně pravidel skript spustit znovu.
@@ -21,6 +21,12 @@ slot jako `((turn - 1) % 3) + 1`.
 
 Pořadí v tahu:
 1. Hráč A dostane `views/A.json` (jeho pohled na svět) + veřejný log + Zprávy světa posledních 3 tahů. Vrátí tah.
+   Od v1.11 navíc tři bloky paměti, sestavené z vlastních úvah hráče a dat enginu, nikdy z cizích úvah:
+   `tve_minule_uvahy` (vlastní `private_reasoning` z posledních 3 tahů s číslem tahu), `od_tveho_minuleho_tahu`
+   (akce a veřejné výsledky soupeře, jeho projev doslova, vlastní akce a výsledky včetně vyřazení s důvodem, změna
+   vlastního `wealth` a `power` proti minulému tahu a tahu 1, změna `law`, `tech`, `industry`, změny vlastního vlivu
+   u NPC, změny cen, změny statusu států a nové nabídky NPC; fakta bez hodnocení) a `tve_smlouvy` (trvalé obchody
+   a pakty s nákladem nebo výnosem za tah v `wealth` a `power` a součtem).
 2. Hráč B totéž se svým pohledem. Nevidí tah A z tohoto tahu (tahy jsou simultánní).
 3. Unie (od svého vzniku) totéž.
 4. Rozhodčí vyhodnotí všechny tahy najednou, přepočítá svět, vydá Zprávy světa, posune Minskyho fázi, uloží `state.json` a `history/turn_NNN.json`.
@@ -31,11 +37,16 @@ Pořadí v tahu:
 {
   "public_statement": "Diplomatický projev, vidí ho všichni. 2 až 5 vět.",
   "private_reasoning": "Skutečné zdůvodnění, vidí ho jen publikum. Upřímně, včetně lží v projevu.",
-  "actions": [ { "type": "...", ... }, { "type": "...", ... } ]
+  "actions": [ { "type": "...", ... }, { "type": "...", ... } ],
+  "domestic_action": { "type": "invest_industry" }
 }
 ```
 
 Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí ignoruje a zapíše důvod.
+
+**Domácí akce (v1.11):** hráči A a B smějí navíc jednu domácí akci v poli `domestic_action` (objekt nebo `null`). Povolené typy: `invest_tech`, `invest_law`, `invest_industry`, `invest_prod`, `arm`, `explore`, vždy na vlastní stát. Do limitu 2 akcí se nepočítá; rozhodčí ji přeloží na akci s `"slot": "domestic"` a jiný typ nebo cizí cíl vyřadí. Investice do NPC ve sféře zůstávají běžnými akcemi v limitu. Unie domácí akci nemá.
+
+**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí.
 
 ### 3.2 Akce
 
@@ -46,16 +57,16 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `pressure` | `target`, `demand` | sankce: přeruší obchody hráče s NPC; NPC ztrácí 3 wealth/tah, hráč 1; `influence` protivníka +1. Cílem může být i druhý hráč: sankce pak po dobu trvání přeruší vzájemný automatický obchod obou hráčů a stojí oba 1 wealth/tah; cílené obchody mezi nimi trvají dál | 1 wealth/tah |
 | `protect` | `target` | vojenský pakt: NPC `power` +2/tah, `influence[hráč]` +2/tah, `law` −0.2/tah; NPC nelze napadnout, dokud pakt trvá (útok = válka s ochráncem, viz 3.3a). NPC má nejvýš jeden aktivní pakt: `protect` na NPC s cizím paktem se vyřadí bez hodu s důvodem „NPC je pod paktem X“ | 2 power/tah |
 | `invade` | `target` | viz 3.3; cílem je jen NPC, hráče nelze dobýt ani okupovat | 10 wealth + 5 power za tah |
-| `invest_tech` | (vlastní stát nebo `target` v sphere/union) | `tech` +0.3 | 8 wealth |
+| `invest_tech` | (vlastní stát nebo `target` v sphere/union) | `tech` +0.3 | 8 wealth + 4 goods (v1.11) |
 | `invest_law` | `target` v sphere/union, nebo vlastní | `law` +0.3 | 6 wealth |
-| `invest_industry` | vlastní stát nebo `target` v sphere/union (Unie: členové a kandidáti) | `industry` +0.3 × (law/5), jen při `law ≥ 4` cíle | 10 wealth |
-| `invest_prod` | `res`, `target` (volitelný) | `prod[res]` +1, jen pro zdroj s `prod[res] > 0` a jen při `tech ≥ 3`; orit se takto zvýšit nedá. Cílem je vlastní stát nebo NPC ve vlastní sféře, u Unie členové a kandidáti (jako `invest_industry`); `prod > 0` i `tech ≥ 3` se berou u cíle | 12 wealth |
+| `invest_industry` | vlastní stát nebo `target` v sphere/union (Unie: členové a kandidáti) | `industry` +0.3 × (law/5), jen při `law ≥ 4` cíle | 10 wealth + 6 goods (v1.11) |
+| `invest_prod` | `res`, `target` (volitelný) | `prod[res]` +1, jen pro zdroj s `prod[res] > 0` a jen při `tech ≥ 3`; orit se takto zvýšit nedá. Cílem je vlastní stát nebo NPC ve vlastní sféře, u Unie členové a kandidáti (jako `invest_industry`); `prod > 0` i `tech ≥ 3` se berou u cíle | 12 wealth + 4 goods (v1.11) |
 | `explore` | (vlastní stát) | 15 % šance na malé ložisko oritu (prod.orit +2) | 5 wealth |
-| `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci; bez `amount` se bere 8 (síla +5). Unie `arm` použít nemůže, její síla je součet členů | `amount` wealth |
+| `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci; bez `amount` se bere 8 (síla +5). Unie `arm` použít nemůže, její síla je součet členů | `amount` wealth + 1 goods na každých započatých 8 wealth (v1.11) |
 | `declare_war` | `target` A nebo B | vyhlášení války druhému hráči, viz 3.3a | viz 3.3a |
 | `admit` | jen Unie: `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
 | `cancel` | `deal_id` | zruší obchod, pakt nebo sankci; `cancel` na válku je nabídka příměří, `cancel` s `"retreat": true` ústup (3.3a) | žádný |
-| `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí | žádný |
+| `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí; mimo limit akcí, nejvýš 1 za tah (v1.11) | žádný |
 | `union_fund` | jen Unie: `target` člen, `amount` | převod ze společného fondu členovi | fond |
 | `set_tariff` | jen Unie: `rate` 0 až 0.20 po 0.05 | sazba cla celní unie od dalšího tahu, viz 7.2 | žádný |
 | `accept_offer` | `offer_id` | přijme nabídku NPC z pohledu hráče bez vyhodnocení podle 3.4 (3.5) | žádný |

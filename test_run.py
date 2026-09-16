@@ -60,18 +60,28 @@ def _base_actions(turn: int, state) -> list[dict]:
     return acts
 
 
-def _accept_offers(state, acts: list[dict]) -> None:
-    """3.5: prijmi sell, ktere kryji deficit hrace, a loan_request v boom a euphoria."""
+def _foreign(acts, pid) -> int:
+    """Pocet zahranicnich akci hrace (v1.11: domaci akce a zprava se do limitu nepocitaji)."""
+    return sum(1 for a in acts if a["player"] == pid and engine.action_slot(a) == "foreign")
+
+
+def _accept_offers(state, acts: list[dict], stock_cap: dict | None = None, only=("A", "B")) -> None:
+    """3.5: prijmi sell, ktere kryji deficit hrace, a loan_request v boom a euphoria.
+    stock_cap {hrac: tahy}: sell jen pri zasobe statku pod tolika tahy potreby (scenar v)."""
     turn = int(state["meta"]["turn"]) + 1
     for o in state.get("offers", []):
         pid = o["player"]
-        if pid not in ("A", "B") or turn > int(o["expires"]):
+        if pid not in only or turn > int(o["expires"]):
             continue
-        if sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
+        if _foreign(acts, pid) >= engine.ACTION_LIMIT[pid]:
             continue
         if o["type"] == "sell":
             deficit = float(engine.current_need(state, pid).get(o["res"], 0.0)) - \
                 engine.supply_of(state, pid, o["res"])
+            if stock_cap and pid in stock_cap:
+                need = float(engine.current_need(state, pid).get(o["res"], 0.0))
+                if float(state["players"][pid]["stock"].get(o["res"], 0.0)) >= stock_cap[pid] * need:
+                    continue
             if deficit > 0:
                 acts.append({"player": pid, "type": "accept_offer", "offer_id": o["offer_id"]})
         elif o["type"] == "loan_request" and state["phase"] in ("boom", "euphoria"):
@@ -113,7 +123,7 @@ def scenario_b(turn: int, state) -> list[dict]:
     seekers = _loan_seekers(state)
     if seekers:
         for idx, pid in enumerate(("A", "B")):
-            if sum(1 for a in acts if a["player"] == pid) >= engine.ACTION_LIMIT[pid]:
+            if _foreign(acts, pid) >= engine.ACTION_LIMIT[pid]:
                 continue
             if float(state["players"][pid]["wealth"]) < 12:
                 continue
@@ -276,10 +286,44 @@ def kriteria_k(res) -> bool:
     return bool(ok)
 
 
+def scenario_v(turn: int, state) -> list[dict]:
+    """(v) v1.11, A jako rozumna vlada: tah 1 smlouva ropa 6 za 0.85 s N3, tah 2 obili 4 za 0.85
+    s N1, tah 3 pakt s N3, dal nic noveho; nabidky NPC neprijima; domaci invest_industry jen pri
+    wealth > 60, nejvys jednou za den. B: pakty N5 a N1 v tahu 1, N7 a N15 v tahu 4, od tahu 3
+    domaci arm pri wealth > 60, pujcky a nabidky jako ve (b)."""
+    acts: list[dict] = []
+    if turn == 1:
+        acts += [{"player": "A", "type": "trade_offer", "target": "N3", "res": "oil", "qty": 6, "price_per_unit": 0.85},
+                 {"player": "B", "type": "protect", "target": "N5"},
+                 {"player": "B", "type": "protect", "target": "N1"}]
+    if turn == 2:
+        acts.append({"player": "A", "type": "trade_offer", "target": "N1", "res": "grain", "qty": 4, "price_per_unit": 0.85})
+    if turn == 3:
+        acts.append({"player": "A", "type": "protect", "target": "N3"})
+    if turn == 4:
+        acts += [{"player": "B", "type": "protect", "target": "N7"},
+                 {"player": "B", "type": "protect", "target": "N15"}]
+    den = engine.day_of(turn)
+    if float(state["players"]["A"]["wealth"]) > 60 and _v_invest_day.get("A") != den:
+        _v_invest_day["A"] = den
+        acts.append({"player": "A", "type": "invest_industry", "slot": "domestic"})
+    if turn >= 3 and float(state["players"]["B"]["wealth"]) > 60:
+        acts.append({"player": "B", "type": "arm", "amount": 16, "slot": "domestic"})
+    seekers = _loan_seekers(state)
+    if seekers and _foreign(acts, "B") < engine.ACTION_LIMIT["B"] and float(state["players"]["B"]["wealth"]) >= 12:
+        acts.append({"player": "B", "type": "loan", "target": seekers[(turn + 1) % len(seekers)], "amount": 10})
+    _accept_offers(state, acts, only=("B",))
+    return acts
+
+
+_v_invest_day: dict = {}
+
+
 SCENARE = {
     "0": (scenario_0, "nikdo netahne"),
     "a": (scenario_a, "scenar ze zadani (A pujcuje N6 od tahu 8, B chrani N7)"),
     "b": (scenario_b, "realisticke pujcovani (jen kdyz NPC zada, max 1 na hrace a tah)"),
+    "v": (scenario_v, "v1.11: A jako v ostrem behu, domaci akce, goods jako kapital"),
     "k": (scenario_k, "v1.10: soutez o cil, jeden pakt, valka hracu (14 tahu)"),
 }
 

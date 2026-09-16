@@ -33,6 +33,7 @@ Schemata dohodnuta v docs/OPEN_QUESTIONS.md (oddil B):
 from __future__ import annotations
 
 import json
+import math
 import random
 import zlib
 from copy import deepcopy
@@ -65,6 +66,7 @@ TARIFF_MAX = 0.20                           # set_tariff: sazba 0 az 0.20 (7.2, 
 TARIFF_STEP = 0.05                          # set_tariff: krok sazby (7.2, v1.9)
 PLAYER_FLAT_CROSSINGS = 1                   # pausal prejezdu A a B na automatickem trhu (4.1a, v1.9)
 SPECULATIVE_SHARE = 0.1                     # spekulativni nabidka velkych tovaren (4.0, v1.9)
+SPECULATIVE_SHARE_PLAYER = 0.5              # hraci A a B: podil volne kapacity (4.0, v1.11)
 # 4.1a (v1.9): parovani podle ceny. False vraci parovani v1.8 jen pro srovnani v test_run.py.
 PRICE_PAIRING = True
 WAR_POWER_LOSS = 10.0                       # valka hracu: power -10 za tah obema (3.3a, v1.10)
@@ -81,6 +83,12 @@ ARM_MAX = 40.0                              # arm: nejvys 40 wealth na akci (3.2
 ARM_RATIO = 1.6                             # arm: power += amount / 1.6
 ADMIT_ZONE_MIN = 8.0                        # admit ze zony vlivu: vliv nad 8 ...
 ADMIT_ZONE_MAX = 12.0                       # ... do 12 vcetne (7.4, v1.10)
+DOMESTIC_TYPES = ("invest_tech", "invest_law", "invest_industry", "invest_prod", "arm", "explore")
+DOMESTIC_LIMIT = 1                          # 3.1 (v1.11): jedna nepovinna domaci akce A a B mimo limit
+MESSAGE_LIMIT = 1                           # 3.2 (v1.11): jedna zprava za tah mimo limit
+GOODS_COST = {"invest_tech": 4.0, "invest_industry": 6.0, "invest_prod": 4.0}   # 4.0 (v1.11): goods jako kapital
+ARM_GOODS_PER = 8.0                         # arm: 1 goods za kazdych 8 wealth (zaokrouhleno nahoru)
+INVEST_WAIT_TURNS = 3                       # investice bez goods propadne po 3 tazich, goods se vrati
 MAX_CROSSINGS = 3                           # nejvys 3 prejezdy na trhu (4.1a, v1.5)
 TRANSIT_SURCHARGE = 0.1                     # prirazka za prejezd (4.1a, v1.5)
 SOLIDARITY_MAX = 3.0                        # automaticka solidarita Unie za tah (7.2, v1.5)
@@ -258,8 +266,22 @@ def planned_goods(state, sid: str, capacity: float) -> float:
         plan = min(plan, 0.5 * own)
     elif industry >= 4.0:
         # 4.0 (v1.8): velke tovarny pridavaji spekulativni exportni nabidku 10 % kapacity (S2)
-        plan = plan + 0.1 * capacity
+        plan = plan + speculative_offer(state, sid, capacity, own)
     return max(0.0, min(capacity, plan))
+
+
+def invest_goods_need(state, sid: str) -> float:
+    """4.0 (v1.11): investicni spotreba goods tahu, soucet cekajicich investic statu."""
+    return sum(float(r["goods_need"]) for r in state.get("investments_pending", []) if r["owner"] == sid)
+
+
+def speculative_offer(state, sid: str, capacity: float, own: float) -> float:
+    """4.0: spekulativni nabidka velkych tovaren. NPC 10 % kapacity; hraci A a B (v1.11)
+    50 % volne kapacity = kapacita minus vlastni potreba minus investicni spotreba tahu."""
+    if sid in ("A", "B"):
+        free = max(0.0, capacity - own - invest_goods_need(state, sid))
+        return SPECULATIVE_SHARE_PLAYER * free
+    return SPECULATIVE_SHARE * capacity
 
 
 def current_need(state, sid: str) -> dict:
@@ -321,6 +343,8 @@ def normalize(state) -> None:
     state["players"]["C"].setdefault("tariff_rate", TARIFF_RATE)
     state["players"]["C"].setdefault("tariff_next", None)
     state.setdefault("deals", [])
+    state.setdefault("investments_pending", [])   # 4.0 (v1.11)
+    state["minsky"].setdefault("next_invest_id", 1)
     state.setdefault("wars", [])   # 3.3a (v1.10)
     state["minsky"].setdefault("next_war_id", 1)
     state.setdefault("invasions", [])
@@ -1023,6 +1047,116 @@ def _npc_balance_for_trade(state, nid: str, res: str) -> float:
     return supply_of(state, nid, res) - float(current_need(state, nid).get(res, 0.0))
 
 
+def action_slot(act) -> str:
+    """3.1 a 3.2 (v1.11): slot akce: message, domestic (A a B, vlastni stat) nebo foreign."""
+    if act.get("type") == "message":
+        return "message"
+    if (act.get("player") in ("A", "B") and act.get("slot") == "domestic"
+            and act.get("type") in DOMESTIC_TYPES and act.get("target") in (None, "", act.get("player"))):
+        return "domestic"
+    return "foreign"
+
+
+def slot_limit(pid: str, slot: str) -> int:
+    if slot == "message":
+        return MESSAGE_LIMIT
+    if slot == "domestic":
+        return DOMESTIC_LIMIT
+    return ACTION_LIMIT[pid]
+
+
+def _investment_owner(state, owner):
+    return state["players"][owner] if owner in state["players"] else state["npc"][owner]
+
+
+def apply_investment(state, owner, target, atype, res, wealth_cost, events, trace, amount=None) -> None:
+    """Provede investici (wealth a ucinek). Goods uz jsou zaplacene (4.0, v1.11)."""
+    payer = _investment_owner(state, owner)
+    e = ent(state, target)
+    payer["wealth"] = float(payer["wealth"]) - wealth_cost
+    npc_owner = is_npc(owner)
+    if atype == "arm":
+        before = float(e["power"])
+        e["power"] = before + float(amount) / ARM_RATIO
+        events.append({"kind": "arm", "player": owner, "power": e["power"]})
+        trace.add("3.2 arm", {"player": owner, "amount": amount},
+                  {"power": e["power"], "from": before, "gain": round(float(amount) / ARM_RATIO, 4)})
+        return
+    if atype == "invest_prod":
+        before = float(e["prod"][res])
+        e["prod"][res] = before + 1.0
+        if npc_owner:
+            events.append({"kind": "npc_invest_prod", "npc": owner, "res": res, "prod": e["prod"][res]})
+            trace.add("4.2a automatika NPC: invest_prod", {"npc": owner, "cost": wealth_cost, "res": res},
+                      {"prod": e["prod"][res], "from": before})
+        else:
+            events.append({"kind": "invest_prod_done", "player": owner, "target": target, "res": res,
+                           "prod": e["prod"][res]})
+            trace.add("3.2 invest_prod", {"player": owner, "target": target, "res": res, "cost": wealth_cost},
+                      {"prod": e["prod"][res], "from": before})
+        return
+    field = {"invest_tech": "tech", "invest_law": "law", "invest_industry": "industry"}[atype]
+    before = float(e.get(field) or 0.0)
+    gain = 0.3 * (float(e["law"]) / 5.0) if atype == "invest_industry" else 0.3   # 3.2 (v1.2)
+    e[field] = clamp(before + gain, 0.0, 10.0)
+    if npc_owner:
+        events.append({"kind": "npc_%s" % atype, "npc": owner, field: e[field]})
+        trace.add("4.2a automatika NPC: %s" % atype, {"npc": owner, "cost": wealth_cost},
+                  {field: e[field], "from": before})
+    else:
+        events.append({"kind": f"{atype}_done", "player": owner, "target": target, field: e[field]})
+        trace.add(f"3.2 {atype}", {"player": owner, "target": target, "cost": wealth_cost},
+                  {field: e[field], "from": before})
+
+
+def queue_investment(state, owner, target, atype, res, wealth_cost, goods_need, events, trace, amount=None) -> None:
+    """4.0 (v1.11): investice ceka na goods. Co je v zasobe, vezme hned; zbytek koupi na trhu tohoto tahu."""
+    stock = _investment_owner(state, owner)["stock"]
+    have = min(float(stock.get(GOODS, 0.0)), goods_need)
+    stock[GOODS] = round(float(stock.get(GOODS, 0.0)) - have, 4)
+    m = state["minsky"]
+    rec = {"id": "v%d" % int(m.get("next_invest_id", 1)), "owner": owner, "target": target, "type": atype,
+           "res": res, "amount": amount, "wealth_cost": wealth_cost, "goods_need": goods_need,
+           "goods_have": round(have, 4), "since": int(state["meta"]["turn"])}
+    m["next_invest_id"] = int(m.get("next_invest_id", 1)) + 1
+    state.setdefault("investments_pending", []).append(rec)
+    trace.add("4.0 investice ceka na goods", {"vlastnik": owner, "cil": target, "typ": atype},
+              {"goods_potreba": goods_need, "ze_zasoby": round(have, 4), "wealth": wealth_cost})
+
+
+def step_investments(state, trace, events) -> None:
+    """4.0 (v1.11): po trhu dokonci investice, ktere maji goods; ostatni odlozi nebo po 3 tazich zrusi."""
+    turn = int(state["meta"]["turn"])
+    keep, new_events = [], []
+    for rec in state.get("investments_pending", []):
+        owner = rec["owner"]
+        payer = _investment_owner(state, owner)
+        who = {"player": owner} if not is_npc(owner) else {"npc": owner}
+        if rec["goods_have"] >= rec["goods_need"] - 1e-9:
+            if float(payer["wealth"]) >= rec["wealth_cost"]:
+                apply_investment(state, owner, rec["target"], rec["type"], rec.get("res"), rec["wealth_cost"],
+                                 events, trace, amount=rec.get("amount"))
+                continue
+            reason = "nedostatek wealth"
+        else:
+            reason = "chybi goods (%.1f z %.1f)" % (rec["goods_have"], rec["goods_need"])
+        if turn - int(rec["since"]) >= INVEST_WAIT_TURNS - 1:
+            stock = payer["stock"]
+            stock[GOODS] = round(float(stock.get(GOODS, 0.0)) + rec["goods_have"], 4)
+            new_events.append({"kind": "investment_cancelled", "type": rec["type"], "target": rec["target"],
+                               "reason": "investice propadla po %d tazich: %s" % (INVEST_WAIT_TURNS, reason), **who})
+            trace.add("4.0 investice propadla", {"vlastnik": owner, "typ": rec["type"]},
+                      {"duvod": reason, "vraceno_goods": rec["goods_have"]})
+            continue
+        new_events.append({"kind": "investment_postponed", "type": rec["type"], "target": rec["target"],
+                           "reason": "investice odlozena: " + reason, **who})
+        trace.add("4.0 investice odlozena", {"vlastnik": owner, "typ": rec["type"]}, {"duvod": reason})
+        keep.append(rec)
+    state["investments_pending"] = keep
+    events.extend(new_events)
+    _log_rejections(state, new_events, kinds=("investment_postponed", "investment_cancelled"))
+
+
 def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
     """Provede akce hracu. Vraci seznam udalosti pro rozhodciho.
 
@@ -1031,17 +1165,20 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
     a prahy patri sem (pravidla cast 9).
     """
     events: list[dict] = []
-    counts: dict[str, int] = {}
+    counts: dict[tuple, int] = {}
 
-    # limit akci predem; do souteze o cil (3.4a) vstupuji jen akce v limitu
+    # limit akci predem; do souteze o cil (3.4a) vstupuji jen akce v limitu.
+    # 3.1 a 3.2 (v1.11): domaci akce A a B a jedna zprava se do limitu nepocitaji
     valid = []
     for idx, act in enumerate(actions):
         pid = act.get("player")
         if pid not in ("A", "B", "C"):
             continue
-        counts[pid] = counts.get(pid, 0) + 1
-        if counts[pid] > ACTION_LIMIT[pid]:
-            events.append({"kind": "action_over_limit", "player": pid, "type": act.get("type")})
+        slot = action_slot(act)
+        counts[(pid, slot)] = counts.get((pid, slot), 0) + 1
+        if counts[(pid, slot)] > slot_limit(pid, slot):
+            events.append({"kind": "action_over_limit", "player": pid, "type": act.get("type"),
+                           "reason": "prekrocen limit (%s)" % slot})
             continue
         valid.append(idx)
     losers = _competition(state, npcdata, actions, valid, events, trace)
@@ -1235,17 +1372,11 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "nedostatek wealth"})
                 continue
-            player["wealth"] = float(player["wealth"]) - cost
-            before = float(e.get(field) or 0.0)
-            if atype == "invest_industry":
-                gain = 0.3 * (float(e["law"]) / 5.0)   # 3.2 (v1.2)
+            if atype == "invest_law" or pid == "C":
+                # 4.0 (v1.11): pravo stoji jen wealth; Unie nema zasoby ani trh, investuje bez goods
+                apply_investment(state, pid, tgt, atype, None, cost, events, trace)
             else:
-                gain = 0.3
-            e[field] = clamp(before + gain, 0.0, 10.0)
-            events.append({"kind": f"{atype}_done", "player": pid, "target": tgt,
-                           field: e[field]})
-            trace.add(f"3.2 {atype}", {"player": pid, "target": tgt, "cost": cost},
-                      {field: e[field], "from": before})
+                queue_investment(state, pid, tgt, atype, None, cost, GOODS_COST[atype], events, trace)
 
         # --- invest_prod (3.2, v1.8) -------------------------------------------
         elif atype == "invest_prod":
@@ -1285,13 +1416,10 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "nedostatek wealth"})
                 continue
-            player["wealth"] = float(player["wealth"]) - cost
-            before = float(e["prod"][res])
-            e["prod"][res] = before + 1.0
-            events.append({"kind": "invest_prod_done", "player": pid, "target": tgt, "res": res,
-                           "prod": e["prod"][res]})
-            trace.add("3.2 invest_prod", {"player": pid, "target": tgt, "res": res, "cost": cost},
-                      {"prod": e["prod"][res], "from": before})
+            if pid == "C":
+                apply_investment(state, pid, tgt, atype, res, cost, events, trace)
+            else:
+                queue_investment(state, pid, tgt, atype, res, cost, GOODS_COST["invest_prod"], events, trace)
 
         # --- explore -----------------------------------------------------------
         elif atype == "explore":
@@ -1321,12 +1449,9 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 events.append({"kind": "action_invalid", "player": pid, "type": atype,
                                "reason": "nedostatek wealth"})
                 continue
-            before = float(player["power"])
-            player["wealth"] = float(player["wealth"]) - amount
-            player["power"] = before + amount / ARM_RATIO
-            events.append({"kind": "arm", "player": pid, "power": player["power"]})
-            trace.add("3.2 arm", {"player": pid, "amount": amount},
-                      {"power": player["power"], "from": before, "gain": round(amount / ARM_RATIO, 4)})
+            # 4.0 (v1.11): 1 goods za kazdych 8 wealth
+            queue_investment(state, pid, pid, "arm", None, amount, float(math.ceil(amount / ARM_GOODS_PER)),
+                             events, trace, amount=amount)
 
         # --- cancel -------------------------------------------------------------
         elif atype == "cancel":
@@ -1442,12 +1567,12 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
 REJECTION_KINDS = ("trade_rejected", "action_invalid", "invade_blocked", "action_over_limit", "union_rejected")
 
 
-def _log_rejections(state, events) -> None:
+def _log_rejections(state, events, kinds=REJECTION_KINDS) -> None:
     """3.4 (v1.10.2): kazde vyrazeni akce enginem jde do soukromeho logu hrace s duvodem."""
     turn = int(state["meta"]["turn"])
     plog = state.setdefault("private_log", {"A": [], "B": [], "C": []})
     for e in events:
-        if e.get("kind") not in REJECTION_KINDS:
+        if e.get("kind") not in kinds:
             continue
         pid = e.get("player") or ("C" if e.get("kind") == "union_rejected" else None)
         if pid not in ("A", "B", "C"):
@@ -1682,6 +1807,8 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                 cap = own if i in ("A", "B") else max(0.0, stock + bal)
                 offer[i] = max(offer[i], min(spec[i], cap))
             d_flow[i] = max(0.0, -bal)
+            if res == GOODS:
+                d_flow[i] += float(state.get("_invest_goods", {}).get(i, 0.0))   # 4.0 (v1.11)
             can_refill = float(e["wealth"]) >= REFILL_MIN_WEALTH  # 4.1c (v1.6): jen pri wealth >= 25
             d_refill[i] = max(0.0, reserve - stock) if can_refill else 0.0
 
@@ -1700,7 +1827,8 @@ def _auto_market(state, npcdata, resources, needs, imports, exports, trace: Trac
                     continue
                 if seller in ("A", "B") or buyer in ("A", "B"):
                     # 4.1a (v1.9): pausal prejezdu hracu, prirazka propada, tranzit nikomu
-                    k, path = (PLAYER_FLAT_CROSSINGS if PRICE_PAIRING else 0), []
+                    # 4.1a (v1.11): u goods hraci 0 prejezdu (prumyslovy vyvoz vlastnim lodstvem)
+                    k, path = (PLAYER_FLAT_CROSSINGS if PRICE_PAIRING and res != GOODS else 0), []
                 else:
                     route = routes.get((seller, buyer))
                     if route is None or route[0] > MAX_CROSSINGS:
@@ -2002,13 +2130,36 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
                   {"coverage": e["coverage"], "goods_out": e["goods_out"]})
 
     # 4.0 a 4.1a (v1.9): 10 % kapacity velkych tovaren jde na trh vzdy, nejvys letosni vyroba
-    state["_spec_offer"] = {i: min(SPECULATIVE_SHARE * potential[i], float(ent(state, i)["goods_out"]))
+    state["_spec_offer"] = {i: min(speculative_offer(state, i, potential[i],
+                                                     household_need(ent(state, i), state["_need_wealth"].get(i))["goods"]),
+                                   float(ent(state, i)["goods_out"]))
                             for i in ids if float(ent(state, i).get("industry") or 0.0) >= 4.0}
 
     # 4b. goods: vnitrni trh Unie, pak automaticky trh
     _union_market(state, (GOODS,), needs, imports, exports, trace)
+    # 4.0 (v1.11): chybejici goods pro investice se kupuji na tomto trhu jako poptavka toku
+    inv = {}
+    for rec in state.get("investments_pending", []):
+        miss = max(0.0, rec["goods_need"] - rec["goods_have"])
+        if miss > 0 and rec["owner"] in imports:
+            inv[rec["owner"]] = inv.get(rec["owner"], 0.0) + miss
+    state["_invest_goods"] = inv
+    before_inv = {k: imports[k][GOODS] for k in inv}
     v_g, pv_g, g_g, pairs_g = _auto_market(state, npcdata, (GOODS,), needs,
                                            imports, exports, trace)
+    for k, miss in inv.items():
+        used = min(miss, max(0.0, imports[k][GOODS] - before_inv[k]))
+        if used <= 0:
+            continue
+        exports[k][GOODS] += used          # goods spotrebovane investici se nepocitaji domacnostem
+        left = used
+        for rec in state["investments_pending"]:
+            if rec["owner"] != k or left <= 0:
+                continue
+            take = min(left, max(0.0, rec["goods_need"] - rec["goods_have"]))
+            rec["goods_have"] = round(rec["goods_have"] + take, 4)
+            left -= take
+        trace.add("4.0 goods pro investice", {"kupec": k, "potreba": round(miss, 3)}, {"koupeno": round(used, 3)})
     npc_volume = v_in + v_g
     goods_volume += g_in + g_g
     for pid in ("A", "B"):
@@ -2136,37 +2287,34 @@ def step_growth(state, grain_deficit, trace: Trace) -> None:
 
 
 def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
-    """4.2a: bezne NPC s wealth > 40, law >= 5 a rostoucim wealth investuje kazdy treti tah,
-    v cyklu deviti tahu tech, industry, prod (S6); cil invest_prod podle ceny (v1.9)."""
+    """4.2a: bezne NPC s wealth > 40 a rostoucim wealth investuje kazdy treti tah.
+
+    v1.11: NPC s law < 5 investuje do prava (6 wealth, bez goods); ostatni v cyklu deviti tahu
+    tech, industry, prod (S6) a investice ceka na goods jako u hracu (4.0). Rozhoduje se pred trhem,
+    aby chybejici goods slo koupit v tomtez tahu.
+    """
     turn = state["meta"]["turn"]
     if turn % 3 != 0:
         return
-    # 4.2a (v1.8): stridani tri investic podle cisla tahu pro vsechna NPC (S6)
     kind = {3: "tech", 6: "industry", 0: "prod"}[turn % 9]
+    busy = {r["owner"] for r in state.get("investments_pending", [])}
     for i, n in sorted(state["npc"].items()):
-        if n.get("kind") == "fallen":
+        if n.get("kind") == "fallen" or i in busy:
             continue
-        if not (float(n["wealth"]) > 40.0 and float(n["law"]) >= 5.0):
+        if not float(n["wealth"]) > 40.0:
             continue
         # 4.2a (v1.4): jen NPC, jehoz wealth za posledni 3 tahy vzrostlo (K4)
         hist = n.get("wealth_history") or []
         if len(hist) < 3 or float(n["wealth"]) <= float(hist[0]):
             continue
+        if float(n["law"]) < 5.0:
+            apply_investment(state, i, i, "invest_law", None, COST["invest_law"], events, trace)
+            continue
         if kind == "tech":
-            n["wealth"] = float(n["wealth"]) - COST["invest_tech"]
-            before = float(n["tech"])
-            n["tech"] = clamp(before + 0.3, 0.0, 10.0)
-            events.append({"kind": "npc_invest_tech", "npc": i, "tech": n["tech"]})
-            trace.add("4.2a automatika NPC: invest_tech", {"npc": i, "cost": COST["invest_tech"]},
-                      {"tech": n["tech"], "from": before})
+            queue_investment(state, i, i, "invest_tech", None, COST["invest_tech"], GOODS_COST["invest_tech"], events, trace)
         elif kind == "industry":
-            n["wealth"] = float(n["wealth"]) - COST["invest_industry"]
-            before = float(n.get("industry") or 0.0)
-            n["industry"] = clamp(before + 0.3 * (float(n["law"]) / 5.0), 0.0, 10.0)
-            events.append({"kind": "npc_invest_industry", "npc": i, "industry": n["industry"]})
-            trace.add("4.2a automatika NPC: invest_industry",
-                      {"npc": i, "cost": COST["invest_industry"]},
-                      {"industry": n["industry"], "from": before})
+            queue_investment(state, i, i, "invest_industry", None, COST["invest_industry"],
+                             GOODS_COST["invest_industry"], events, trace)
         else:
             # 4.2a (v1.9): invest_prod do vyrabeneho zdroje s nejvyssi trzni cenou, nikdy do zdroje
             # s cenou na dolni mezi (0.7x zakladu); jen pri tech >= 3; pri shode poradi oil, grain, metal
@@ -2185,12 +2333,7 @@ def step_npc_auto_invest(state, trace: Trace, events: list) -> None:
                           {"duvod": "zadny vyrabeny zdroj nad dolni mezi ceny"})
                 continue
             res = max(cands)[2]
-            n["wealth"] = float(n["wealth"]) - COST["invest_prod"]
-            before = float(n["prod"][res])
-            n["prod"][res] = before + 1.0
-            events.append({"kind": "npc_invest_prod", "npc": i, "res": res, "prod": n["prod"][res]})
-            trace.add("4.2a automatika NPC: invest_prod", {"npc": i, "cost": COST["invest_prod"], "res": res},
-                      {"prod": n["prod"][res], "from": before})
+            queue_investment(state, i, i, "invest_prod", res, COST["invest_prod"], GOODS_COST["invest_prod"], events, trace)
 
 
 def step_income(state, trace: Trace) -> None:
@@ -3309,6 +3452,11 @@ def build_views(state, npcdata) -> dict:
             mine["stock"] = {k: round(float(v), 3) for k, v in (me.get("stock") or {}).items()}
             # 2 (v1.10.1): co hrac minuly tah prodal a nakoupil na automatickem trhu
             mine["automaticky_obchodovano"] = dict(me.get("auto_last") or {})
+            # 4.0 (v1.11): vlastni investice, ktere cekaji na goods
+            mine["investice_cekajici"] = [
+                {"typ": r["type"], "cil": r["target"], "goods_potreba": r["goods_need"],
+                 "goods_mas": r["goods_have"], "od_tahu": r["since"]}
+                for r in state.get("investments_pending", []) if r["owner"] == pid]
         else:
             mine["members"] = list(C["members"])
             mine["candidates"] = list(C["candidates"])
@@ -3364,11 +3512,12 @@ def apply_turn(state, npcdata, actions):
         step_prices(st, trace)
         st["prices_turn"] = turn
     events = apply_actions(st, npcdata, actions, rng, trace)
+    step_npc_auto_invest(st, trace, events)   # 4.2a (v1.11): pred trhem kvuli nakupu goods
     upkeep_deals(st, trace, events)
     step_wars(st, trace, events)   # 3.3a (v1.10)
     grain_deficit = step_resources(st, npcdata, trace, events)
+    step_investments(st, trace, events)       # 4.0 (v1.11): investice s goods po trhu
     step_growth(st, grain_deficit, trace)
-    step_npc_auto_invest(st, trace, events)
     step_income(st, trace)
     step_industry(st, grain_deficit, trace)
     step_poverty(st, npcdata, grain_deficit, trace, events)
@@ -3407,6 +3556,7 @@ def apply_turn(state, npcdata, actions):
     st.pop("_player_imports", None)
     st.pop("_goods_sold", None)
     st.pop("_need_wealth", None)
+    st.pop("_invest_goods", None)
     st.pop("_union_tariff", None)
     st.pop("_ab_volume", None)
     st.pop("_ab_auto", None)

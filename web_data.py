@@ -86,6 +86,14 @@ def write_index(played_turn=None) -> None:
 # history/summary.json
 # --------------------------------------------------------------------------
 
+def _indicators(e) -> dict:
+    """v1.11 (F13): goods (zasoba, vyroba, potreba), industry, law a tech pro panel statu."""
+    return {"goods": {"stock": _r((e.get("stock") or {}).get("goods", 0), 1),
+                      "vyroba": _r(e.get("goods_out"), 1) if e.get("goods_out") is not None else None,
+                      "potreba": _r((e.get("need") or {}).get("goods"), 1) if (e.get("need") or {}).get("goods") is not None else None},
+            "industry": _r(e.get("industry"), 2), "law": _r(e.get("law"), 2), "tech": _r(e.get("tech"), 2)}
+
+
 def turn_summary(snap) -> dict:
     """Co web potrebuje o jednom tahu pro mapu, slider a grafy."""
     st = snap["state"]
@@ -95,12 +103,13 @@ def turn_summary(snap) -> dict:
         p = st["players"][pid]
         states[pid] = {"wealth": _r(p.get("wealth")), "paper_wealth": _r(p.get("paper_wealth", 0)),
                        "pop": _r(p.get("pop"), 1), "orit": _r((p.get("prod") or {}).get("orit", 0)),
-                       "occupied": list(p.get("occupied") or [])}
+                       "occupied": list(p.get("occupied") or []), **_indicators(p)}
     for nid, n in st["npc"].items():
         states[nid] = {"wealth": _r(n.get("wealth")), "paper_wealth": _r(n.get("paper_wealth", 0)),
                        "status": n.get("status"), "kind": n.get("kind", "normal"),
                        "influence": {k: _r((n.get("influence") or {}).get(k, 0.0)) for k in ("A", "B")},
-                       "pop": _r(n.get("pop"), 1), "orit": _r((n.get("prod") or {}).get("orit", 0))}
+                       "pop": _r(n.get("pop"), 1), "orit": _r((n.get("prod") or {}).get("orit", 0)),
+                       **_indicators(n)}
     C = st["players"]["C"]
     migration = []
     for rec in (st.get("minsky") or {}).get("migration_ledger") or []:

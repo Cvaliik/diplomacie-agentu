@@ -4628,3 +4628,69 @@ ji použije beze změny; každé vyřazení enginem jde do soukromého logu hrá
 dispozici. Snímek tahu ukazuje, že první pokus skončil `end_turn` s 1 865 výstupními tokeny (druhý 1 455), tedy ne limitem
 ani odmítnutím, ale nevalidním JSON nebo chybějícím povinným polem. Workflow od v1.10.1 nahrává neúspěšné pokusy a selhaný
 tah jako artefakt `diagnostika-<run_id>`; oprava parseru nebo promptu až podle obsahu příštího selhání.
+
+## v1.11 (rozhodnutí Adama z 16. 9. 2026)
+
+### W3. Goods nemají v ekonomice roli (uzavřeno v1.11)
+
+Otázka z rozboru prvního dne: `goods` se vyráběly a spotřebovávaly, ale nic na nich nestálo, obchod s nimi stál a přebytek
+velkých továren končil v zásobách. Pozn.: W3 a W4 v tomto souboru dosud zapsané nebyly, text je doplněn podle rozhodnutí.
+**Uzavřeno bodem B v1.11:** goods jsou kapitál. Investice a zbrojení je spotřebovávají (4.0), chybějící se kupují na trhu
+v tomtéž tahu, investiční poptávka se počítá do prodaného minulého tahu. Hráči A a B nabízejí spekulativně 50 % volné
+kapacity (4.0) a u `goods` nemají paušál přejezdu (4.1a).
+
+### W4. NPC s nízkým právem nemají cestu k institucím (uzavřeno v1.11)
+
+Automatika NPC (4.2a) vyžadovala `law ≥ 5`, takže NPC pod prahem nikdy neinvestovala a právo měnily jen obchod s A a pakt B.
+**Uzavřeno bodem B v1.11:** NPC s `law < 5` investuje místo cyklu do práva (`invest_law` za 6 wealth, bez goods).
+
+### W5. Podíl A na trhu s goods (sledovat)
+
+V testu (v) v1.11 roste podíl A na obchodu s `goods` po dni 6 na 60 až 80 % (dny 1 až 10 celkem 40,8 %, prodejci ve dnech
+1 až 10: A 56,7, B 34,6, N3 23,7 kusu). Kombinace 50 % volné kapacity a nulového přejezdu může z A udělat monopolního
+dodavatele. **Sledovat v ostrém běhu;** zásah až podle dat.
+
+### V16. Typy zboží (v2)
+
+`goods` je v v1.11 jediný průmyslový statek pro spotřebu i investice. **Otázka pro v2:** rozlišit spotřební a kapitálové
+zboží (případně zbrojní), s vlastní výrobou, cenou a vazbou na investice.
+
+### Výklady enginu v1.11
+
+| bod | výklad |
+|---|---|
+| zpráva zdarma | `message` mimo limit platí pro všechny hráče včetně Unie, nejvýš 1 za tah |
+| investice Unie | Unie platí jen bohatství, goods nepotřebuje (nemá zásobu) |
+| `arm` a goods | 1 goods na každých započatých 8 wealth, tedy zaokrouhlení nahoru (`amount` 16 = 2 goods, 17 = 3) |
+| čekající investice | bohatství se platí až při provedení; investice propadne nejpozději ve třetím tahu od zadání, goods se vrátí |
+| NPC `invest_law` | platí dál podmínky `wealth > 40`, růstu za 3 tahy a třetího tahu; NPC s čekající investicí znovu neinvestuje |
+| pořadí 4.2a | automatika NPC rozhoduje po akcích hráčů a před trhem, provedení je po trhu |
+| domácí akce | musí mířit na vlastní stát; investice do NPC ve sféře je běžná akce v limitu. Engine uzná slot `domestic` jen u A a B a povoleného typu, jinak se akce počítá do limitu |
+| investice hráče do NPC | goods platí hráč ze své zásoby a nákupu (vlastník investice) |
+| spekulativní nabídka hráče | 50 % volné kapacity zvyšuje plán výroby; na trhu hráč dál prodává jen vlastní výrobu nad potřebu (4.1a) |
+| 0 přejezdů u goods | platí pro každou dvojici na automatickém trhu, kde je A nebo B stranou, tedy pro prodej i nákup goods hráčem |
+| paměť hráčů | bloky `tve_minule_uvahy`, `od_tveho_minuleho_tahu` a `tve_smlouvy` dostávají jen A a B; Unie je nemá (`hrac_unie.md` beze změny). Smlouvy jsou v nominální výši bez cla |
+| princip viditelnosti | pohled A a B nese vlastní `law`, `tech`, `industry` (1 desetinné místo), změny v bloku `od_tveho_minuleho_tahu` na 2 místa |
+
+### T (v1.11). Test scénáře (v), 90 tahů
+
+Skript (v): A tah 1 smlouva ropa 6 za 0,85 s N3, tah 2 obilí 4 za 0,85 s N1, tah 3 pakt s N3, nabídky NPC nepřijímá,
+domácí `invest_industry` při wealth nad 60, nejvýš jednou za den; B pakty N5 a N1 v tahu 1, N7 a N15 v tahu 4, domácí
+`arm` 16 při wealth nad 60, půjčky a nabídky jako ve (b).
+
+| den | wealth A | wealth B | obchod goods | podíl A |
+|---|---|---|---|---|
+| 1 | 89,2 | 74,6 | 15,64 | 18,9 % |
+| 2 | 81,2 | 46,9 | 16,69 | 35,8 % |
+| 3 | 73,3 | 30,7 | 17,31 | 33,1 % |
+| 4 | 61,3 | 34,8 | 15,03 | 11,7 % |
+| 5 | 51,7 | 43,0 | 24,03 | 19,1 % |
+| 6 | 56,3 | 36,0 | 14,67 | 64,0 % |
+| 7 | 58,7 | 42,1 | 15,77 | 53,0 % |
+| 8 | 59,6 | 58,6 | 10,43 | 66,5 % |
+| 9 | 53,0 | 58,0 | 10,20 | 87,8 % |
+| 10 | 53,2 | 44,7 | 10,60 | 63,8 % |
+
+`invest_law` použilo 5 NPC (N2, N3, N5, N7, N15). Unie i crash v tahu 33 (den 11). validate 0 chyb. Scénář (0) prošel
+(crash tah 69). Stop podmínka „A na konci dne 5 aspoň 60“ nesplněna (51,7, z toho 50 wealth v pěti investicích
+do průmyslu); Adam výsledek přijal 16. 9. 2026.
