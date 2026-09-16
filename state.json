@@ -60,7 +60,16 @@
       "occupied": [],
       "poverty_streak": 0,
       "coups": 0,
-      "last_coup_turn": null
+      "last_coup_turn": null,
+      "goods_capacity": 12.8,
+      "goods_planned": 9.4667,
+      "need": {
+        "grain": 6.9,
+        "goods": 6.1333,
+        "oil": 6.1133,
+        "metal": 3.99,
+        "orit": 0.0
+      }
     },
     "B": {
       "name": "Lidová republika Ostrogard",
@@ -88,7 +97,16 @@
       "occupied": [],
       "poverty_streak": 0,
       "coups": 0,
-      "last_coup_turn": null
+      "last_coup_turn": null,
+      "goods_capacity": 8.4,
+      "goods_planned": 6.65,
+      "need": {
+        "grain": 6.3,
+        "goods": 4.9,
+        "oil": 4.585,
+        "metal": 3.045,
+        "orit": 0.0
+      }
     },
     "C": {
       "name": null,
@@ -152,7 +170,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 45.0
+      "wealth_peak": 45.0,
+      "goods_capacity": 2.6,
+      "goods_planned": 2.6,
+      "need": {
+        "grain": 5.7,
+        "goods": 3.325,
+        "oil": 2.44,
+        "metal": 1.73,
+        "orit": 0.0
+      }
     },
     "N2": {
       "wealth": 40,
@@ -198,7 +225,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 40.0
+      "wealth_peak": 40.0,
+      "goods_capacity": 2.4,
+      "goods_planned": 2.4,
+      "need": {
+        "grain": 4.8,
+        "goods": 2.6667,
+        "oil": 2.16,
+        "metal": 1.52,
+        "orit": 0.0
+      }
     },
     "N3": {
       "wealth": 60,
@@ -244,7 +280,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 60.0
+      "wealth_peak": 60.0,
+      "goods_capacity": 5.2,
+      "goods_planned": 2.92,
+      "need": {
+        "grain": 3.6,
+        "goods": 2.4,
+        "oil": 2.18,
+        "metal": 1.476,
+        "orit": 0.0
+      }
     },
     "N4": {
       "wealth": 55,
@@ -290,7 +335,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 55.0
+      "wealth_peak": 55.0,
+      "goods_capacity": 5.6,
+      "goods_planned": 2.6683,
+      "need": {
+        "grain": 3.3,
+        "goods": 2.1083,
+        "oil": 1.9942,
+        "metal": 1.3505,
+        "orit": 0.0
+      }
     },
     "N5": {
       "wealth": 40,
@@ -336,7 +390,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 40.0
+      "wealth_peak": 40.0,
+      "goods_capacity": 4.2,
+      "goods_planned": 1.6667,
+      "need": {
+        "grain": 3.0,
+        "goods": 1.6667,
+        "oil": 1.4333,
+        "metal": 1.0,
+        "orit": 0.0
+      }
     },
     "N6": {
       "wealth": 22,
@@ -382,7 +445,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 22.0
+      "wealth_peak": 22.0,
+      "goods_capacity": 1.1,
+      "goods_planned": 0.615,
+      "need": {
+        "grain": 2.7,
+        "goods": 1.23,
+        "oil": 0.8475,
+        "metal": 0.6345,
+        "orit": 0.0
+      }
     },
     "N7": {
       "wealth": 38,
@@ -428,7 +500,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 38.0
+      "wealth_peak": 38.0,
+      "goods_capacity": 3.9,
+      "goods_planned": 1.7967,
+      "need": {
+        "grain": 3.3,
+        "goods": 1.7967,
+        "oil": 1.5583,
+        "metal": 1.089,
+        "orit": 0.0
+      }
     },
     "N8": {
       "wealth": 22,
@@ -474,7 +555,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 22.0
+      "wealth_peak": 22.0,
+      "goods_capacity": 1.1,
+      "goods_planned": 0.5467,
+      "need": {
+        "grain": 2.4,
+        "goods": 1.0933,
+        "oil": 0.7533,
+        "metal": 0.564,
+        "orit": 0.0
+      }
     },
     "N9": {
       "wealth": 20,
@@ -520,7 +610,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 20.0
+      "wealth_peak": 20.0,
+      "goods_capacity": 1.1,
+      "goods_planned": 0.4,
+      "need": {
+        "grain": 1.8,
+        "goods": 0.8,
+        "oil": 0.56,
+        "metal": 0.42,
+        "orit": 0.0
+      }
     },
     "N10": {
       "wealth": 25,
@@ -566,7 +665,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 25.0
+      "wealth_peak": 25.0,
+      "goods_capacity": 1.2,
+      "goods_planned": 0.6021,
+      "need": {
+        "grain": 2.55,
+        "goods": 1.2042,
+        "oil": 0.811,
+        "metal": 0.6056,
+        "orit": 0.0
+      }
     },
     "N11": {
       "wealth": 90,
@@ -612,7 +720,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 90.0
+      "wealth_peak": 90.0,
+      "goods_capacity": 12.6,
+      "goods_planned": 2.51,
+      "need": {
+        "grain": 1.5,
+        "goods": 1.25,
+        "oil": 1.555,
+        "metal": 1.003,
+        "orit": 0.0
+      }
     },
     "N12": {
       "wealth": 80,
@@ -658,7 +775,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 80.0
+      "wealth_peak": 80.0,
+      "goods_capacity": 11.9,
+      "goods_planned": 2.8233,
+      "need": {
+        "grain": 2.1,
+        "goods": 1.6333,
+        "oil": 1.8317,
+        "metal": 1.197,
+        "orit": 0.0
+      }
     },
     "N13": {
       "wealth": 50,
@@ -704,7 +830,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 50.0
+      "wealth_peak": 50.0,
+      "goods_capacity": 7.5,
+      "goods_planned": 2.95,
+      "need": {
+        "grain": 3.6,
+        "goods": 2.2,
+        "oil": 2.195,
+        "metal": 1.485,
+        "orit": 0.0
+      }
     },
     "N14": {
       "wealth": 40,
@@ -750,7 +885,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 40.0
+      "wealth_peak": 40.0,
+      "goods_capacity": 3.9,
+      "goods_planned": 1.6667,
+      "need": {
+        "grain": 3.0,
+        "goods": 1.6667,
+        "oil": 1.4333,
+        "metal": 1.0,
+        "orit": 0.0
+      }
     },
     "N15": {
       "wealth": 35,
@@ -796,7 +940,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 35.0
+      "wealth_peak": 35.0,
+      "goods_capacity": 2.4,
+      "goods_planned": 1.2667,
+      "need": {
+        "grain": 2.4,
+        "goods": 1.2667,
+        "oil": 1.1133,
+        "metal": 0.78,
+        "orit": 0.0
+      }
     },
     "N16": {
       "wealth": 22,
@@ -842,7 +995,16 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 22.0
+      "wealth_peak": 22.0,
+      "goods_capacity": 1.1,
+      "goods_planned": 0.615,
+      "need": {
+        "grain": 2.7,
+        "goods": 1.23,
+        "oil": 0.8475,
+        "metal": 0.6345,
+        "orit": 0.0
+      }
     }
   },
   "deals": [],

@@ -4631,24 +4631,28 @@ tah jako artefakt `diagnostika-<run_id>`; oprava parseru nebo promptu až podle 
 
 ## v1.11 (rozhodnutí Adama z 16. 9. 2026)
 
-### W3. Goods nemají v ekonomice roli (uzavřeno v1.11)
+### W3. A vydávala víc, než vydělávala (uzavřeno v1.11)
 
-Otázka z rozboru prvního dne: `goods` se vyráběly a spotřebovávaly, ale nic na nich nestálo, obchod s nimi stál a přebytek
-velkých továren končil v zásobách. Pozn.: W3 a W4 v tomto souboru dosud zapsané nebyly, text je doplněn podle rozhodnutí.
-**Uzavřeno bodem B v1.11:** goods jsou kapitál. Investice a zbrojení je spotřebovávají (4.0), chybějící se kupují na trhu
-v tomtéž tahu, investiční poptávka se počítá do prodaného minulého tahu. Hráči A a B nabízejí spekulativně 50 % volné
-kapacity (4.0) a u `goods` nemají paušál přejezdu (4.1a).
+V ostrém běhu v1.10.2 klesla wealth A za 5 tahů ze 100 na 27: trvalé nákupní smlouvy nad trhem a přijímané nabídky NPC
+stály víc, než přinášel prodej. **Uzavřeno v1.11:** trh s goods (hráči nabízejí 50 % volné kapacity a u goods nemají
+paušál přejezdu, 4.0 a 4.1a) dává A příjem z vývozu a blok `tve_smlouvy` ukazuje hráči náklad jeho smluv za tah.
 
-### W4. NPC s nízkým právem nemají cestu k institucím (uzavřeno v1.11)
+### W4. Poptávka po goods nezávisí na bohatství (uzavřeno v1.11)
 
-Automatika NPC (4.2a) vyžadovala `law ≥ 5`, takže NPC pod prahem nikdy neinvestovala a právo měnily jen obchod s A a pakt B.
-**Uzavřeno bodem B v1.11:** NPC s `law < 5` investuje místo cyklu do práva (`invest_law` za 6 wealth, bez goods).
+Goods se kupovaly jen jako spotřeba domácností, bohatší státy po nich nepoptávaly víc na růst. **Uzavřeno v1.11:** goods
+jsou kapitál. Investice a zbrojení je spotřebovávají (4.0), chybějící se kupují na trhu v tomtéž tahu a investiční
+poptávka se počítá do prodaného minulého tahu; kdo má na investice, poptává goods.
 
 ### W5. Podíl A na trhu s goods (sledovat)
 
 V testu (v) v1.11 roste podíl A na obchodu s `goods` po dni 6 na 60 až 80 % (dny 1 až 10 celkem 40,8 %, prodejci ve dnech
 1 až 10: A 56,7, B 34,6, N3 23,7 kusu). Kombinace 50 % volné kapacity a nulového přejezdu může z A udělat monopolního
 dodavatele. **Sledovat v ostrém běhu;** zásah až podle dat.
+
+### W6. NPC s nízkým právem bez cesty k institucím (uzavřeno v1.11)
+
+Automatika NPC (4.2a) vyžadovala `law ≥ 5`, takže NPC pod prahem nikdy neinvestovala a právo měnily jen obchod s A a pakt B.
+**Uzavřeno v1.11:** NPC s `law < 5` investuje místo cyklu do práva (`invest_law` za 6 wealth, bez goods).
 
 ### V16. Typy zboží (v2)
 
@@ -4670,6 +4674,7 @@ zboží (případně zbrojní), s vlastní výrobou, cenou a vazbou na investice
 | spekulativní nabídka hráče | 50 % volné kapacity zvyšuje plán výroby; na trhu hráč dál prodává jen vlastní výrobu nad potřebu (4.1a) |
 | 0 přejezdů u goods | platí pro každou dvojici na automatickém trhu, kde je A nebo B stranou, tedy pro prodej i nákup goods hráčem |
 | paměť hráčů | bloky `tve_minule_uvahy`, `od_tveho_minuleho_tahu` a `tve_smlouvy` dostávají jen A a B; Unie je nemá (`hrac_unie.md` beze změny). Smlouvy jsou v nominální výši bez cla |
+| pohled tahu 1 | potřeby a plán výroby goods z výchozího stavu (`precompute_needs`), výroba v pohledu = plán, dokud engine nespočítá skutečnou |
 | princip viditelnosti | pohled A a B nese vlastní `law`, `tech`, `industry` (1 desetinné místo), změny v bloku `od_tveho_minuleho_tahu` na 2 místa |
 
 ### T (v1.11). Test scénáře (v), 90 tahů

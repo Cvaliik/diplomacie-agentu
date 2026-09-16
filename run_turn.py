@@ -121,6 +121,7 @@ def load_state(path: Path):
     state = json.loads(text)
     npcdata = json.loads(read_text(config.NPC_PATH))
     engine.normalize(state)
+    engine.precompute_needs(state)   # v1.11: potreby pro pohled tahu 1 (u pozdejsich tahu uz jsou)
     return state, npcdata
 
 

@@ -193,6 +193,22 @@ def precompute_prices(state, trace=None) -> None:
     """4.1b (v1.10.2): cena pristiho tahu ze stavu na konci tohoto tahu (pro pohledy a pasmo trade_offer)."""
     step_prices(state, trace if trace is not None else Trace())
     state["prices_turn"] = int(state["meta"]["turn"]) + 1
+    precompute_needs(state)
+
+
+def precompute_needs(state) -> None:
+    """4.0 a 4.1b (v1.11): stat bez spocitanych potreb (vychozi stav pred tahem 1) dostane potreby
+    a plan vyroby goods predem ze soucasneho stavu, aby je pohled tahu 1 ukazal. Prepocet tahu
+    je pocita znovu (4.1), vysledek tahu to nemeni."""
+    for i in world_ids(state):
+        e = ent(state, i)
+        if isinstance(e.get("need"), dict) and GOODS in e["need"]:
+            continue
+        pot = goods_potential(e)
+        plan = planned_goods(state, i, pot)
+        e["goods_capacity"] = round(pot, 4)
+        e["goods_planned"] = round(plan, 4)
+        e["need"] = {k: round(v, 4) for k, v in compute_need(state, i, plan).items()}
 
 
 def eff_prod(e: dict, res: str) -> float:
@@ -3363,7 +3379,8 @@ HIDDEN_FIELDS = ("law", "tech", "prosperity_index", "law_threshold",
 
 def _goods_view(e: dict) -> dict:
     """Verejny prehled goods: vyroba, potreba a jejich rozdil (v1.2)."""
-    out = float(e.get("goods_out") or 0.0)
+    # pred prvnim prepoctem (tah 1) plan vyroby misto skutecne vyroby (v1.11)
+    out = float(e["goods_out"] if e.get("goods_out") is not None else (e.get("goods_planned") or 0.0))
     need = float((e.get("need") or {}).get(GOODS, 0.0))
     return {"vyroba": round(out, 3), "potreba": round(need, 3),
             "bilance": round(out - need, 3)}

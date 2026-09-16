@@ -334,7 +334,7 @@ Tržní cena každého zdroje se přepočítá na začátku každého tahu:
 
 `cena[res] = základ[res] × clamp(světová poptávka / světová nabídka, 0.7, 1.5)`
 
-Světová poptávka je součet `need[res]` všech států, nabídka součet efektivní produkce podle 4.1. Potřeby a výroba `goods` vznikají až v přepočtu tahu (4.0), proto se použijí hodnoty z minulého tahu; v prvním tahu z plánované výroby podle 4.0, stejně jako v ostatních tazích. **Cena tahu se spočítá před sestavením pohledů hráčů** (na konci přepočtu minulého tahu, pro tah 1 ve výchozím stavu): pohled ukazuje tuto cenu, tah ji použije beze změny a pásmo 0.7 až 1.5 u `trade_offer` se hodnotí proti ní, ne proti ceně minulého tahu ani proti základu. Cena platí pro NPC i hráče.
+Světová poptávka je součet `need[res]` všech států, nabídka součet efektivní produkce podle 4.1. Potřeby a výroba `goods` vznikají až v přepočtu tahu (4.0), proto se použijí hodnoty z minulého tahu; v prvním tahu z plánované výroby podle 4.0, stejně jako v ostatních tazích. **Cena tahu se spočítá před sestavením pohledů hráčů** (na konci přepočtu minulého tahu, pro tah 1 ve výchozím stavu): pohled ukazuje tuto cenu, tah ji použije beze změny a pásmo 0.7 až 1.5 u `trade_offer` se hodnotí proti ní, ne proti ceně minulého tahu ani proti základu. Cena platí pro NPC i hráče. **Potřeby pro pohled tahu 1 (v1.11):** stejně jako cenu spočítá engine ve výchozím stavu i `need` všech států a plán výroby `goods` podle 4.0; pohled tahu 1 je ukazuje (výroba = plán). Přepočet tahu 1 je spočítá znovu se stejným výsledkem.
 
 U oritu se dynamika **přičítá** k pohybu ceny z části 5: nejdřív se uplatní Minskyho násobek fáze, výsledek je nový základ oritu a na něj se pak použije poměr poptávky a nabídky.
 
