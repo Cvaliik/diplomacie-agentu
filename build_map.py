@@ -640,6 +640,8 @@ def main() -> int:
         "regions": [{k: v for k, v in r.items() if k != "cells"} for r in regions],
         "land": land, "highlands": highlands, "shores": shores, "lakes": lakes,
         "sea_routes": routes,
+        # vsechna namorni spojeni vcetne tech, ktera nejdou nakreslit bez krizeni ciziho uzemi
+        "sea_links": sorted(sorted(e) for e in (removed | missing)),
     }, ensure_ascii=False, separators=(",", ":")) + "\n", encoding="utf-8")
     (web / "map_seeds.json").write_text(json.dumps({
         "odebrane_hrany": sorted(list(e) for e in removed),

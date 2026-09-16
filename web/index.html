@@ -475,6 +475,9 @@ async function panelStatu(id) {
       radky.push(["vliv Ostrogardu", cis(e.influence.B, 1)]);
     }
     if (e.status) radky.push(["postavení", STATUS[e.status] || e.status]);
+    const namorni = ((hra.mapa && hra.mapa.sea_links) || []).filter((p) => p.includes(id))
+      .map((p) => { const druhy = p[0] === id ? p[1] : p[0]; return druhy in KRATKE ? KRATKE[druhy] : jm(druhy); });
+    if (namorni.length) radky.push(["námořní spojení", namorni.join(", ")]);
     if (e.kind === "fallen") radky.push(["", "padlá říše"]);
     if (e.coups) radky.push(["pády vlády", cis(e.coups, 0)]);
   }
