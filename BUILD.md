@@ -59,7 +59,9 @@ Musí selhat, pokud: záporné `wealth`/`power`/`pop`; `law`/`tech` mimo 0 až 1
 
 ## 6. Plánovač: GitHub Actions (změna stacku, dříve Claude Code routines)
 
-Ostrý běh plánuje workflow `.github/workflows/turn.yml`, ne Claude Code routines.
+Ostrý běh plánují dvě workflow, ne Claude Code routines: `.github/workflows/rozvrh.yml` (kontrola rozvrhu každých 30 minut)
+a `.github/workflows/tah.yml` (jen skutečné tahy a kroniky; spouští ho rozvrh přes `gh workflow run` s `GITHUB_TOKEN` a
+`permissions: actions: write`, nebo člověk ručně). `tah.yml` po checkoutu rozvrh přepočítá, aby se tah neodehrál dvakrát.
 
 - **Časy:** cron `*/30 * * * *`. Sloty 07:00, 13:00 a 20:00 pražského času jsou jen výpočet, ne čas spuštění: `run_turn.py --schedule-check` spočítá očekávaný počet tahů jako 3 x (dnešek minus `meta.day1_date`) plus dnešní sloty a rozhodne, zda se hraje. Zaostává-li stav o dva tahy, `--scheduled` odehraje v jednom běhu dva. Prázdný běh končí před `pip install`.
 - **Ruční spuštění:** `workflow_dispatch` se vstupem `mode`: `turn` (ostrý tah) nebo `dry-model` (jen prompty do artefaktu, bez API).

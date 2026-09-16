@@ -1,24 +1,29 @@
-# Planovac ostreho behu (BUILD.md cast 6).
-# Cron bezi kazdych 30 minut, rozvrh si skript spocita sam ze state.json (meta.day1_date a sloty
-# 07:00, 13:00 a 20:00 prazskeho casu). Zameskany slot se tak dohoni do 30 minut.
+# Tah ostreho behu (BUILD.md cast 6). Spousti ho rozvrh.yml (source = rozvrh), nebo clovek rucne.
+# V Actions obsahuje jen skutecne tahy, kroniky a rucni suche behy; filtruje se pres Workflow -> tah.
 # Klic jde jen do promenne prostredi kroku; zadny krok netiskne env ani secrets.
 
 name: tah
-run-name: ${{ github.event_name == 'workflow_dispatch' && format('ruční: {0}', inputs.mode) || 'rozvrh' }}
+run-name: "${{ inputs.source == 'rozvrh' && 'tah' || format('ručně {0}', inputs.mode) }}"
 
 on:
-  schedule:
-    - cron: "*/30 * * * *"
   workflow_dispatch:
     inputs:
       mode:
-        description: "turn = odehrát tah bez ohledu na rozvrh, dry-model = jen prompty bez API"
+        description: "turn = odehrát tah, dry-model = jen prompty bez API"
         required: true
         default: turn
         type: choice
         options:
           - turn
           - dry-model
+      source:
+        description: "kdo běh spustil (rozvrh = podle rozvrhu, ručně = bez ohledu na rozvrh)"
+        required: false
+        default: ručně
+        type: choice
+        options:
+          - ručně
+          - rozvrh
 
 permissions:
   contents: write
@@ -43,22 +48,23 @@ jobs:
         with:
           python-version: "3.11"
 
-      # Rozhoduje se jeste pred pip install, jen ze state.json: prazdny beh je hotovy za par sekund.
+      # Pojistka proti dvojimu tahu: po checkoutu (aktualni state.json) se rozvrh prepocita.
+      # Rucni turn hraje bez ohledu na rozvrh (--force).
       - name: Rozvrh
         id: plan
-        if: github.event_name == 'schedule' || inputs.mode == 'turn'
-        run: python run_turn.py --schedule-check ${{ (github.event_name == 'workflow_dispatch' && inputs.mode == 'turn') && '--force' || '' }}
+        if: inputs.mode == 'turn'
+        run: python run_turn.py --schedule-check ${{ inputs.source != 'rozvrh' && '--force' || '' }}
 
       - name: Závislosti
         if: inputs.mode == 'dry-model' || steps.plan.outputs.plan == 'hrat' || steps.plan.outputs.plan == 'kronika'
         run: pip install anthropic
 
       - name: Suchý běh (jen prompty, bez API)
-        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-model'
+        if: inputs.mode == 'dry-model'
         run: python run_turn.py --dry-model
 
       - name: Prompty suchého běhu jako artefakt
-        if: github.event_name == 'workflow_dispatch' && inputs.mode == 'dry-model'
+        if: inputs.mode == 'dry-model'
         uses: actions/upload-artifact@v4
         with:
           name: debug-prompty
@@ -69,7 +75,7 @@ jobs:
         if: steps.plan.outputs.plan == 'hrat'
         env:
           ARDAN_API_KEY: ${{ secrets.ARDAN_API_KEY }}
-        run: python run_turn.py --scheduled ${{ (github.event_name == 'workflow_dispatch' && inputs.mode == 'turn') && '--force' || '' }}
+        run: python run_turn.py --scheduled ${{ inputs.source != 'rozvrh' && '--force' || '' }}
 
       - name: Commit tahu
         if: steps.tah.outputs.played != '' && steps.tah.outputs.played != '0'
@@ -90,7 +96,7 @@ jobs:
         run: python run_chronicle.py --day ${{ steps.tah.outputs.chronicle_day || steps.plan.outputs.chronicle_day }}
 
       - name: Commit kroniky
-        if: steps.kronika.outcome == 'success' && (steps.tah.outputs.chronicle_day != '' || steps.plan.outputs.plan == 'kronika')
+        if: steps.kronika.outcome == 'success'
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898789+github-actions[bot]@users.noreply.github.com"
@@ -103,7 +109,6 @@ jobs:
             echo "kronika se nezapsala (chybí některý snímek dne, pravidla 10.7)"
           fi
 
-      # Vysledek behu do shrnuti, aby se dal poznat bez otevirani logu.
       - name: Shrnutí běhu
         if: always()
         run: echo "${{ steps.tah.outputs.label || steps.plan.outputs.label || 'suchý běh' }}" >> "$GITHUB_STEP_SUMMARY"

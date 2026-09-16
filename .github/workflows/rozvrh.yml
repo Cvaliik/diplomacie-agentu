@@ -1,0 +1,51 @@
+# Rozvrh ostreho behu (BUILD.md cast 6). Kazdych 30 minut spocita ze state.json, jestli ma byt
+# odehran tah nebo napsana kronika (meta.day1_date a sloty 07:00, 13:00 a 20:00 prazskeho casu).
+# Kdyz ano, spusti tah.yml; jinak skonci za par sekund bez zavislosti a bez klice.
+# GITHUB_TOKEN novy beh obecne nespousti, workflow_dispatch je ale vyslovna vyjimka.
+
+name: rozvrh
+run-name: "rozvrh"
+
+on:
+  schedule:
+    - cron: "*/30 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: write
+
+concurrency:
+  group: rozvrh
+  cancel-in-progress: true
+
+jobs:
+  kontrola:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: master
+
+      - name: Rozvrh
+        id: plan
+        run: python3 run_turn.py --schedule-check
+
+      - name: Spustit tah
+        if: steps.plan.outputs.plan == 'hrat' || steps.plan.outputs.plan == 'kronika'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          active=$(gh run list --workflow tah.yml --limit 20 --json status --jq '[.[] | select(.status != "completed")] | length')
+          if [ "$active" != "0" ]; then
+            echo "tah.yml už běží nebo čeká, nic nespouštím" >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+          gh workflow run tah.yml --ref master -f mode=turn -f source=rozvrh
+          echo "spuštěn tah.yml: ${{ steps.plan.outputs.label }}" >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Shrnutí
+        if: steps.plan.outputs.plan != 'hrat' && steps.plan.outputs.plan != 'kronika'
+        run: echo "${{ steps.plan.outputs.label }}" >> "$GITHUB_STEP_SUMMARY"
