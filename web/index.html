@@ -7,6 +7,8 @@
 <title>Ardan: kronika diplomacie agentů</title>
 <style>
   :root {
+    --more: #d9e0e2;
+    --zeme: #efe8da;
     --papir: #f6f1e7;
     --papir-tmavy: #ece5d6;
     --inkoust: #222;
@@ -39,14 +41,16 @@
   h3 { font-family: var(--patkove); font-size: 18px; margin: 18px 0 4px; }
 
   .horni { display: grid; grid-template-columns: 1fr; gap: 12px; }
-  #mapa { width: 100%; height: auto; display: block; background: var(--papir-tmavy); border: 1px solid var(--linka); }
-  #mapa text { font-family: var(--bezpatkove); font-size: 17px; fill: var(--inkoust);
-               paint-order: stroke; stroke: var(--papir-tmavy); stroke-width: 4px; pointer-events: none; }
-  #mapa .stat { cursor: pointer; }
-  #mapa .stat:focus { outline: none; }
-  #mapa .vybrany { stroke: var(--inkoust) !important; stroke-width: 4 !important; }
+  #mapa { width: 100%; height: auto; display: block; background: var(--more); border: 1px solid var(--linka); }
+  #mapa .uzemi { cursor: pointer; stroke-linejoin: round; }
+  #mapa .uzemi:focus { outline: none; }
+  #mapa .uzemi.vybrany { stroke: var(--inkoust); stroke-width: 3.2; }
+  #mapa text { font-family: var(--patkove); fill: var(--inkoust); pointer-events: none; }
+  #mapa .jmeno { font-size: 15px; font-variant: small-caps; letter-spacing: .03em; }
+  #mapa .krajina { font-size: 13px; font-style: italic; }
+  #mapa .stitek { font-family: var(--bezpatkove); font-size: 12px; }
   .legenda { font-family: var(--bezpatkove); font-size: 12.5px; color: var(--inkoust-2); margin-top: 6px; line-height: 1.8; }
-  .legenda i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+  .legenda i { display: inline-block; width: 13px; height: 11px; vertical-align: -1px; margin-right: 4px; border: 1px solid var(--inkoust-2); }
   .legenda span { margin-right: 12px; white-space: nowrap; }
 
   #stat { font-family: var(--bezpatkove); font-size: 14px; border-top: 1px solid var(--linka); padding-top: 8px; }
@@ -89,7 +93,9 @@
   .chyba { font-family: var(--bezpatkove); color: var(--b-tmava); }
 
   @media (max-width: 600px) {
-    #mapa text { font-size: 30px; stroke-width: 6px; }
+    #mapa .jmeno { font-size: 25px; }
+    #mapa .krajina { font-size: 20px; }
+    #mapa .stitek { font-size: 18px; }
   }
   @media (min-width: 900px) {
     .horni.otevreno { grid-template-columns: 2fr 1fr; }
@@ -111,22 +117,28 @@
       <svg id="mapa" viewBox="0 0 1000 700" role="img" aria-label="Mapa světa Ardan">
         <defs>
           <marker id="sipka" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-            <path d="M0,0 L10,5 L0,10 z" fill="#8a857c"/>
+            <path d="M0,0 L10,5 L0,10 z" fill="#6f6b63"/>
           </marker>
+          <pattern id="srafy" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
+            <line x1="0" y1="0" x2="0" y2="7" stroke="#2a2825" stroke-width="0.8" opacity="0.55"/>
+          </pattern>
         </defs>
+        <g id="vrstva-uzemi"></g>
         <g id="vrstva-linky"></g>
         <g id="vrstva-staty"></g>
         <g id="vrstva-popisky"></g>
       </svg>
       <div class="legenda">
-        <span><i style="background:var(--a)"></i>Kalvera a její sféra</span>
-        <span><i style="background:var(--b)"></i>Ostrogard a jeho sféra</span>
-        <span><i style="background:var(--unie)"></i>Unie</span>
-        <span><i style="background:var(--seda)"></i>nezávislý stát</span>
-        <span><i style="border:2px solid var(--unie)"></i>kandidát Unie</span>
-        <span><i style="border:2px solid var(--zlata)"></i>padlá říše</span>
+        <span><i style="background:#7f9dc9"></i>Kalvera a její sféra</span>
+        <span><i style="background:#cf8a84"></i>Ostrogard a jeho sféra</span>
+        <span><i style="background:#9cc09f"></i>Unie</span>
+        <span><i style="background:var(--zeme)"></i>nezávislý stát</span>
+        <span><i style="background:var(--zeme);border:2px solid var(--unie)"></i>kandidát Unie</span>
+        <span><i style="background:var(--zeme);border:2px solid var(--zlata)"></i>padlá říše</span>
+        <span>● hlavní město, plocha podle bohatství</span>
         <span>◆ ložisko oritu</span>
-        <span>plocha kruhu = bohatství</span>
+        <span>··· námořní trasa</span>
+        <span><i style="background:var(--zeme);background-image:repeating-linear-gradient(55deg,#8a857c 0 1px,transparent 1px 5px)"></i>neobydlená vysočina</span>
       </div>
     </div>
     <section id="stat" hidden></section>
@@ -214,11 +226,14 @@ async function start() {
       hra.jmena[n.id] = n.name;
       hra.druh[n.id] = n.kind || "normal";
     }
-    const [idx, souhrn, kroniky] = await Promise.all([
+    const [idx, souhrn, kroniky, mapaUzemi] = await Promise.all([
       nacti("history/index.json").catch(() => ({ turns: [] })),
       nacti("history/summary.json").catch(() => ({ turns: [] })),
-      nacti("chronicle/index.json").catch(() => ({ days: [] }))
+      nacti("chronicle/index.json").catch(() => ({ days: [] })),
+      nacti("web/map.json").catch(() => null)
     ]);
+    hra.mapa = mapaUzemi;
+    if (mapaUzemi) for (const r of mapaUzemi.regions) hra.pozice[r.id] = r.capital_xy;
     hra.index = (idx.turns || []).filter((t) => typeof t === "object");
     hra.souhrn = souhrn.turns || [];
     hra.kroniky = kroniky.days || [];
@@ -335,81 +350,94 @@ function el(nazev, atributy, rodic) {
   return e;
 }
 
+const ZEME = "#efe8da";
+const VYPLN = { A: "#7f9dc9", B: "#cf8a84", sphere_A: "#c3d0e4", sphere_B: "#ebc9c5", union: "#9cc09f",
+                occupied_A: "#4f6f9f", occupied_B: "#9a5550" };
+const INKOUST = "#2a2825";
+const LOD = "M-7,0 L7,0 L4,3.5 L-4,3.5 Z M0,0 L0,-8 L5,-2 Z";
+
 function polomer(st) {
   const w = Math.max(0, (st.wealth || 0) + (st.paper_wealth || 0));
-  return Math.max(5, 58 * Math.sqrt(w / hra.rMax));
+  return Math.max(2.5, 11 * Math.sqrt(w / hra.rMax));
 }
 
-function vzhled(id, st, s) {
-  if (id === "A" || id === "B") return { fill: BARVA[id], stroke: "#222", width: 1.5 };
-  const v = { fill: "var(--seda)", stroke: "#6f6b63", width: 1, opacity: 1 };
-  switch (st.status) {
-    case "sphere_A": v.fill = BARVA.A; v.opacity = 0.55; break;
-    case "sphere_B": v.fill = BARVA.B; v.opacity = 0.55; break;
-    case "occupied_A": v.fill = "var(--a-tmava)"; break;
-    case "occupied_B": v.fill = "var(--b-tmava)"; break;
-    case "union": v.fill = BARVA.C; break;
-    case "candidate": v.stroke = BARVA.C; v.width = 4; break;
-  }
-  if (st.kind === "fallen" || hra.druh[id] === "fallen") { v.stroke = "var(--zlata)"; v.width = 4; }
+function drahaD(body) { return "M" + body.map((q) => q.join(",")).join(" L"); }
+function polyD(kruhy) { return kruhy.map((r) => "M" + r.map((q) => q.join(",")).join(" L") + " Z").join(" "); }
+
+function vzhled(id, st) {
+  const v = { fill: VYPLN[id] || ZEME, stroke: INKOUST, width: 0.9 };
+  if (VYPLN[st.status]) v.fill = VYPLN[st.status];
+  if (st.status === "candidate") { v.stroke = BARVA.C; v.width = 3; }
+  if (st.kind === "fallen" || hra.druh[id] === "fallen") { v.stroke = "var(--zlata)"; v.width = 2.8; }
   return v;
 }
 
 function mapa(s) {
-  const linky = $("vrstva-linky"), staty = $("vrstva-staty"), popisky = $("vrstva-popisky");
-  linky.replaceChildren(); staty.replaceChildren(); popisky.replaceChildren();
+  const uzemi = $("vrstva-uzemi"), linky = $("vrstva-linky"), staty = $("vrstva-staty"), popisky = $("vrstva-popisky");
+  uzemi.replaceChildren(); linky.replaceChildren(); staty.replaceChildren(); popisky.replaceChildren();
   const P = hra.pozice;
+  const M = hra.mapa;
+  if (M) {
+    el("path", { d: polyD(M.land), fill: ZEME, "fill-rule": "evenodd" }, uzemi);
+    for (const r of M.regions) {
+      const st = s.states[r.id] || {};
+      const v = vzhled(r.id, st);
+      const p = el("path", { d: polyD(r.polygon), fill: v.fill, stroke: v.stroke, "stroke-width": v.width,
+                             "fill-rule": "evenodd", class: "uzemi", tabindex: 0, role: "button",
+                             "aria-label": r.id in HRACI ? HRACI[r.id] : jm(r.id) }, uzemi);
+      if (hra.vybrany === r.id) p.classList.add("vybrany");
+      p.addEventListener("click", () => vyber(r.id));
+      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); vyber(r.id); } });
+    }
+    for (const h of M.highlands || []) el("path", { d: polyD(h.polygon), fill: "url(#srafy)", stroke: INKOUST, "stroke-width": 0.9, "fill-rule": "evenodd" }, uzemi);
+    for (const b of M.shores || []) el("path", { d: polyD(b.polygon), fill: ZEME, "fill-rule": "evenodd" }, uzemi);
+    el("path", { d: polyD(M.land), fill: "none", stroke: INKOUST, "stroke-width": 1.8, "fill-rule": "evenodd" }, uzemi);
+    for (const t of M.sea_routes || []) {
+      el("path", { d: drahaD(t.path), fill: "none", stroke: INKOUST, "stroke-width": 1.2, "stroke-dasharray": "1 5", "stroke-linecap": "round" }, linky);
+      const [x, y, a] = t.ship;
+      el("path", { d: LOD, fill: INKOUST, transform: `translate(${x},${y}) rotate(${a > 90 || a < -90 ? a - 180 : a})` }, linky);
+    }
+    for (const k of [...(M.lakes || []), ...(M.highlands || [])]) {
+      if (!k.label_xy) continue;
+      const t = el("text", { x: k.label_xy[0], y: k.label_xy[1], "text-anchor": "middle", class: "krajina" }, popisky);
+      t.textContent = k.name;
+    }
+  }
   const spoj = (a, b, atr) => {
     if (!P[a] || !P[b]) return null;
     return el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], ...atr }, linky);
   };
-  // migrace
   for (const [z, kam] of s.migration || []) {
-    spoj(z, kam, { stroke: "#8a857c", "stroke-width": 1.2, "marker-end": "url(#sipka)", opacity: 0.8 });
+    spoj(z, kam, { stroke: "#6f6b63", "stroke-width": 1.1, "marker-end": "url(#sipka)", opacity: 0.8 });
   }
-  // obchody, pakty, sankce
   for (const d of s.deals || []) {
-    if (d.type === "trade") spoj(d.owner, d.target, { stroke: "#8a857c", "stroke-width": 1.4 });
-    else if (d.type === "protect") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || "#222", "stroke-width": 6, opacity: 0.55 });
-    else if (d.type === "pressure") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || "#222", "stroke-width": 1.5, "stroke-dasharray": "2 5" });
+    if (d.type === "trade") spoj(d.owner, d.target, { stroke: "#6f6b63", "stroke-width": 1.2 });
+    else if (d.type === "protect") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || INKOUST, "stroke-width": 4.5, opacity: 0.7, "stroke-linecap": "round" });
+    else if (d.type === "pressure") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || INKOUST, "stroke-width": 1.5, "stroke-dasharray": "2 5" });
   }
-  // invaze
+  const stred = (a, b) => [(P[a][0] + P[b][0]) / 2, (P[a][1] + P[b][1]) / 2];
   for (const v of s.invasions || []) {
-    const l = spoj(v.attacker, v.target, { stroke: BARVA[v.attacker] || "#222", "stroke-width": 3, "stroke-dasharray": "10 7" });
-    if (l && P[v.attacker] && P[v.target]) {
-      const t = el("text", { x: (P[v.attacker][0] + P[v.target][0]) / 2, y: (P[v.attacker][1] + P[v.target][1]) / 2 - 6,
-                             "text-anchor": "middle" }, popisky);
-      t.textContent = `invaze ${v.turns}/${v.need}`;
+    if (spoj(v.attacker, v.target, { stroke: BARVA[v.attacker] || INKOUST, "stroke-width": 3, "stroke-dasharray": "10 7" })) {
+      const [x, y] = stred(v.attacker, v.target);
+      el("text", { x, y: y - 6, "text-anchor": "middle", class: "stitek" }, popisky).textContent = `invaze ${v.turns}/${v.need}`;
     }
   }
-  // valky hracu
   for (const w of s.wars || []) {
-    const l = spoj(w.aggressor, w.defender, { stroke: BARVA.B, "stroke-width": 3.5, "stroke-dasharray": "14 8" });
-    if (l) {
-      const t = el("text", { x: (P[w.aggressor][0] + P[w.defender][0]) / 2, y: (P[w.aggressor][1] + P[w.defender][1]) / 2 - 8,
-                             "text-anchor": "middle" }, popisky);
-      t.textContent = "válka";
+    if (spoj(w.aggressor, w.defender, { stroke: BARVA.B, "stroke-width": 3.5, "stroke-dasharray": "14 8" })) {
+      const [x, y] = stred(w.aggressor, w.defender);
+      el("text", { x, y: y - 8, "text-anchor": "middle", class: "stitek" }, popisky).textContent = "válka";
     }
   }
-  // staty, nejvetsi dospod
-  const poradi = Object.entries(s.states).filter(([id]) => P[id])
-    .sort((x, y) => polomer(y[1]) - polomer(x[1]));
-  for (const [id, st] of poradi) {
+  for (const [id, st] of Object.entries(s.states)) {
+    if (!P[id]) continue;
     const [x, y] = P[id];
     const r = polomer(st);
-    const v = vzhled(id, st, s);
-    const c = el("circle", { cx: x, cy: y, r: r, fill: v.fill, "fill-opacity": v.opacity ?? 1,
-                             stroke: v.stroke, "stroke-width": v.width, class: "stat", tabindex: 0,
-                             role: "button", "aria-label": jm(id) }, staty);
-    if (hra.vybrany === id) c.classList.add("vybrany");
-    c.addEventListener("click", () => vyber(id));
-    c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); vyber(id); } });
+    el("circle", { cx: x, cy: y, r, fill: INKOUST }, staty);
     if ((st.orit || 0) > 0) {
-      const dx = x + r * 0.72, dy = y - r * 0.72;
-      el("polygon", { points: `${dx},${dy - 8} ${dx + 7},${dy} ${dx},${dy + 8} ${dx - 7},${dy}`,
-                      fill: "#222", stroke: "var(--papir-tmavy)", "stroke-width": 1.5 }, popisky);
+      const ox = x - 10, oy = y + 13;
+      el("polygon", { points: `${ox},${oy - 6} ${ox + 5},${oy} ${ox},${oy + 6} ${ox - 5},${oy}`, fill: INKOUST }, staty);
     }
-    const t = el("text", { x: x, y: y + r + 18, "text-anchor": "middle" }, popisky);
+    const t = el("text", { x: x + r + 4, y: y + 5, class: "jmeno" }, popisky);
     t.textContent = (id === "A" || id === "B") ? KRATKE[id] : jm(id);
   }
 }
