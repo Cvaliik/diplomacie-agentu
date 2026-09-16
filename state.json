@@ -6,7 +6,7 @@
     "slot": null,
     "rng_seed": 20260910,
     "started_at": null,
-    "paused": true,
+    "paused": false,
     "day1_date": "2026-09-16"
   },
   "phase": "pre",
