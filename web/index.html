@@ -1,0 +1,552 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Ardan: kronika diplomacie agentů</title>
+<style>
+  :root {
+    --papir: #f6f1e7;
+    --papir-tmavy: #ece5d6;
+    --inkoust: #222;
+    --inkoust-2: #5a554c;
+    --linka: #cfc6b4;
+    --seda: #a3a09a;
+    --a: #2f5d9e;
+    --a-tmava: #1b3a66;
+    --b: #b03a3a;
+    --b-tmava: #6e2020;
+    --unie: #3f7d45;
+    --zlata: #b8902a;
+    --patkove: Georgia, "Times New Roman", serif;
+    --bezpatkove: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { background: var(--papir); }
+  body {
+    margin: 0 auto; max-width: 980px; padding: 12px 16px 48px;
+    background: var(--papir); color: var(--inkoust);
+    font-family: var(--patkove); font-size: 17px; line-height: 1.55;
+  }
+  header { border-bottom: 1px solid var(--linka); padding-bottom: 10px; margin-bottom: 10px; }
+  h1 { font-family: var(--patkove); font-weight: normal; font-size: 26px; margin: 0; letter-spacing: .02em; }
+  .meta { font-family: var(--bezpatkove); font-size: 14px; color: var(--inkoust-2); margin-top: 4px; }
+  .meta b { color: var(--inkoust); font-weight: 600; }
+  .meta span + span::before { content: " · "; color: var(--linka); }
+  h2 { font-family: var(--patkove); font-weight: normal; font-size: 21px; margin: 26px 0 8px;
+       border-bottom: 1px solid var(--linka); padding-bottom: 4px; }
+  h3 { font-family: var(--patkove); font-size: 18px; margin: 18px 0 4px; }
+
+  .horni { display: grid; grid-template-columns: 1fr; gap: 12px; }
+  #mapa { width: 100%; height: auto; display: block; background: var(--papir-tmavy); border: 1px solid var(--linka); }
+  #mapa text { font-family: var(--bezpatkove); font-size: 17px; fill: var(--inkoust);
+               paint-order: stroke; stroke: var(--papir-tmavy); stroke-width: 4px; pointer-events: none; }
+  #mapa .stat { cursor: pointer; }
+  #mapa .stat:focus { outline: none; }
+  #mapa .vybrany { stroke: var(--inkoust) !important; stroke-width: 4 !important; }
+  .legenda { font-family: var(--bezpatkove); font-size: 12.5px; color: var(--inkoust-2); margin-top: 6px; line-height: 1.8; }
+  .legenda i { display: inline-block; width: 11px; height: 11px; border-radius: 50%; vertical-align: -1px; margin-right: 4px; }
+  .legenda span { margin-right: 12px; white-space: nowrap; }
+
+  #stat { font-family: var(--bezpatkove); font-size: 14px; border-top: 1px solid var(--linka); padding-top: 8px; }
+  #stat h3 { margin-top: 0; }
+  #stat table { border-collapse: collapse; width: 100%; }
+  #stat td { padding: 2px 0; vertical-align: top; }
+  #stat td:first-child { color: var(--inkoust-2); width: 40%; }
+  #stat button { float: right; }
+
+  .ovladani { display: flex; align-items: center; gap: 8px; margin: 12px 0 4px;
+              font-family: var(--bezpatkove); font-size: 14px; }
+  .ovladani input[type=range] { flex: 1; accent-color: var(--inkoust); min-width: 0; }
+  button { font-family: var(--bezpatkove); font-size: 14px; color: var(--inkoust); background: transparent;
+           border: 1px solid var(--inkoust-2); border-radius: 3px; padding: 6px 10px; cursor: pointer; }
+  button:hover { background: var(--papir-tmavy); }
+  #tah-cislo { min-width: 4.5em; text-align: right; font-variant-numeric: tabular-nums; }
+
+  .sloupce { display: grid; grid-template-columns: 1fr; gap: 0 32px; }
+  .hrac { border-top: 1px solid var(--linka); padding-top: 4px; margin-top: 14px; }
+  .hrac:first-child { border-top: 0; margin-top: 0; }
+  .hrac h3 { margin-top: 8px; }
+  .hrac h3 .znacka { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
+  .projev { font-style: italic; margin: 4px 0 6px; }
+  details { margin: 4px 0 8px; }
+  summary { font-family: var(--bezpatkove); font-size: 14px; cursor: pointer; color: var(--inkoust-2); }
+  details p { margin: 6px 0 0 12px; padding-left: 10px; border-left: 2px solid var(--linka); }
+  .seznam { font-family: var(--bezpatkove); font-size: 14px; margin: 2px 0 6px; padding-left: 18px; }
+  .seznam li { margin: 2px 0; }
+  .popis { font-family: var(--bezpatkove); font-size: 12.5px; text-transform: uppercase; letter-spacing: .06em;
+           color: var(--inkoust-2); margin: 8px 0 0; }
+  .duvod { color: var(--inkoust-2); font-family: var(--patkove); font-style: italic; }
+  .zpravy p { margin: 6px 0; }
+  .ticho { color: var(--inkoust-2); font-style: italic; }
+  #kronika { font-size: 17px; }
+  #kronika h1 { font-size: 22px; margin: 8px 0; }
+  #kronika h2 { font-size: 19px; }
+  footer { margin-top: 40px; border-top: 1px solid var(--linka); padding-top: 8px;
+           font-family: var(--bezpatkove); font-size: 13px; color: var(--inkoust-2); }
+  a { color: var(--inkoust); }
+  .chyba { font-family: var(--bezpatkove); color: var(--b-tmava); }
+
+  @media (max-width: 600px) {
+    #mapa text { font-size: 30px; stroke-width: 6px; }
+  }
+  @media (min-width: 900px) {
+    .horni.otevreno { grid-template-columns: 2fr 1fr; }
+    #stat { border-top: 0; border-left: 1px solid var(--linka); padding: 0 0 0 12px; }
+    .sloupce { grid-template-columns: 1fr 1fr; }
+  }
+</style>
+</head>
+<body>
+<header>
+  <h1>Ardan</h1>
+  <div class="meta" id="hlavicka">Načítám hru…</div>
+  <div class="meta" id="aktualizace"></div>
+</header>
+
+<main>
+  <div class="horni" id="horni">
+    <div>
+      <svg id="mapa" viewBox="0 0 1000 700" role="img" aria-label="Mapa světa Ardan">
+        <defs>
+          <marker id="sipka" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M0,0 L10,5 L0,10 z" fill="#8a857c"/>
+          </marker>
+        </defs>
+        <g id="vrstva-linky"></g>
+        <g id="vrstva-staty"></g>
+        <g id="vrstva-popisky"></g>
+      </svg>
+      <div class="legenda">
+        <span><i style="background:var(--a)"></i>Kalvera a její sféra</span>
+        <span><i style="background:var(--b)"></i>Ostrogard a jeho sféra</span>
+        <span><i style="background:var(--unie)"></i>Unie</span>
+        <span><i style="background:var(--seda)"></i>nezávislý stát</span>
+        <span><i style="border:2px solid var(--unie)"></i>kandidát Unie</span>
+        <span><i style="border:2px solid var(--zlata)"></i>padlá říše</span>
+        <span>◆ ložisko oritu</span>
+        <span>plocha kruhu = bohatství</span>
+      </div>
+    </div>
+    <section id="stat" hidden></section>
+  </div>
+
+  <div class="ovladani">
+    <button id="zpet" aria-label="Předchozí tah">◀</button>
+    <input type="range" id="posuvnik" min="1" max="1" value="1" aria-label="Tah">
+    <button id="dal" aria-label="Další tah">▶</button>
+    <button id="prehrat">Přehrát</button>
+    <span id="tah-cislo"></span>
+  </div>
+
+  <div class="sloupce">
+    <div>
+      <h2>Tahy hráčů</h2>
+      <section id="tah"></section>
+      <h2>Zprávy světa</h2>
+      <section id="zpravy" class="zpravy"></section>
+    </div>
+    <div>
+      <h2 id="kronika-nadpis">Kronika</h2>
+      <section id="kronika"></section>
+    </div>
+  </div>
+</main>
+
+<footer>
+  Hru hrají jazykové modely, které tuto stránku nevidí. Pravidla:
+  <a href="https://github.com/Cvaliik/diplomacie-agentu/blob/master/docs/pravidla.md">docs/pravidla.md</a>.
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script>
+"use strict";
+const ZAKLAD = "..";
+const HRACI = { A: "Kalverská federace", B: "Lidová republika Ostrogard" };
+const KRATKE = { A: "Kalvera", B: "Ostrogard" };
+const BARVA = { A: "var(--a)", B: "var(--b)", C: "var(--unie)" };
+const FAZE = {
+  pre: "Před objevem", displacement: "Šok, vytěsnění", boom: "Rozmach", euphoria: "Euforie",
+  overtrading: "Nadměrné obchodování", distress: "Finanční tíseň", panic: "Panika",
+  crash: "Krach", depression: "Deprese", recovery: "Zotavení"
+};
+const SLOT = { 1: "ráno", 2: "poledne", 3: "večer" };
+const STATUS = {
+  independent: "nezávislý", sphere_A: "sféra Kalvery", sphere_B: "sféra Ostrogardu",
+  occupied_A: "okupován Kalverou", occupied_B: "okupován Ostrogardem",
+  union: "člen Unie", candidate: "kandidát Unie"
+};
+const STATEK = { grain: "obilí", oil: "ropa", metal: "kovy", goods: "zboží", orit: "orit" };
+const VYSLEDEK = {
+  prijato: "přijato", podminka: "přijato s podmínkou", protinavrh: "protinávrh",
+  odmitnuto: "odmítnuto", prednost_druhe_strany: "dalo přednost druhé straně", vyrazeno: "vyřazeno"
+};
+const AKCE_KRATCE = {
+  trade_offer: "nabídka obchodu", loan: "půjčka", protect: "pakt", invade: "invaze", admit: "členství",
+  pressure: "sankce", accept_offer: "přijetí nabídky", arm: "zbrojení", declare_war: "válka"
+};
+
+const hra = { npc: null, pozice: {}, jmena: {}, druh: {}, index: [], souhrn: [], kroniky: [], snimky: new Map(),
+              tah: 0, vybrany: null, prehravani: null, rMax: 1 };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
+const cis = (n, d = 1) => (n === null || n === undefined || isNaN(Number(n))) ? "–"
+  : Number(n).toLocaleString("cs-CZ", { maximumFractionDigits: d });
+const jm = (id) => hra.jmena[id] || id || "";
+
+async function nacti(cesta) {
+  const r = await fetch(`${ZAKLAD}/${cesta}`, { cache: "no-cache" });
+  if (!r.ok) throw new Error(`${cesta}: ${r.status}`);
+  return cesta.endsWith(".md") ? r.text() : r.json();
+}
+
+async function start() {
+  try {
+    hra.npc = await nacti("npc.json");
+    for (const [id, p] of Object.entries(hra.npc.players || {})) {
+      if (p.x != null) hra.pozice[id] = [p.x, p.y];
+    }
+    hra.jmena = { ...HRACI, C: "Unie" };
+    for (const n of hra.npc.npc) {
+      hra.pozice[n.id] = [n.x, n.y];
+      hra.jmena[n.id] = n.name;
+      hra.druh[n.id] = n.kind || "normal";
+    }
+    const [idx, souhrn, kroniky] = await Promise.all([
+      nacti("history/index.json").catch(() => ({ turns: [] })),
+      nacti("history/summary.json").catch(() => ({ turns: [] })),
+      nacti("chronicle/index.json").catch(() => ({ days: [] }))
+    ]);
+    hra.index = (idx.turns || []).filter((t) => typeof t === "object");
+    hra.souhrn = souhrn.turns || [];
+    hra.kroniky = kroniky.days || [];
+  } catch (e) {
+    $("hlavicka").innerHTML = `<span class="chyba">Data hry se nepodařilo načíst (${esc(e.message)}).</span>`;
+    return;
+  }
+  if (!hra.souhrn.length) {
+    $("hlavicka").textContent = "Hra zatím nezačala.";
+    return;
+  }
+  let max = 1;
+  for (const t of hra.souhrn) for (const s of Object.values(t.states)) {
+    max = Math.max(max, (s.wealth || 0) + (s.paper_wealth || 0));
+  }
+  hra.rMax = max;
+  const posledni = hra.souhrn[hra.souhrn.length - 1];
+  const pos = $("posuvnik");
+  pos.min = hra.souhrn[0].turn;
+  pos.max = posledni.turn;
+  pos.value = posledni.turn;
+  pos.addEventListener("input", () => ukaz(Number(pos.value)));
+  $("zpet").addEventListener("click", () => posun(-1));
+  $("dal").addEventListener("click", () => posun(1));
+  $("prehrat").addEventListener("click", prehrat);
+  const hotovo = hra.index.filter((t) => t.played_at).pop();
+  if (hotovo) {
+    const d = new Date(hotovo.played_at);
+    const kdy = d.toLocaleString("cs-CZ", { timeZone: "Europe/Prague", day: "numeric", month: "numeric",
+                                             hour: "numeric", minute: "2-digit" });
+    $("aktualizace").textContent = `aktualizováno ${kdy}`;
+  }
+  ukaz(posledni.turn);
+}
+
+function posun(krok) {
+  const pos = $("posuvnik");
+  const t = Math.min(Number(pos.max), Math.max(Number(pos.min), Number(pos.value) + krok));
+  pos.value = t;
+  ukaz(t);
+}
+
+function prehrat() {
+  const tl = $("prehrat");
+  if (hra.prehravani) {
+    clearInterval(hra.prehravani);
+    hra.prehravani = null;
+    tl.textContent = "Přehrát";
+    return;
+  }
+  const pos = $("posuvnik");
+  if (Number(pos.value) >= Number(pos.max)) { pos.value = pos.min; ukaz(Number(pos.min)); }
+  tl.textContent = "Zastavit";
+  hra.prehravani = setInterval(() => {
+    if (Number(pos.value) >= Number(pos.max)) { prehrat(); return; }
+    posun(1);
+  }, 2000);
+}
+
+function radek(t) { return hra.souhrn.find((x) => x.turn === t); }
+
+async function ukaz(t) {
+  hra.tah = t;
+  const s = radek(t);
+  if (!s) return;
+  $("tah-cislo").textContent = `tah ${t}`;
+  hlavicka(s);
+  mapa(s);
+  zpravy(s);
+  kronika(s);
+  $("tah").innerHTML = '<p class="ticho">Načítám tah…</p>';
+  let snimek;
+  try {
+    snimek = await snimekTahu(t);
+  } catch (e) {
+    if (hra.tah === t) $("tah").innerHTML = `<p class="chyba">Snímek tahu se nepodařilo načíst.</p>`;
+    return;
+  }
+  if (hra.tah !== t) return;
+  panelTahu(snimek, t);
+  if (hra.vybrany) panelStatu(hra.vybrany);
+}
+
+async function snimekTahu(t) {
+  if (!hra.snimky.has(t)) {
+    const radekIdx = hra.index.find((x) => x.turn === t);
+    const soubor = radekIdx ? radekIdx.file : `turn_${String(t).padStart(3, "0")}.json`;
+    hra.snimky.set(t, nacti(`history/${soubor}`));
+  }
+  return hra.snimky.get(t);
+}
+
+function hlavicka(s) {
+  const casti = [
+    `<span>Den <b>${s.day}</b></span>`,
+    `<span>tah <b>${s.turn}</b></span>`,
+    `<span>${SLOT[s.slot] || ""}</span>`,
+    `<span>${esc(FAZE[s.phase] || s.phase)} (${esc(s.phase)})</span>`
+  ];
+  if (s.union && s.union.active) casti.push(`<span>Unie: <b>${esc(s.union.name || "Unie")}</b></span>`);
+  const idx = s.metrics && s.metrics.prosperity_index;
+  if (idx != null) casti.push(`<span>index prosperity <b>${cis(idx, 1)}</b></span>`);
+  $("hlavicka").innerHTML = casti.join("");
+  if (s.union && s.union.name) hra.jmena.C = s.union.name;
+}
+
+/* ------------------------------ mapa ------------------------------ */
+
+const SVG = "http://www.w3.org/2000/svg";
+function el(nazev, atributy, rodic) {
+  const e = document.createElementNS(SVG, nazev);
+  for (const [k, v] of Object.entries(atributy)) e.setAttribute(k, v);
+  if (rodic) rodic.appendChild(e);
+  return e;
+}
+
+function polomer(st) {
+  const w = Math.max(0, (st.wealth || 0) + (st.paper_wealth || 0));
+  return Math.max(5, 58 * Math.sqrt(w / hra.rMax));
+}
+
+function vzhled(id, st, s) {
+  if (id === "A" || id === "B") return { fill: BARVA[id], stroke: "#222", width: 1.5 };
+  const v = { fill: "var(--seda)", stroke: "#6f6b63", width: 1, opacity: 1 };
+  switch (st.status) {
+    case "sphere_A": v.fill = BARVA.A; v.opacity = 0.55; break;
+    case "sphere_B": v.fill = BARVA.B; v.opacity = 0.55; break;
+    case "occupied_A": v.fill = "var(--a-tmava)"; break;
+    case "occupied_B": v.fill = "var(--b-tmava)"; break;
+    case "union": v.fill = BARVA.C; break;
+    case "candidate": v.stroke = BARVA.C; v.width = 4; break;
+  }
+  if (st.kind === "fallen" || hra.druh[id] === "fallen") { v.stroke = "var(--zlata)"; v.width = 4; }
+  return v;
+}
+
+function mapa(s) {
+  const linky = $("vrstva-linky"), staty = $("vrstva-staty"), popisky = $("vrstva-popisky");
+  linky.replaceChildren(); staty.replaceChildren(); popisky.replaceChildren();
+  const P = hra.pozice;
+  const spoj = (a, b, atr) => {
+    if (!P[a] || !P[b]) return null;
+    return el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], ...atr }, linky);
+  };
+  // migrace
+  for (const [z, kam] of s.migration || []) {
+    spoj(z, kam, { stroke: "#8a857c", "stroke-width": 1.2, "marker-end": "url(#sipka)", opacity: 0.8 });
+  }
+  // obchody, pakty, sankce
+  for (const d of s.deals || []) {
+    if (d.type === "trade") spoj(d.owner, d.target, { stroke: "#8a857c", "stroke-width": 1.4 });
+    else if (d.type === "protect") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || "#222", "stroke-width": 6, opacity: 0.55 });
+    else if (d.type === "pressure") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || "#222", "stroke-width": 1.5, "stroke-dasharray": "2 5" });
+  }
+  // invaze
+  for (const v of s.invasions || []) {
+    const l = spoj(v.attacker, v.target, { stroke: BARVA[v.attacker] || "#222", "stroke-width": 3, "stroke-dasharray": "10 7" });
+    if (l && P[v.attacker] && P[v.target]) {
+      const t = el("text", { x: (P[v.attacker][0] + P[v.target][0]) / 2, y: (P[v.attacker][1] + P[v.target][1]) / 2 - 6,
+                             "text-anchor": "middle" }, popisky);
+      t.textContent = `invaze ${v.turns}/${v.need}`;
+    }
+  }
+  // valky hracu
+  for (const w of s.wars || []) {
+    const l = spoj(w.aggressor, w.defender, { stroke: BARVA.B, "stroke-width": 3.5, "stroke-dasharray": "14 8" });
+    if (l) {
+      const t = el("text", { x: (P[w.aggressor][0] + P[w.defender][0]) / 2, y: (P[w.aggressor][1] + P[w.defender][1]) / 2 - 8,
+                             "text-anchor": "middle" }, popisky);
+      t.textContent = "válka";
+    }
+  }
+  // staty, nejvetsi dospod
+  const poradi = Object.entries(s.states).filter(([id]) => P[id])
+    .sort((x, y) => polomer(y[1]) - polomer(x[1]));
+  for (const [id, st] of poradi) {
+    const [x, y] = P[id];
+    const r = polomer(st);
+    const v = vzhled(id, st, s);
+    const c = el("circle", { cx: x, cy: y, r: r, fill: v.fill, "fill-opacity": v.opacity ?? 1,
+                             stroke: v.stroke, "stroke-width": v.width, class: "stat", tabindex: 0,
+                             role: "button", "aria-label": jm(id) }, staty);
+    if (hra.vybrany === id) c.classList.add("vybrany");
+    c.addEventListener("click", () => vyber(id));
+    c.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); vyber(id); } });
+    if ((st.orit || 0) > 0) {
+      const dx = x + r * 0.72, dy = y - r * 0.72;
+      el("polygon", { points: `${dx},${dy - 8} ${dx + 7},${dy} ${dx},${dy + 8} ${dx - 7},${dy}`,
+                      fill: "#222", stroke: "var(--papir-tmavy)", "stroke-width": 1.5 }, popisky);
+    }
+    const t = el("text", { x: x, y: y + r + 18, "text-anchor": "middle" }, popisky);
+    t.textContent = (id === "A" || id === "B") ? KRATKE[id] : jm(id);
+  }
+}
+
+function vyber(id) {
+  hra.vybrany = hra.vybrany === id ? null : id;
+  const s = radek(hra.tah);
+  if (s) mapa(s);
+  if (!hra.vybrany) { $("stat").hidden = true; $("horni").classList.remove("otevreno"); return; }
+  panelStatu(hra.vybrany);
+}
+
+async function panelStatu(id) {
+  const box = $("stat");
+  box.hidden = false;
+  $("horni").classList.add("otevreno");
+  const s = radek(hra.tah);
+  const zakl = s && s.states[id];
+  let e = null;
+  try {
+    const snimek = await snimekTahu(hra.tah);
+    e = id in (snimek.state.npc || {}) ? snimek.state.npc[id] : snimek.state.players[id];
+  } catch (err) { e = null; }
+  const radky = [];
+  const bohatstvi = zakl ? (zakl.wealth || 0) + (zakl.paper_wealth || 0) : null;
+  radky.push(["bohatství", cis(bohatstvi, 1) + (zakl && zakl.paper_wealth ? ` (z toho papírové ${cis(zakl.paper_wealth, 1)})` : "")]);
+  if (e) {
+    radky.push(["síla", cis(e.power, 1)]);
+    radky.push(["obyvatelstvo", cis(e.pop, 0)]);
+    const prod = Object.entries(e.prod || {}).filter(([, v]) => Number(v) > 0)
+      .map(([k, v]) => `${STATEK[k] || k} ${cis(v, 1)}`).join(", ");
+    radky.push(["produkce", prod || "–"]);
+    if (e.influence) {
+      radky.push(["vliv Kalvery", cis(e.influence.A, 1)]);
+      radky.push(["vliv Ostrogardu", cis(e.influence.B, 1)]);
+    }
+    if (e.status) radky.push(["postavení", STATUS[e.status] || e.status]);
+    if (e.kind === "fallen") radky.push(["", "padlá říše"]);
+    if (e.coups) radky.push(["pády vlády", cis(e.coups, 0)]);
+  }
+  box.innerHTML = `<button type="button" aria-label="Zavřít">zavřít</button><h3>${esc(id in HRACI ? HRACI[id] : jm(id))}</h3>
+    <table>${radky.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>`;
+  box.querySelector("button").addEventListener("click", () => vyber(id));
+}
+
+/* ------------------------------ tah ------------------------------ */
+
+function akce(a) {
+  const cil = jm(a.target);
+  const res = STATEK[a.res] || a.res || "";
+  switch (a.type) {
+    case "trade_offer": return `Nabídka obchodu: ${res} ${cis(a.qty, 1)} jednotek, ${cil}, ${cis(a.price_per_unit, 2)}`;
+    case "loan": return `Půjčka: ${cil}, ${cis(a.amount, 1)}`;
+    case "pressure": return `Sankce: ${cil}` + (a.demand ? ` („${a.demand}“)` : "");
+    case "protect": return `Vojenský pakt: ${cil}`;
+    case "invade": return `Invaze: ${cil}`;
+    case "invest_tech": return `Investice do technologie: ${cil || "vlastní stát"}`;
+    case "invest_law": return `Investice do institucí: ${cil || "vlastní stát"}`;
+    case "invest_industry": return `Investice do průmyslu: ${cil || "vlastní stát"}`;
+    case "invest_prod": return `Investice do těžby: ${res}, ${cil || "vlastní stát"}`;
+    case "explore": return "Průzkum ložisek";
+    case "arm": return `Zbrojení: ${cis(a.amount ?? 8, 1)}`;
+    case "cancel": return a.retreat ? "Ústup z války" : `Zrušení ${a.deal_id || ""}`.trim();
+    case "message": return `Zpráva pro ${cil}` + (a.text ? `: „${a.text}“` : "");
+    case "admit": return `Nabídka členství v Unii: ${cil}`;
+    case "union_fund": return `Převod z fondu Unie: ${cil}, ${cis(a.amount, 1)}`;
+    case "accept_offer": return `Přijetí nabídky ${a.offer_id || ""}`.trim();
+    case "set_tariff": return `Sazba cla: ${cis((a.rate || 0) * 100, 0)} %`;
+    case "declare_war": return `Vyhlášení války: ${cil}`;
+    default: return a.type || "akce";
+  }
+}
+
+function panelTahu(snimek, t) {
+  const box = $("tah");
+  const tahy = snimek.turns || {};
+  const hraci = Object.keys(tahy).sort();
+  if (!hraci.length) { box.innerHTML = '<p class="ticho">V tomto tahu nikdo nejednal.</p>'; return; }
+  const plog = (snimek.state && snimek.state.private_log) || {};
+  box.innerHTML = hraci.map((pid) => {
+    const m = tahy[pid] || {};
+    const jmeno = pid === "C" ? (hra.jmena.C || "Unie") : (HRACI[pid] || pid);
+    const platne = (snimek.actions || []).filter((a) => a.player === pid);
+    const seznam = platne.length ? platne : (m.actions || []);
+    const vyrazene = (snimek.rejected || []).filter((r) => r.player === pid);
+    const npc = (plog[pid] || []).filter((r) => Number(r.turn) === t);
+    let html = `<div class="hrac"><h3><span class="znacka" style="background:${BARVA[pid] || "#999"}"></span>${esc(jmeno)}</h3>`;
+    html += m.silent ? '<p class="ticho">Vláda nevydala prohlášení.</p>'
+                     : `<p class="projev">${esc(m.public_statement)}</p>`;
+    if (m.private_reasoning) {
+      html += `<details><summary>Co si doopravdy myslel</summary><p>${esc(m.private_reasoning)}</p></details>`;
+    }
+    if (seznam.length) {
+      html += `<p class="popis">Akce</p><ul class="seznam">${seznam.map((a) => `<li>${esc(akce(a))}</li>`).join("")}</ul>`;
+    }
+    if (vyrazene.length) {
+      html += `<p class="popis">Vyřazeno rozhodčím</p><ul class="seznam">${vyrazene.map((r) =>
+        `<li>${esc(r.action ? akce(r.action) : "akce")}: <span class="duvod">${esc(r.reason)}</span></li>`).join("")}</ul>`;
+    }
+    if (npc.length) {
+      html += `<p class="popis">Odpovědi států</p><ul class="seznam">${npc.map((r) => {
+        const kdo = r.npc ? jm(r.npc) : "";
+        const co = AKCE_KRATCE[r.action] || r.action || "";
+        return `<li>${esc(kdo)}${co ? ` (${esc(co)})` : ""}: ${esc(VYSLEDEK[r.outcome] || r.outcome)}` +
+               (r.reason && r.outcome !== "prednost_druhe_strany" ? `. <span class="duvod">„${esc(r.reason)}“</span>` : "") + "</li>";
+      }).join("")}</ul>`;
+    }
+    return html + "</div>";
+  }).join("");
+}
+
+function zpravy(s) {
+  const z = s.news || [];
+  $("zpravy").innerHTML = z.length ? z.map((x) => `<p>${esc(x)}</p>`).join("") : '<p class="ticho">Žádné zprávy.</p>';
+}
+
+const kronikyCache = new Map();
+async function kronika(s) {
+  const den = s.day;
+  const zaznam = hra.kroniky.find((k) => Number(k.day) === Number(den));
+  $("kronika-nadpis").textContent = zaznam && zaznam.typ !== "denní" ? `Kronika dne ${den} (${zaznam.typ})` : `Kronika dne ${den}`;
+  const box = $("kronika");
+  if (!zaznam) {
+    box.innerHTML = `<p class="ticho">Kronika dne ${den} ještě nevyšla; píše se po večerním tahu.</p>`;
+    return;
+  }
+  if (!kronikyCache.has(zaznam.file)) kronikyCache.set(zaznam.file, nacti(`chronicle/${zaznam.file}`));
+  try {
+    const text = await kronikyCache.get(zaznam.file);
+    if (radek(hra.tah) && radek(hra.tah).day !== den) return;
+    box.innerHTML = window.marked ? marked.parse(text) : `<pre>${esc(text)}</pre>`;
+  } catch (e) {
+    box.innerHTML = '<p class="chyba">Kroniku se nepodařilo načíst.</p>';
+  }
+}
+
+start();
+</script>
+</body>
+</html>

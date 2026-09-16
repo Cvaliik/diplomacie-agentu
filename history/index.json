@@ -1,8 +1,1 @@
-{
-  "turns": [
-    "turn_001.json",
-    "turn_002.json",
-    "turn_003.json",
-    "turn_004.json"
-  ]
-}
+{"turns":[{"turn":1,"day":1,"slot":1,"phase":"pre","file":"turn_001.json","played_at":"2026-09-15T14:04:12Z"},{"turn":2,"day":1,"slot":2,"phase":"pre","file":"turn_002.json","played_at":"2026-09-15T14:08:53Z"},{"turn":3,"day":1,"slot":3,"phase":"pre","file":"turn_003.json","played_at":"2026-09-15T20:39:20Z"},{"turn":4,"day":2,"slot":1,"phase":"pre","file":"turn_004.json","played_at":"2026-09-16T08:02:20Z"}]}

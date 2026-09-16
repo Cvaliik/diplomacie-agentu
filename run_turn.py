@@ -509,16 +509,18 @@ def rollback(n: int, use_git: bool) -> int:
         if int(p.stem.split("_")[1]) > engine.day_of(n):
             p.unlink()
     write_index()
+    import web_data
+    web_data.rebuild_summary()
     if use_git:
         commit_and_push("rollback na tah %03d" % n, ["-A", "state.json", "history", "chronicle"])
     print("state.json vracen na tah %d" % n)
     return 0
 
 
-def write_index() -> None:
-    turns = sorted(int(p.stem.split("_")[1]) for p in config.HISTORY_DIR.glob("turn_*.json"))
-    (config.HISTORY_DIR / "index.json").write_text(
-        dump({"turns": ["turn_%03d.json" % t for t in turns]}) + "\n", encoding="utf-8")
+def write_index(played_turn=None) -> None:
+    """history/index.json s metadaty tahu pro web (BUILD.md cast 7), viz web_data.py."""
+    import web_data
+    web_data.write_index(played_turn)
 
 
 def append_rulings(turn: int, rulings: list) -> None:
@@ -726,7 +728,9 @@ def main() -> int:
     config.HISTORY_DIR.mkdir(exist_ok=True)
     config.VIEWS_DIR.mkdir(exist_ok=True)
     history_path(turn).write_text(dump(snapshot) + "\n", encoding="utf-8")
-    write_index()
+    write_index(turn)
+    import web_data
+    web_data.update_summary(snapshot)   # history/summary.json pro web
     config.STATE_PATH.write_text(dump(new_state) + "\n", encoding="utf-8")
     for pid, v in new_views.items():
         (config.VIEWS_DIR / ("%s.json" % pid)).write_text(dump_view(v) + "\n", encoding="utf-8")

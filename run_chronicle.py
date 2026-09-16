@@ -144,6 +144,8 @@ def main() -> int:
     config.CHRONICLE_DIR.mkdir(exist_ok=True)
     out = config.CHRONICLE_DIR / ("day_%02d.md" % day)
     out.write_text(text.strip() + "\n", encoding="utf-8")
+    import web_data
+    web_data.write_chronicle_index()   # chronicle/index.json pro web
     print("zapsano %s" % out.relative_to(config.ROOT))
     return 0
 
