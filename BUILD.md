@@ -44,6 +44,8 @@ Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER
 
 Klíč se čte z `ARDAN_API_KEY`, náhradně `ANTHROPIC_API_KEY`; nikdy není v repu.
 
+**v1.12 (tah 4, 17. 9. 2026):** hráč A vrátil platný JSON s projevem, ale s prázdnou úvahou a bez akcí, a zpráva B dorazila prázdná, protože ji rozhodčí přeložil na akci bez `text`. Proto `valid_move()` odmítne odpověď s `private_reasoning` kratším než `MIN_REASONING_CHARS` (80) nebo bez akce, domácí akce i zprávy (schéma hráče nese `minLength`), a akci `message` skládá `player_messages()` přímo z pole `message` tahu hráče; rozhodčí zprávy nepřekládá.
+
 Rozhodčí dostává jen výtah pravidel `docs/pravidla_rozhodci.md` (části 1, 3, 6, 7.2, 9 a 10) a `secrets/`. Výtah generuje
 `python build_referee_rules.py`; pouštět při každé změně `docs/pravidla.md`.
 

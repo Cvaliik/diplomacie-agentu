@@ -50,6 +50,8 @@ REFEREE_RULES_PATH = config.DOCS_DIR / "pravidla_rozhodci.md"
 PROMPT_FILES = {"A": "hrac_A.md", "B": "hrac_B.md", "C": "hrac_unie.md"}
 SECRET_FILES = {"A": "cil_A.md", "B": "cil_B.md", "C": "cil_C.md"}
 SILENT_STATEMENT = "Vláda nevydala prohlášení."
+# v1.12: kratsi uvaha znamena neuplnou odpoved (tah 4: prazdna uvaha i akce pri platnem JSON)
+MIN_REASONING_CHARS = 80
 
 # Co hrac nikdy nesmi dostat (zadani 14. 9. 2026, bod 7). Klice se hledaji v pohledu
 # a ve verejnem logu; law a tech se hlidaji zvlast, protoze C je u clenu a kandidatu vidi.
@@ -626,7 +628,7 @@ def player_schema(pid: str) -> dict:
               "properties": {"type": {"type": "string", "enum": list(ACTION_TYPES)}, **ACTION_PARAMS}}
     props = {
         "public_statement": {"type": "string"},
-        "private_reasoning": {"type": "string"},
+        "private_reasoning": {"type": "string", "minLength": MIN_REASONING_CHARS},
         "actions": {"type": "array", "items": action},
         "message": {"anyOf": [{"type": "null"}, MESSAGE_SCHEMA]},
     }
@@ -724,10 +726,28 @@ def parse_json(text: str):
 
 
 def valid_move(obj) -> bool:
-    return (isinstance(obj, dict) and isinstance(obj.get("public_statement"), str)
+    if not (isinstance(obj, dict) and isinstance(obj.get("public_statement"), str)
             and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list)
             and isinstance(obj.get("domestic_action"), (dict, type(None)))
-            and isinstance(obj.get("message"), (dict, type(None))))
+            and isinstance(obj.get("message"), (dict, type(None)))):
+        return False
+    # v1.12: uvaha aspon MIN_REASONING_CHARS znaku a aspon jedna akce, domaci akce nebo zprava
+    if len(obj["private_reasoning"].strip()) < MIN_REASONING_CHARS:
+        return False
+    return bool(obj["actions"]) or obj.get("domestic_action") is not None or obj.get("message") is not None
+
+
+def player_messages(actions: list, moves: dict) -> list:
+    """v1.12: akce message nevytvari rozhodci; jedna na hrace primo z pole message jeho tahu."""
+    out = [a for a in actions if a.get("type") != "message"]
+    for pid, move in moves.items():
+        msg = (move or {}).get("message")
+        if not isinstance(msg, dict):
+            continue
+        target, text = msg.get("target"), (msg.get("text") or "").strip()
+        if target in ("A", "B", "C") and target != pid and text:
+            out.append({"player": pid, "type": "message", "target": target, "text": text})
+    return out
 
 
 def mark_domestic(actions: list, moves: dict) -> list:
@@ -769,7 +789,8 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
         if not valid_move(move):
             save_fail(turn, pid, attempt + 1, raw,
                       "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action ci message "
-                      "neni objekt ani null",
+                      "neni objekt ani null, nebo (v1.12) private_reasoning kratsi nez %d znaku ci zadna akce, "
+                      "domaci akce ani zprava" % MIN_REASONING_CHARS,
                       usage)
             continue
         if valid_move(move):
@@ -1000,6 +1021,7 @@ def main() -> int:
         return 0
     actions = [a for a in ref.get("actions") or [] if isinstance(a, dict) and a.get("player") in players]
     actions = mark_domestic(actions, moves)
+    actions = player_messages(actions, moves)
 
     # 5. prepocet
     delivered = list(state.get("messages_pending", []))

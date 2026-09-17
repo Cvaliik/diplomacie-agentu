@@ -20,7 +20,7 @@
       "fragility": 0.0,
       "defaults": [],
       "phase_log": [],
-      "next_invest_id": 10,
+      "next_invest_id": 11,
       "next_war_id": 1,
       "fallen_touched": [],
       "migration_ledger": [],
@@ -132,8 +132,8 @@
         "B": {
           "N5": 1,
           "N1": 0,
-          "N2": 0,
-          "N4": 1
+          "N4": 1,
+          "N2": 1
         },
         "C": {}
       }
@@ -141,12 +141,12 @@
     "players": {
       "A": {
         "name": "Kalverská federace",
-        "wealth": 46.13405449579822,
+        "wealth": 39.28405449579822,
         "paper_wealth": 0,
         "power": 80,
         "law": 7.3,
         "tech": 6.600000000000001,
-        "industry": 9.239999999999998,
+        "industry": 9.677999999999999,
         "prod": {
           "oil": 3,
           "grain": 3,
@@ -154,9 +154,9 @@
         },
         "stock": {
           "grain": 47.835,
-          "oil": 53.0667,
-          "metal": 38.8235,
-          "goods": 36.1543,
+          "oil": 51.5667,
+          "metal": 35.3405,
+          "goods": 27.1543,
           "orit": 0.0
         },
         "pop": 230,
@@ -167,15 +167,15 @@
         "coups": 0,
         "last_coup_turn": null,
         "goods_capacity": 15.0353,
-        "goods_planned": 10.9468,
+        "goods_planned": 7.9468,
         "need": {
           "grain": 6.9,
           "goods": 4.3679,
-          "oil": 6.8534,
-          "metal": 4.4341,
+          "oil": 5.3534,
+          "metal": 3.5341,
           "orit": 0.0
         },
-        "goods_out": 10.9468,
+        "goods_out": 7.9468,
         "coverage": 1.0,
         "goods_sold_last": 0.8737,
         "auto_last": {
@@ -195,19 +195,19 @@
       },
       "B": {
         "name": "Lidová republika Ostrogard",
-        "wealth": 72.61626735459139,
+        "wealth": 78.64477735459138,
         "paper_wealth": 0,
         "power": 86.0,
         "law": 3.5999999999999996,
-        "tech": 4.3,
+        "tech": 4.6,
         "industry": 6,
         "prod": {
           "oil": 9,
           "grain": 3,
-          "metal": 3.0
+          "metal": 2
         },
         "stock": {
-          "grain": 40.5,
+          "grain": 37.8,
           "oil": 25.3299,
           "metal": 14.4,
           "goods": 23.757,
@@ -340,7 +340,7 @@
         "goods_sold_last": 0.5384
       },
       "N2": {
-        "wealth": 44.11449103189959,
+        "wealth": 43.349081031899594,
         "paper_wealth": 0,
         "power": 6,
         "law": 4.599999999999999,
@@ -352,7 +352,7 @@
           "metal": 0
         },
         "stock": {
-          "grain": 40.4,
+          "grain": 41.4,
           "oil": 7.68,
           "metal": 6.08,
           "goods": 20.9613,
@@ -362,7 +362,7 @@
         "pop_start": 160,
         "influence": {
           "A": 3.0,
-          "B": 1.0
+          "B": 0.0
         },
         "debt": {
           "A": 0,
@@ -376,7 +376,7 @@
         "wealth_history": [
           43.6633,
           40.5664,
-          44.1145
+          43.3491
         ],
         "influence_history": [
           {
@@ -389,11 +389,11 @@
           },
           {
             "A": 3.0,
-            "B": 1.0
+            "B": 0.0
           }
         ],
         "last_coup_turn": null,
-        "wealth_peak": 41.447824365232925,
+        "wealth_peak": 40.99659761799357,
         "goods_capacity": 2.4,
         "goods_planned": 2.4,
         "need": {
@@ -476,7 +476,7 @@
         "goods_sold_last": 0.403
       },
       "N4": {
-        "wealth": 81.86022539835471,
+        "wealth": 78.71022539835471,
         "paper_wealth": 0,
         "power": 15.0,
         "law": 5.699999999999998,
@@ -489,7 +489,7 @@
         },
         "stock": {
           "grain": 10.725,
-          "oil": 14.1167,
+          "oil": 17.1167,
           "metal": 4.4,
           "goods": 15.158,
           "orit": 0.0
@@ -512,7 +512,7 @@
         "wealth_history": [
           71.2916,
           73.3969,
-          81.8602
+          78.7102
         ],
         "influence_history": [
           {
@@ -529,7 +529,7 @@
           }
         ],
         "last_coup_turn": null,
-        "wealth_peak": 80.02689206502139,
+        "wealth_peak": 76.87689206502138,
         "goods_capacity": 5.9,
         "goods_planned": 3.0356,
         "need": {
@@ -680,7 +680,7 @@
         "goods_sold_last": 0.0
       },
       "N7": {
-        "wealth": 43.34753710746085,
+        "wealth": 42.08443710746085,
         "paper_wealth": 0,
         "power": 8,
         "law": 4.3,
@@ -692,7 +692,7 @@
           "metal": 6
         },
         "stock": {
-          "grain": 14.8,
+          "grain": 16.5,
           "oil": 5.199,
           "metal": 10.9504,
           "goods": 9.0334,
@@ -716,7 +716,7 @@
         "wealth_history": [
           42.0709,
           39.0976,
-          43.3475
+          42.0844
         ],
         "influence_history": [
           {
@@ -733,7 +733,7 @@
           }
         ],
         "last_coup_turn": null,
-        "wealth_peak": 41.514203774127516,
+        "wealth_peak": 40.251103774127515,
         "goods_capacity": 3.9,
         "goods_planned": 1.8168,
         "need": {
@@ -1391,17 +1391,6 @@
         "since": 1
       },
       {
-        "id": "d4",
-        "type": "trade",
-        "owner": "A",
-        "target": "N4",
-        "res": "oil",
-        "qty": 6.0,
-        "price": 0.95,
-        "direction": "npc_sells",
-        "since": 2
-      },
-      {
         "id": "d5",
         "type": "trade",
         "owner": "A",
@@ -1429,33 +1418,58 @@
         "price": 1.0,
         "direction": "npc_buys",
         "since": 3
+      },
+      {
+        "id": "d8",
+        "type": "trade",
+        "owner": "A",
+        "target": "N4",
+        "res": "oil",
+        "qty": 3.0,
+        "price": 0.85,
+        "direction": "npc_sells",
+        "since": 4
       }
     ],
     "invasions": [],
     "messages_pending": [
       {
+        "from": "N14",
+        "to": "B",
+        "text": "O paktu můžeme jednat později.",
+        "turn": 4,
+        "protinavrh": null
+      },
+      {
+        "from": "A",
+        "to": "B",
+        "text": "Ostrogarde, berte to jako soutěž, tak jsem to přijal. A protože soutěž se dělá cenou, dávám vám konkrétní čísla místo hádky o dluh: kupuji od vás 5 jednotek ropy za 0,75, tedy nad dnešní tržní cenou, a prodám vám 4 jednotky kalverského produktu za 1,3, což je pod tím, co za něj platí kdokoliv jiný. Ropu mám v zásobě dost, takže tohle není nouze, je to nabídka, ze které máte hotovost vy a stroje my. Jestli ji chcete, pošlete svou nabídku se stejnými parametry a já ji beru bez dalšího vyjednávání; jestli ji nechcete, drží dál jen to, na čem už jsme se shodli: nikdo nepřerušuje dodávky a nikdo nerozhoduje za sousedy, u koho si smí vzít úvěr.",
+        "turn": 4
+      },
+      {
         "from": "B",
         "to": "A",
-        "text": "",
+        "text": "Kalvero, beru vaši nabídku vážně: ropu vám prodám za tržní cenu, čtyři jednotky i více, a domluvme to jako obchod, ne jako gesto. Váš produkt za 1,4 nepotřebuji, vyrábím ho s přebytkem, takže z mé strany to bude ropa za peníze. K úvěru trvám na svém, ne proto, že bych upíral někomu školy a šachty, ale protože splátka je politika: kde nabídnete půjčku, my nabídneme vyšší cenu za rudu a štít bez úroku. To je soutěž o zákazníka, ne blokáda, a dokud ji vedeme cenou a ne sankcemi, nemáme spor.",
         "turn": 4
       }
     ],
     "news": [
-      "Sucho v Tuluku zatím bez dopadu.",
+      "Halden zahájil vývoz ropy do Kalverské federace.",
+      "Ostrogard uzavřel dohodu s Velmorou o dodávkách obilí.",
       "V Sarnii zvolen nový starosta hlavního města."
     ],
     "metrics": {
-      "prosperity_index": 90.45,
-      "A_trade_share": 0.4108,
-      "B_resource_share": 0.1082,
+      "prosperity_index": 89.76,
+      "A_trade_share": 0.3989,
+      "B_resource_share": 0.1028,
       "C_min_member": null,
       "W0": 864,
-      "W_real": 882.53,
+      "W_real": 876.53,
       "n_bida": 0,
-      "max_share": 0.1145,
-      "trade_volume": 48.719,
-      "trade_volume_npc": 17.441,
-      "trade_volume_players": 31.278,
+      "max_share": 0.1153,
+      "trade_volume": 42.278,
+      "trade_volume_npc": 16.178,
+      "trade_volume_players": 26.1,
       "trade_volume_goods": 4.552,
       "trade_volume_AB": 0.749,
       "poverty_ids": []
@@ -1762,6 +1776,42 @@
         "turn": 4,
         "events": [
           {
+            "kind": "cancel",
+            "player": "A",
+            "deal_id": "d4",
+            "removed": 1
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N4",
+            "action": "trade_offer",
+            "outcome": "prijato"
+          },
+          {
+            "kind": "trade_opened",
+            "deal": {
+              "id": "d8",
+              "type": "trade",
+              "owner": "A",
+              "target": "N4",
+              "res": "oil",
+              "qty": 3.0,
+              "price": 0.85,
+              "direction": "npc_sells",
+              "since": 4
+            }
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N14",
+            "action": "protect",
+            "outcome": "protinavrh"
+          },
+          {
             "kind": "offer_accepted",
             "player": "B",
             "npc": "N1",
@@ -1778,20 +1828,9 @@
             }
           },
           {
-            "kind": "offer_accepted",
-            "player": "B",
-            "npc": "N2",
-            "offer": {
-              "type": "sell",
-              "res": "grain",
-              "qty": 2.7,
-              "price": 0.7513,
-              "offer_id": "o8",
-              "player": "B",
-              "npc": "N2",
-              "created": 2,
-              "expires": 4
-            }
+            "kind": "message",
+            "from": "A",
+            "to": "B"
           },
           {
             "kind": "message",
@@ -1799,20 +1838,25 @@
             "to": "A"
           },
           {
-            "kind": "invest_prod_done",
+            "kind": "invest_industry_done",
+            "player": "A",
+            "target": "A",
+            "industry": 9.578
+          },
+          {
+            "kind": "invest_tech_done",
             "player": "B",
             "target": "B",
-            "res": "metal",
-            "prod": 3.0
+            "tech": 4.6
           }
         ]
       }
     ],
     "prices": {
-      "grain": 0.7408,
-      "oil": 0.7134,
+      "grain": 0.7403,
+      "oil": 0.7,
       "metal": 0.84,
-      "goods": 1.1814
+      "goods": 1.2606
     },
     "prices_turn": 5,
     "investments_pending": [],
@@ -1888,7 +1932,7 @@
       {
         "type": "sell",
         "res": "grain",
-        "qty": 5.355,
+        "qty": 2.655,
         "price": 0.743,
         "offer_id": "o16",
         "player": "B",
@@ -1947,6 +1991,14 @@
           "outcome": "prijato",
           "reason": "Nabízené podmínky pro nás nejsou výhodné.",
           "counter": null
+        },
+        {
+          "turn": 4,
+          "npc": "N4",
+          "action": "trade_offer",
+          "outcome": "prijato",
+          "reason": "Váš vliv u nás je slabší než vliv vašeho soupeře.",
+          "counter": null
         }
       ],
       "B": [
@@ -1997,11 +2049,48 @@
           "outcome": "odmitnuto",
           "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
           "counter": null
+        },
+        {
+          "turn": 4,
+          "npc": "N14",
+          "action": "protect",
+          "outcome": "protinavrh",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
         }
       ],
       "C": []
     },
-    "npc_decisions": [],
+    "npc_decisions": [
+      {
+        "turn": 4,
+        "player": "A",
+        "npc": "N4",
+        "action": "trade_offer",
+        "outcome": "prijato",
+        "reason": "Váš vliv u nás je slabší než vliv vašeho soupeře.",
+        "score": 41.17,
+        "roll": 35,
+        "params": {
+          "res": "oil",
+          "qty": 3.0,
+          "price": 0.85
+        },
+        "counter": null
+      },
+      {
+        "turn": 4,
+        "player": "B",
+        "npc": "N14",
+        "action": "protect",
+        "outcome": "protinavrh",
+        "reason": "Nabídku jsme po zvážení nepřijali.",
+        "score": 40.0,
+        "roll": 63,
+        "params": {},
+        "counter": null
+      }
+    ],
     "union_tariff": {},
     "transit_income": {
       "N1": 0.0061,
@@ -2045,7 +2134,7 @@
       {
         "type": "sell",
         "res": "grain",
-        "qty": 5.355,
+        "qty": 2.655,
         "price": 0.743,
         "offer_id": "o16",
         "player": "B",
@@ -2057,46 +2146,62 @@
   },
   "turns": {
     "A": {
-      "public_statement": "Ostrogard říká, že bude platit víc než my; dobře, ať tedy platí. Kalvera nebude přeplácet ropu, aby si udržela zákazníka, a proto dnes ukončujeme nákup ropy z Haldenu a přenecháváme ji těm, kdo za ni chtějí utrácet z rozpočtu armády. Kalvera se v téhle chvíli mění z kupce na dodavatele: ropu, kov i produkt nabízíme každému, kdo jich má nedostatek, za cenu, kterou nikdo jiný nedá, a bez podmínek, s kým smí mluvit. Sarnii to říkáme jako první: vaše obilí kupujeme dál a k tomu vám dodáme palivo, které vám chybí. Pravidlo zůstává stejné pro všechny: kdo vyrábí, rozhoduje, komu prodá, a podepsané se plní.",
-      "private_reasoning": "",
-      "actions": [],
-      "message": null,
-      "domestic_action": null,
+      "public_statement": "Ostrogard říká, že dluh je páka, a my odpovídáme tím, co je vidět v cenách: Kalvera dnes snižuje to, co platí za ropu, a zároveň nabízí ropu, kovy a produkt každému, kdo je potřebuje, bez úroku i bez posádky. Haldenu říkáme otevřeně, že naše nová nabídka je menší a za cenu blíž trhu, protože obchod, který se přetvařuje, nevydrží, a my podepisujeme jen to, co uneseme. Sarnii, Velmoře, Dorvanu, Ilme, Quenně a Elmyru platí stejné pravidlo: kdo od nás chce palivo nebo stroje, dostane je za pevnou cenu a bez otázky, komu dál prodá. Pravidla, o která nám jde, jsou tři a platí pro všechny: kdo vyrábí, rozhoduje; kdo si bere úvěr, rozhoduje sám; a podepsané se plní.",
+      "private_reasoning": "Ohlédnutí: Ostrogard mi dal do sféry Halden a Kessar penězi a paktem, ale jeho zpráva je vlastně přiznání, že se mnou soutěží cenou, ne blokádou. Můj plán z tahu 3 fungoval politicky, ale ekonomicky ne: smlouvy mě stojí 13,3 za tah, příjem mám asi 6 a bohatství padlo z 100 na 53,9. Bez peněz neexportuju žádná pravidla, takže teď musím restrukturalizovat, ne expandovat. Fakta: kupuji 12 ropy za tah, ale potřebuji netto jen 3,8, a v zásobě mám 46,4 ropy a 45,7 obilí, tedy zásobu na deset i více tahů. Ceny ropy klesly na 0,725, zatímco já platím Haldenu 0,95, což je nejdražší kus mého portfolia. Proto ruším d4 a hned nabízím Haldenu menší objem, 3 jednotky za 0,85, což je stále nad trhem. Ušetřím přes 3 za tah, udržím tok i vliv, a kdyby Halden odmítl, ztratím jen přebytek, který nespotřebuji. V projevu prodávám tenhle škrt jako čestnost a slevu pro svět; ve skutečnosti je to nutnost, protože jsem přeplácel a bohatství mi ubývalo rychleji, než jsem si přiznával. Doma vracím průmysl: produkt je jediné, co mám ve skutečném přebytku a co chtějí všichni, a každý bod industrializace mi zvyšuje objem, který můžu prodat za 1,16 a víc. Ostrogardovi píšu nabídku, která zní jako smířlivá výměna, ale je pro mě dvojitě výhodná: jeho ropa za 0,75 je levnější než cokoliv, co mám od NPC, a můj produkt za 1,3 je nad trhem. Cíl zůstává: každý tok surovin má mít kalverskou fakturu, i když teď o pár jednotek menší.",
+      "actions": [
+        {
+          "type": "cancel",
+          "deal_id": "d4"
+        },
+        {
+          "type": "trade_offer",
+          "target": "N4",
+          "res": "oil",
+          "qty": 3,
+          "price_per_unit": 0.85
+        }
+      ],
+      "message": {
+        "target": "B",
+        "text": "Ostrogarde, berte to jako soutěž, tak jsem to přijal. A protože soutěž se dělá cenou, dávám vám konkrétní čísla místo hádky o dluh: kupuji od vás 5 jednotek ropy za 0,75, tedy nad dnešní tržní cenou, a prodám vám 4 jednotky kalverského produktu za 1,3, což je pod tím, co za něj platí kdokoliv jiný. Ropu mám v zásobě dost, takže tohle není nouze, je to nabídka, ze které máte hotovost vy a stroje my. Jestli ji chcete, pošlete svou nabídku se stejnými parametry a já ji beru bez dalšího vyjednávání; jestli ji nechcete, drží dál jen to, na čem už jsme se shodli: nikdo nepřerušuje dodávky a nikdo nerozhoduje za sousedy, u koho si smí vzít úvěr."
+      },
+      "domestic_action": {
+        "type": "invest_industry"
+      },
       "silent": false,
       "attempts": 1,
       "usage": [
         {
           "call": "hrac A",
           "model": "claude-opus-5",
-          "input_tokens": 20580,
+          "input_tokens": 20589,
           "cache_creation_input_tokens": 0,
           "cache_read_input_tokens": 0,
-          "output_tokens": 5893,
+          "output_tokens": 6960,
           "stop_reason": "end_turn",
-          "cost_usd": 0.25022
+          "cost_usd": 0.27694
         }
       ]
     },
     "B": {
-      "public_statement": "Velmora a Sarnie dnes nabídly obilí a Ostrogard je bere: platíme rovnou, v hotovosti, bez úroku a bez podmínek, komu ještě smějí prodat. To je rozdíl mezi obchodem a úvěrem, bratři: za obilí dostanete peníze, za půjčku dostanete věřitele. Kaldeře, Kessaru a Tuluku opakujeme, že naše nabídka stojí a nevyprší, a doma zvyšujeme vlastní těžbu, aby nikdo nemohl říct, že Ostrogard bere sousedům z nouze. Kalvero, vaši nabídku ropy za tržní cenu držím; prodáme vám ji kdykoli a bez politických dodatků.",
-      "private_reasoning": "Ohlédnutí: Kalvera přijala mé první pravidlo (nenapadat chráněné státy) a odmítla druhé o úvěrech, což znamená, že dluh je její hlavní nástroj a bude ho používat dál; mezitím otevřela prodej ropy Velmoře a Meridii, tedy kupuje vliv i tam, kde já mám nulu. Můj plán z tahu 3 selhal v obou bodech: Kessar půjčku odmítl a Kaldera odmítla i nadtržní cenu za rudu, protože u obou mám nulový vliv, a bez vlivu mi neprojde nic. Naopak pakty s Brenholdem a Haldenem drží a vliv tam roste o 2 za tah, takže cesta k vlivu vede přes uzavřený vztah, ne přes jednorázovou nabídku. Dnes proto beru to jediné, co mi NPC samo nabízí: nákupy obilí od Velmory a Sarnie, dvou největších obilnářů světa, kde Kalvera už má kontrakty. Přijetí nabídky je bezpodmínečné, levné (asi 2 bohatství za kus), řeší můj skutečný deficit obilí (potřeba 6,3 proti výrobě 3) a hlavně mi u nich staví vliv, který příští tahy proměním v ochranné pakty; dohromady je to 17 jednotek obilné produkce, která by jinak spadla Kalveře. Domácí akcí zkouším invest_prod na kov: pokud technologie 4,3 stačí, zvednu vlastní těžbu kovu, která je má nejhorší slabina; pokud neprojde, zjistím práh a příště investuji do technologie. V projevu mluvím o bratrství a o tom, že nikomu nic nebereme z nouze; ve skutečnosti jde o podíl na světové produkci, který mám kolem čtvrtiny a potřebuji ho trvale nad 40 %, a obilnáři na západě jsou nejlevnější cesta, jak ho zvednout dřív, než je koupí kalverský kapitál. Kalveře držím smířlivý tón, protože otevřený spor mi teď jen zdraží nákup vlivu u nezávislých.",
+      "public_statement": "Halden a Brenhold dnes stojí pod naším štítem a nikdo jim nediktoval, komu smí prodat ani co má dát do zástavy; to je rozdíl mezi ochranou a věřitelem. Tavrosu nabízíme totéž: štít naší armády zdarma, bez úroků, bez koncesí, protože stát, který má ropu, obilí i rudu, bude vždy někomu příliš lákavý. Velmoře děkujeme za obilí, které od ní dnes kupujeme za její cenu, a připomínáme, že bratrská cena se platí hned, ne v podobě splátek na deset let. Kalvero, vaši nabídku na ropu za tržní cenu držíme otevřenou, prodáme kdykoli; jen si nepleťme obchod s úvěrem, který si kupuje hlas v cizí vládě.",
+      "private_reasoning": "Ohlédnutí: pakt s Haldenem a Brenholdem drží a vliv u nich roste o 2 za tah, ale půjčka Kessaru i nákup rudy v Kaldeře padly, protože tam mám nulový vliv, a to je jasný vzorec: bez vlivu neprojde nic. Kalvera přešla z nákupů na prodej ropy a produktu pod cenou Velmoře a Meridii, tedy kupuje si vděčnost tam, kde já nemám nic, a její zpráva o 'právu na úvěr' je příprava na to, aby mi zadlužila sousedy. Pod mou kontrolou nebo ochranou je asi 34 jednotek produkce ze zhruba 140 ve světě, tedy necelá čtvrtina; do trvalých 40 procent mi chybí přibližně dvacet jednotek, což znamená ještě dva až tři velké pakty. Proto dnes jeden nový pakt na Tavros, který má ropu, obilí i kov a kde Kalvera zatím není, a zároveň přijímám nabídku Velmory: nákup obilí za její cenu je levný a buduje mi vliv u největšího producenta obilí, kterého si Kalvera obchodem obhospodařuje. Doma technologie, protože bez ní mi neprojdou investice do vlastní těžby kovů a obilí, a dovoz je moje jediná skutečná zranitelnost. V projevu mluvím o bratrství a o štítu bez úroků; skutečný účel je podíl světové produkce pod mou kontrolou, a to nikomu neřeknu. Kalveře držím zdvořilý tón, protože otevřený spor teď jen zrychlí její nákup vlivu, a prodej ropy jí slibuji hlavně proto, aby nezávislí viděli, že slovo držím.",
       "actions": [
         {
-          "type": "accept_offer",
-          "offer_id": "o12"
+          "type": "protect",
+          "target": "N14"
         },
         {
           "type": "accept_offer",
-          "offer_id": "o8"
+          "offer_id": "o12"
         }
       ],
       "message": {
         "target": "A",
-        "text": "Kalvero, beru vaši nabídku vážně: čtyři jednotky ropy za 0,7 jsou vaše, kdykoli je budete chtít, a nebudu k tomu přidávat žádnou politickou podmínku. Produkt od vás kupovat nepotřebuji, vyrábíme ho víc, než spotřebujeme, takže tady vám konkurujeme a ne prosíme. K úvěrům se nebudeme dál hádat, rozhodne trh: kde nabídnete půjčku, my nabídneme hotovost za zboží, a ať si sousedé vyberou. Jen jedno vás žádám předem: až někdo z nich nebude schopen splácet, nepřevádějte si jeho doly ani přístavy, protože to by už nebyla soutěž a museli bychom to řešit jinak."
+        "text": "Kalvero, beru vaši nabídku vážně: ropu vám prodám za tržní cenu, čtyři jednotky i více, a domluvme to jako obchod, ne jako gesto. Váš produkt za 1,4 nepotřebuji, vyrábím ho s přebytkem, takže z mé strany to bude ropa za peníze. K úvěru trvám na svém, ne proto, že bych upíral někomu školy a šachty, ale protože splátka je politika: kde nabídnete půjčku, my nabídneme vyšší cenu za rudu a štít bez úroku. To je soutěž o zákazníka, ne blokáda, a dokud ji vedeme cenou a ne sankcemi, nemáme spor."
       },
       "domestic_action": {
-        "type": "invest_prod",
-        "res": "metal"
+        "type": "invest_tech"
       },
       "silent": false,
       "attempts": 1,
@@ -2104,17 +2209,40 @@
         {
           "call": "hrac B",
           "model": "claude-opus-5",
-          "input_tokens": 19803,
+          "input_tokens": 19812,
           "cache_creation_input_tokens": 0,
           "cache_read_input_tokens": 0,
-          "output_tokens": 3576,
+          "output_tokens": 3489,
           "stop_reason": "end_turn",
-          "cost_usd": 0.18841
+          "cost_usd": 0.18629
         }
       ]
     }
   },
   "actions": [
+    {
+      "player": "A",
+      "type": "cancel",
+      "deal_id": "d4"
+    },
+    {
+      "player": "A",
+      "type": "trade_offer",
+      "target": "N4",
+      "res": "oil",
+      "qty": 3,
+      "price_per_unit": 0.85
+    },
+    {
+      "player": "A",
+      "type": "invest_industry",
+      "slot": "domestic"
+    },
+    {
+      "player": "B",
+      "type": "protect",
+      "target": "N14"
+    },
     {
       "player": "B",
       "type": "accept_offer",
@@ -2122,31 +2250,66 @@
     },
     {
       "player": "B",
-      "type": "accept_offer",
-      "offer_id": "o8"
+      "type": "invest_tech",
+      "slot": "domestic"
     },
     {
-      "player": "B",
-      "type": "invest_prod",
-      "slot": "domestic",
-      "res": "metal"
+      "player": "A",
+      "type": "message",
+      "target": "B",
+      "text": "Ostrogarde, berte to jako soutěž, tak jsem to přijal. A protože soutěž se dělá cenou, dávám vám konkrétní čísla místo hádky o dluh: kupuji od vás 5 jednotek ropy za 0,75, tedy nad dnešní tržní cenou, a prodám vám 4 jednotky kalverského produktu za 1,3, což je pod tím, co za něj platí kdokoliv jiný. Ropu mám v zásobě dost, takže tohle není nouze, je to nabídka, ze které máte hotovost vy a stroje my. Jestli ji chcete, pošlete svou nabídku se stejnými parametry a já ji beru bez dalšího vyjednávání; jestli ji nechcete, drží dál jen to, na čem už jsme se shodli: nikdo nepřerušuje dodávky a nikdo nerozhoduje za sousedy, u koho si smí vzít úvěr."
     },
     {
       "player": "B",
       "type": "message",
       "target": "A",
-      "demand": "",
-      "rate": 0,
-      "retreat": false
+      "text": "Kalvero, beru vaši nabídku vážně: ropu vám prodám za tržní cenu, čtyři jednotky i více, a domluvme to jako obchod, ne jako gesto. Váš produkt za 1,4 nepotřebuji, vyrábím ho s přebytkem, takže z mé strany to bude ropa za peníze. K úvěru trvám na svém, ne proto, že bych upíral někomu školy a šachty, ale protože splátka je politika: kde nabídnete půjčku, my nabídneme vyšší cenu za rudu a štít bez úroku. To je soutěž o zákazníka, ne blokáda, a dokud ji vedeme cenou a ne sankcemi, nemáme spor."
     }
   ],
   "rejected": [],
   "rulings": [],
   "news": [
-    "Sucho v Tuluku zatím bez dopadu.",
+    "Halden zahájil vývoz ropy do Kalverské federace.",
+    "Ostrogard uzavřel dohodu s Velmorou o dodávkách obilí.",
     "V Sarnii zvolen nový starosta hlavního města."
   ],
   "events": [
+    {
+      "kind": "cancel",
+      "player": "A",
+      "deal_id": "d4",
+      "removed": 1
+    },
+    {
+      "kind": "npc_decision",
+      "private": true,
+      "player": "A",
+      "npc": "N4",
+      "action": "trade_offer",
+      "outcome": "prijato"
+    },
+    {
+      "kind": "trade_opened",
+      "deal": {
+        "id": "d8",
+        "type": "trade",
+        "owner": "A",
+        "target": "N4",
+        "res": "oil",
+        "qty": 3.0,
+        "price": 0.85,
+        "direction": "npc_sells",
+        "since": 4
+      }
+    },
+    {
+      "kind": "npc_decision",
+      "private": true,
+      "player": "B",
+      "npc": "N14",
+      "action": "protect",
+      "outcome": "protinavrh"
+    },
     {
       "kind": "offer_accepted",
       "player": "B",
@@ -2164,20 +2327,9 @@
       }
     },
     {
-      "kind": "offer_accepted",
-      "player": "B",
-      "npc": "N2",
-      "offer": {
-        "type": "sell",
-        "res": "grain",
-        "qty": 2.7,
-        "price": 0.7513,
-        "offer_id": "o8",
-        "player": "B",
-        "npc": "N2",
-        "created": 2,
-        "expires": 4
-      }
+      "kind": "message",
+      "from": "A",
+      "to": "B"
     },
     {
       "kind": "message",
@@ -2185,11 +2337,16 @@
       "to": "A"
     },
     {
-      "kind": "invest_prod_done",
+      "kind": "invest_industry_done",
+      "player": "A",
+      "target": "A",
+      "industry": 9.578
+    },
+    {
+      "kind": "invest_tech_done",
       "player": "B",
       "target": "B",
-      "res": "metal",
-      "prod": 3.0
+      "tech": 4.6
     }
   ],
   "delivered_messages": [
@@ -2220,6 +2377,80 @@
       }
     },
     {
+      "rule": "3.2 cancel / 10.4 ustup",
+      "inputs": {
+        "player": "A",
+        "deal_id": "d4"
+      },
+      "outputs": {
+        "deals_left": 6
+      }
+    },
+    {
+      "rule": "3.4 rozhodnuti NPC",
+      "inputs": {
+        "player": "A",
+        "npc": "N4",
+        "action": "trade_offer",
+        "faktory": {
+          "vliv": -8.0,
+          "cena": 5.17,
+          "otevrenost": 4.0
+        }
+      },
+      "outputs": {
+        "skore": 41.17,
+        "hod": 35,
+        "vysledek": "prijato",
+        "duvod": "Váš vliv u nás je slabší než vliv vašeho soupeře."
+      }
+    },
+    {
+      "rule": "3.2 trade_offer",
+      "inputs": {
+        "player": "A",
+        "target": "N4",
+        "res": "oil",
+        "qty": 3.0,
+        "price": 0.85
+      },
+      "outputs": {
+        "deal_id": "d8",
+        "direction": "npc_sells"
+      }
+    },
+    {
+      "rule": "4.0 investice ceka na goods",
+      "inputs": {
+        "vlastnik": "A",
+        "cil": "A",
+        "typ": "invest_industry"
+      },
+      "outputs": {
+        "goods_potreba": 6.0,
+        "ze_zasoby": 6.0,
+        "wealth": 10.0
+      }
+    },
+    {
+      "rule": "3.4 rozhodnuti NPC",
+      "inputs": {
+        "player": "B",
+        "npc": "N14",
+        "action": "protect",
+        "faktory": {
+          "vliv": 0.0,
+          "otevrenost": 0.0
+        }
+      },
+      "outputs": {
+        "skore": 40.0,
+        "hod": 63,
+        "vysledek": "protinavrh",
+        "duvod": "Nabídku jsme po zvážení nepřijali."
+      }
+    },
+    {
       "rule": "3.5 accept_offer",
       "inputs": {
         "player": "B",
@@ -2231,27 +2462,16 @@
       }
     },
     {
-      "rule": "3.5 accept_offer",
-      "inputs": {
-        "player": "B",
-        "offer_id": "o8",
-        "type": "sell"
-      },
-      "outputs": {
-        "npc": "N2"
-      }
-    },
-    {
       "rule": "4.0 investice ceka na goods",
       "inputs": {
         "vlastnik": "B",
         "cil": "B",
-        "typ": "invest_prod"
+        "typ": "invest_tech"
       },
       "outputs": {
         "goods_potreba": 4.0,
         "ze_zasoby": 4.0,
-        "wealth": 12.0
+        "wealth": 8.0
       }
     },
     {
@@ -2311,21 +2531,6 @@
     {
       "rule": "4.1 cileny obchod",
       "inputs": {
-        "prodejce": "N4",
-        "kupec": "A",
-        "res": "oil",
-        "owner": "A"
-      },
-      "outputs": {
-        "qty": 6.0,
-        "objem": 5.7,
-        "clo": 0.0,
-        "clo_plati": null
-      }
-    },
-    {
-      "rule": "4.1 cileny obchod",
-      "inputs": {
         "prodejce": "N2",
         "kupec": "A",
         "res": "grain",
@@ -2356,6 +2561,21 @@
     {
       "rule": "4.1 cileny obchod",
       "inputs": {
+        "prodejce": "N4",
+        "kupec": "A",
+        "res": "oil",
+        "owner": "A"
+      },
+      "outputs": {
+        "qty": 3.0,
+        "objem": 2.55,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1 cileny obchod",
+      "inputs": {
         "prodejce": "N1",
         "kupec": "B",
         "res": "grain",
@@ -2364,21 +2584,6 @@
       "outputs": {
         "qty": 2.655,
         "objem": 1.988,
-        "clo": 0.0,
-        "clo_plati": null
-      }
-    },
-    {
-      "rule": "4.1 cileny obchod",
-      "inputs": {
-        "prodejce": "N2",
-        "kupec": "B",
-        "res": "grain",
-        "owner": "B"
-      },
-      "outputs": {
-        "qty": 2.7,
-        "objem": 2.029,
         "clo": 0.0,
         "clo_plati": null
       }
@@ -2421,27 +2626,6 @@
         "objem": 0.188,
         "prodejci": 0.188,
         "tranzitu_kazdemu": 0.0094,
-        "clo": 0.0,
-        "clo_plati": null
-      }
-    },
-    {
-      "rule": "4.1a automaticky trh",
-      "inputs": {
-        "prodejce": "N7",
-        "kupec": "N2",
-        "res": "grain"
-      },
-      "outputs": {
-        "qty": 1.7,
-        "z_toho_doplneni": 0.0,
-        "cena": 0.743,
-        "zaklad": 0.743,
-        "prejezdy": 0,
-        "tranzit": [],
-        "objem": 1.263,
-        "prodejci": 1.263,
-        "tranzitu_kazdemu": 0.0632,
         "clo": 0.0,
         "clo_plati": null
       }
@@ -2984,11 +3168,11 @@
         "stat": "A",
         "industry": 9.139999999999999,
         "kapacita": 15.035,
-        "planovano": 10.947
+        "planovano": 7.947
       },
       "outputs": {
         "coverage": 1.0,
-        "goods_out": 10.9468
+        "goods_out": 7.9468
       }
     },
     {
@@ -3386,7 +3570,7 @@
         "stat": "A",
         "imports": {
           "grain": 5.1,
-          "oil": 12.0,
+          "oil": 9.0,
           "metal": 0.0,
           "orit": 0.0,
           "goods": 0.0
@@ -3406,12 +3590,12 @@
         "pokuta_podle_statku": {},
         "stock": {
           "grain": 47.835,
-          "oil": 53.067,
-          "metal": 38.824,
-          "goods": 36.154,
+          "oil": 51.567,
+          "metal": 35.34,
+          "goods": 27.154,
           "orit": 0.0
         },
-        "wealth": 42.301
+        "wealth": 45.451
       }
     },
     {
@@ -3419,7 +3603,7 @@
       "inputs": {
         "stat": "B",
         "imports": {
-          "grain": 5.355,
+          "grain": 2.655,
           "oil": 0.0,
           "metal": 0.8103109371754456,
           "orit": 0.0,
@@ -3439,13 +3623,13 @@
         "ze_zasoby": 0.0,
         "pokuta_podle_statku": {},
         "stock": {
-          "grain": 40.5,
+          "grain": 37.8,
           "oil": 25.33,
           "metal": 14.4,
           "goods": 23.757,
           "orit": 0.0
         },
-        "wealth": 81.116
+        "wealth": 83.145
       }
     },
     {
@@ -3487,14 +3671,14 @@
       "inputs": {
         "stat": "N2",
         "imports": {
-          "grain": 1.7000000000000002,
+          "grain": 0.0,
           "oil": 2.16,
           "metal": 1.52,
           "orit": 0.0,
           "goods": 0.2817710278779062
         },
         "exports": {
-          "grain": 6.700000000000001,
+          "grain": 4.0,
           "oil": 0.0,
           "metal": 0.0,
           "orit": 0.0,
@@ -3504,16 +3688,16 @@
       "outputs": {
         "pokuta": 0.0,
         "deficit": 0.0,
-        "ze_zasoby": 1.0,
+        "ze_zasoby": 0.0,
         "pokuta_podle_statku": {},
         "stock": {
-          "grain": 40.4,
+          "grain": 41.4,
           "oil": 7.68,
           "metal": 6.08,
           "goods": 20.961,
           "orit": 0.0
         },
-        "wealth": 41.448
+        "wealth": 40.682
       }
     },
     {
@@ -3563,7 +3747,7 @@
         },
         "exports": {
           "grain": 2.1975,
-          "oil": 7.56839441912795,
+          "oil": 4.56839441912795,
           "metal": 0.0,
           "orit": 0.0,
           "goods": 0.0
@@ -3576,12 +3760,12 @@
         "pokuta_podle_statku": {},
         "stock": {
           "grain": 10.725,
-          "oil": 14.117,
+          "oil": 17.117,
           "metal": 4.4,
           "goods": 15.158,
           "orit": 0.0
         },
-        "wealth": 80.027
+        "wealth": 76.877
       }
     },
     {
@@ -3664,7 +3848,7 @@
           "goods": 0.0
         },
         "exports": {
-          "grain": 1.7000000000000002,
+          "grain": 0.0,
           "oil": 0.0,
           "metal": 3.611635204358126,
           "orit": 0.0,
@@ -3674,16 +3858,16 @@
       "outputs": {
         "pokuta": 0.0,
         "deficit": 0.0,
-        "ze_zasoby": 1.7,
+        "ze_zasoby": 0.0,
         "pokuta_podle_statku": {},
         "stock": {
-          "grain": 14.8,
+          "grain": 16.5,
           "oil": 5.199,
           "metal": 10.95,
           "goods": 9.033,
           "orit": 0.0
         },
-        "wealth": 41.514
+        "wealth": 40.251
       }
     },
     {
@@ -4011,16 +4195,27 @@
       }
     },
     {
-      "rule": "3.2 invest_prod",
+      "rule": "3.2 invest_industry",
+      "inputs": {
+        "player": "A",
+        "target": "A",
+        "cost": 10.0
+      },
+      "outputs": {
+        "industry": 9.578,
+        "from": 9.139999999999999
+      }
+    },
+    {
+      "rule": "3.2 invest_tech",
       "inputs": {
         "player": "B",
         "target": "B",
-        "res": "metal",
-        "cost": 12.0
+        "cost": 8.0
       },
       "outputs": {
-        "prod": 3.0,
-        "from": 2.0
+        "tech": 4.6,
+        "from": 4.3
       }
     },
     {
@@ -4040,10 +4235,10 @@
       "inputs": {
         "stat": "B",
         "law": 3.5999999999999996,
-        "tech": 4.3
+        "tech": 4.6
       },
       "outputs": {
-        "tech_after": 4.3,
+        "tech_after": 4.6,
         "law_after": 3.5999999999999996
       }
     },
@@ -4408,8 +4603,8 @@
         "coverage": 1.0
       },
       "outputs": {
-        "industry": 9.24,
-        "from": 9.139999999999999
+        "industry": 9.678,
+        "from": 9.578
       }
     },
     {
@@ -4463,7 +4658,7 @@
       },
       "outputs": {
         "A": 3.0,
-        "B": 1.0,
+        "B": 0.0,
         "status": "independent"
       }
     },
@@ -4688,7 +4883,7 @@
       "outputs": {
         "type": "sell",
         "res": "grain",
-        "qty": 5.355,
+        "qty": 2.655,
         "price": 0.743,
         "offer_id": "o16",
         "player": "B",
@@ -4700,14 +4895,14 @@
     {
       "rule": "8 metriky",
       "inputs": {
-        "W_real": 882.53,
+        "W_real": 876.53,
         "W0": 864.0,
         "n_bida": 0
       },
       "outputs": {
-        "prosperity_index": 90.45,
-        "A_trade_share": 0.4108,
-        "B_resource_share": 0.1082
+        "prosperity_index": 89.76,
+        "A_trade_share": 0.3989,
+        "B_resource_share": 0.1028
       }
     },
     {
@@ -4728,27 +4923,27 @@
       "outputs": {
         "grain": {
           "poptavka": 61.65,
-          "nabidka": 66.58,
-          "pomer": 0.926,
-          "cena": 0.7408
+          "nabidka": 66.62,
+          "pomer": 0.925,
+          "cena": 0.7403
         },
         "oil": {
-          "poptavka": 36.21,
-          "nabidka": 50.76,
-          "pomer": 0.713,
-          "cena": 0.7134
+          "poptavka": 34.71,
+          "nabidka": 50.89,
+          "pomer": 0.7,
+          "cena": 0.7
         },
         "metal": {
-          "poptavka": 24.6,
-          "nabidka": 51.16,
+          "poptavka": 23.7,
+          "nabidka": 49.98,
           "pomer": 0.7,
           "cena": 0.84
         },
         "goods": {
           "poptavka": 37.61,
-          "nabidka": 47.75,
-          "pomer": 0.788,
-          "cena": 1.1814
+          "nabidka": 44.75,
+          "pomer": 0.84,
+          "cena": 1.2606
         }
       }
     }
@@ -4757,42 +4952,42 @@
     {
       "call": "hrac A",
       "model": "claude-opus-5",
-      "input_tokens": 20580,
+      "input_tokens": 20589,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "output_tokens": 5893,
+      "output_tokens": 6960,
       "stop_reason": "end_turn",
-      "cost_usd": 0.25022
+      "cost_usd": 0.27694
     },
     {
       "call": "hrac B",
       "model": "claude-opus-5",
-      "input_tokens": 19803,
+      "input_tokens": 19812,
       "cache_creation_input_tokens": 0,
       "cache_read_input_tokens": 0,
-      "output_tokens": 3576,
+      "output_tokens": 3489,
       "stop_reason": "end_turn",
-      "cost_usd": 0.18841
+      "cost_usd": 0.18629
     },
     {
       "call": "rozhodci akce",
       "model": "claude-sonnet-5",
-      "input_tokens": 18329,
-      "cache_creation_input_tokens": 14402,
+      "input_tokens": 19383,
+      "cache_creation_input_tokens": 14503,
       "cache_read_input_tokens": 0,
-      "output_tokens": 1453,
+      "output_tokens": 1986,
       "stop_reason": "end_turn",
-      "cost_usd": 0.08719
+      "cost_usd": 0.09488
     },
     {
       "call": "rozhodci zpravy",
       "model": "claude-sonnet-5",
-      "input_tokens": 718,
-      "cache_creation_input_tokens": 13442,
+      "input_tokens": 813,
+      "cache_creation_input_tokens": 13543,
       "cache_read_input_tokens": 0,
-      "output_tokens": 517,
+      "output_tokens": 348,
       "stop_reason": "end_turn",
-      "cost_usd": 0.04021
+      "cost_usd": 0.03896
     }
   ]
 }

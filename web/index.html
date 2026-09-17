@@ -576,13 +576,18 @@ function panelTahu(snimek, t) {
     const vyrazene = (snimek.rejected || []).filter((r) => r.player === pid);
     const npc = (plog[pid] || []).filter((r) => Number(r.turn) === t);
     let html = `<div class="hrac"><h3><span class="znacka" style="background:${BARVA[pid] || "#999"}"></span>${esc(jmeno)}</h3>`;
-    html += m.silent ? '<p class="ticho">Vláda nevydala prohlášení.</p>'
+    const pokusy = m.attempts ? ` Počet pokusů: ${cis(m.attempts, 0)}.` : "";
+    html += m.silent ? `<p class="ticho">Vláda nevydala prohlášení.${pokusy}</p>`
                      : `<p class="projev">${esc(m.public_statement)}</p>`;
     if (m.private_reasoning) {
       html += `<details><summary>Co si doopravdy myslel</summary><p>${esc(m.private_reasoning)}</p></details>`;
+    } else if (!m.silent) {
+      html += '<p class="ticho">Úvahy nezaznamenány (technická chyba, odpověď hráče dorazila neúplná).</p>';
     }
     if (seznam.length) {
       html += `<p class="popis">Akce</p><ul class="seznam">${seznam.map((a) => `<li>${esc(akce(a))}${a.slot === "domestic" ? " (domácí akce)" : ""}</li>`).join("")}</ul>`;
+    } else if (!m.silent) {
+      html += '<p class="ticho">Bez akcí (technická chyba, odpověď hráče dorazila neúplná).</p>';
     }
     if (vyrazene.length) {
       html += `<p class="popis">Vyřazeno rozhodčím</p><ul class="seznam">${vyrazene.map((r) =>

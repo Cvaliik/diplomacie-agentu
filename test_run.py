@@ -565,13 +565,46 @@ def souhrn(res) -> None:
     print("  prevratu celkem: %d" % res["rows"][-1]["coups"])
 
 
+def test_odpovedi() -> bool:
+    """v1.12: kontrola odpovedi hrace (valid_move) a zprav z tahu hrace (player_messages), bez modelu."""
+    import run_turn
+    uvaha = "Ohlédnutí: soupeř uzavřel pakt s Haldenem, můj plán s ropou funguje, ale smlouvy mě stojí peníze."
+    checks = []
+    prazdny = {"public_statement": "Projev.", "private_reasoning": "", "actions": [],
+               "domestic_action": None, "message": None}
+    checks.append(("prázdná úvaha a žádná akce neprojde", not run_turn.valid_move(prazdny)))
+    checks.append(("krátká úvaha neprojde", not run_turn.valid_move(dict(prazdny, private_reasoning="Krátce.",
+                                                                          domestic_action={"type": "invest_law"}))))
+    checks.append(("úvaha bez akce, domácí akce i zprávy neprojde",
+                   not run_turn.valid_move(dict(prazdny, private_reasoning=uvaha))))
+    checks.append(("úvaha se zprávou projde", run_turn.valid_move(dict(
+        prazdny, private_reasoning=uvaha, message={"target": "A", "text": "Dobrý den."}))))
+    moves = {"A": {"message": None},
+             "B": {"message": {"target": "A", "text": "Kessar je náš."}}}
+    ref = [{"player": "B", "type": "message", "target": "A", "demand": "", "rate": 0},
+           {"player": "B", "type": "protect", "target": "N7"}]
+    out = run_turn.player_messages(ref, moves)
+    zpravy = [a for a in out if a["type"] == "message"]
+    checks.append(("zpráva rozhodčího bez textu nahrazena textem z tahu",
+                   zpravy == [{"player": "B", "type": "message", "target": "A", "text": "Kessar je náš."}]))
+    checks.append(("message null bez akce a ostatní akce zachovány",
+                   not any(a["player"] == "A" for a in out) and {"player": "B", "type": "protect", "target": "N7"} in out))
+    print("TESTY ODPOVEDI HRACU (v1.12)")
+    for name, ok in checks:
+        print("  [%s] %s" % ("OK " if ok else "NE ", name))
+    return all(ok for _, ok in checks)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "vse"], default="vse")
+    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "odpovedi", "vse"], default="vse")
     args = ap.parse_args()
     klice = ["0", "a", "b", "k"] if args.scenar == "vse" else [args.scenar]
 
     vysledek = True
+    if args.scenar in ("odpovedi", "vse"):
+        vysledek &= test_odpovedi()
+        klice = [k for k in klice if k != "odpovedi"]
     for k in klice:
         fn, popis = SCENARE[k]
         print("=" * 78)

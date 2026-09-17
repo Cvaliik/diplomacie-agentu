@@ -156,7 +156,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 **Domácí akce (v1.11):** hráči A a B smějí navíc jednu domácí akci v poli `domestic_action` (objekt nebo `null`). Povolené typy: `invest_tech`, `invest_law`, `invest_industry`, `invest_prod`, `arm`, `explore`, vždy na vlastní stát. Do limitu 2 akcí se nepočítá; rozhodčí ji přeloží na akci s `"slot": "domestic"` a jiný typ nebo cizí cíl vyřadí. Investice do NPC ve sféře zůstávají běžnými akcemi v limitu. Unie domácí akci nemá.
 
-**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí. Hráč ji zadává v poli `message` odpovědi (objekt `target`, `text`, nebo `null`); rozhodčí ji přeloží na akci `message`. Odpověď hráče i rozhodčího se kontroluje proti JSON schématu (strukturovaný výstup API).
+**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí. Hráč ji zadává v poli `message` odpovědi (objekt `target`, `text`, nebo `null`). Akci `message` vytváří `run_turn.py` přímo z tahu hráče (v1.12), rozhodčí zprávy nepřekládá. Odpověď hráče i rozhodčího se kontroluje proti JSON schématu (strukturovaný výstup API). **Platná odpověď hráče (v1.12):** `private_reasoning` má aspoň 80 znaků a tah obsahuje aspoň jednu akci, domácí akci nebo zprávu; jinak se odpověď opakuje jako neplatná (10.6).
 
 ### 3.2 Akce
 
