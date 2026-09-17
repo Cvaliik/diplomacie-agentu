@@ -4654,6 +4654,22 @@ dodavatele. **Sledovat v ostrém běhu;** zásah až podle dat.
 Automatika NPC (4.2a) vyžadovala `law ≥ 5`, takže NPC pod prahem nikdy neinvestovala a právo měnily jen obchod s A a pakt B.
 **Uzavřeno v1.11:** NPC s `law < 5` investuje místo cyklu do práva (`invest_law` za 6 wealth, bez goods).
 
+### W7. Kalvera jednala podle domnělého paktu Ostrogard–Tavros (tah 5, opraveno)
+
+V tahu 5 Kalvera jednala, jako by Ostrogard měl pakt s Tavrosem. Pakt nevznikl: Tavros v tahu 4 na nabídku paktu
+odpověděl protinávrhem a ve stavu žádný záznam `protect` s vlastníkem B a cílem N14 není. Příčina byla v bloku
+`od_tveho_minuleho_tahu`: ukazoval akci soupeře bez veřejného výsledku, takže hráč nabídku pokládal za uzavřený pakt.
+**Opraveno:** blok uvádí u každé akce soupeře veřejný stav cíle po kole (status, pakt s kým nebo s nikým, u obchodu
+smlouvy s hráčem, u paktu a půjčky dluh vůči hráči, invaze, sankce, válka, členství). Výsledek rozhodnutí NPC
+(přijato, odmítnuto, protinávrh) a věta důvodu zůstávají v soukromém logu soupeře. Cizí dluhy a cizí smlouvy se
+neuvádějí, protože podle části 2 veřejné nejsou.
+
+### V17. Informátoři (v2)
+
+NPC, u kterého má hráč vliv aspoň 3, mu s pravděpodobností 50 % pošle soukromou zprávu o nabídce druhého hráče včetně
+výsledku a důvodu. Vliv by se tím stal zdrojem zpravodajství. **Otázka pro v2:** zavést informátory jako cestu, jak
+se hráč dozví výsledek soupeřovy nabídky, který dnes zůstává v soukromém logu soupeře.
+
 ### V16. Typy zboží (v2)
 
 `goods` je v v1.11 jediný průmyslový statek pro spotřebu i investice. **Otázka pro v2:** rozlišit spotřební a kapitálové

@@ -321,7 +321,117 @@ def _public_event(e: dict, pid: str, kinds=PUBLIC_EVENT_KINDS) -> dict | None:
     return {k: v for k, v in e.items() if k not in ("player", "private") and "influence" not in k}
 
 
-def memory_since_last(state, pid: str) -> dict:
+SHORT_NAMES = {"A": "Kalvera", "B": "Ostrogard", "C": "Unie"}
+OFFERED = {"A": "nabídla", "B": "nabídl", "C": "nabídla"}
+RES_ACC = {"grain": "obilí", "oil": "ropu", "metal": "kovy", "goods": "produkt", "orit": "orit"}
+RES_NOM = {"grain": "obilí", "oil": "ropa", "metal": "kovy", "goods": "produkt", "orit": "orit"}
+STATUS_CZ = {"independent": "nezávislý", "sphere_A": "ve sféře Kalvery", "sphere_B": "ve sféře Ostrogardu",
+             "occupied_A": "okupovaný Kalverou", "occupied_B": "okupovaný Ostrogardem",
+             "union": "člen Unie", "candidate": "kandidát Unie"}
+GENITIVE = {"A": "Kalvery", "B": "Ostrogardu", "C": "Unie"}
+DATIVE = {"A": "Kalveře", "B": "Ostrogardu", "C": "Unii"}
+INSTRUMENTAL = {"A": "Kalverou", "B": "Ostrogardem", "C": "Unií"}
+
+
+def _num(x, d=1) -> str:
+    return ("%.*f" % (d, float(x or 0.0))).replace(".", ",")
+
+
+def _target_state(state, npcdata, viewer: str, actor: str, nid: str, kind: str, action: dict) -> str:
+    """Verejny stav cile po kole, hola fakta. Cizi dluhy a cizi smlouvy se neuvadeji (pravidla cast 2)."""
+    names = _state_names(state, npcdata)
+    n = state["npc"].get(nid)
+    if n is None:
+        return ""
+    parts = [STATUS_CZ.get(n["status"], n["status"]) + (", padlá říše" if n.get("kind") == "fallen" else "")]
+    pact = next((d["owner"] for d in state["deals"] if d["type"] == "protect" and d["target"] == nid), None)
+    parts.append("pakt s " + (INSTRUMENTAL.get(pact, names.get(pact, pact)) if pact else "nikým"))
+    if kind == "trade_offer":
+        mine = [d for d in state["deals"] if d["type"] == "trade" and d["owner"] == viewer and d["target"] == nid
+                and not d.get("one_shot")]
+        parts.append("smlouvy s %s: %s" % (INSTRUMENTAL[viewer], ", ".join(
+            "%s %s (od tahu %d)" % (RES_NOM.get(d["res"], d["res"]), _num(d["qty"]), int(d["since"])) for d in mine)
+            if mine else "žádné"))
+    if kind in ("loan", "protect"):
+        parts.append("dluh %s %s" % (DATIVE[viewer], _num(n["debt"].get(viewer, 0.0))))
+    if kind == "invade":
+        inv = next((v for v in state.get("invasions", []) if v["attacker"] == actor and v["target"] == nid), None)
+        need = 10 if n.get("kind") == "fallen" else 6
+        parts.append("invaze %s probíhá, tah %d z %d" % (GENITIVE[actor], int(inv["turns"]), need) if inv
+                     else "žádná invaze")
+    if kind == "pressure":
+        on = any(d["type"] == "pressure" and d["owner"] == actor and d["target"] == nid for d in state["deals"])
+        parts.append("sankce %s: %s" % (GENITIVE[actor], "ano" if on else "ne"))
+    if kind == "admit":
+        parts.append("člen Unie: %s" % ("ano" if n["status"] == "union" else "ne"))
+    return "%s: %s." % (names.get(nid, nid), ", ".join(parts))
+
+
+def opponent_action_lines(state, npcdata, viewer: str, actor: str, snap: dict) -> list[str]:
+    """Akce soupere z minuleho kola a pod ni verejny stav cile; nikdy vysledek rozhodnuti ani duvod."""
+    names = _state_names(state, npcdata)
+    who = SHORT_NAMES[actor]
+    out = []
+    for a in snap.get("actions") or []:
+        if a.get("player") != actor:
+            continue
+        t = a.get("type")
+        tgt = a.get("target")
+        tname = names.get(tgt, tgt)
+        nid = tgt if tgt in state["npc"] else None
+        if t == "protect":
+            line = "%s %s pakt státu %s." % (who, OFFERED[actor], tname)
+        elif t == "trade_offer":
+            line = "%s %s státu %s %s %s za %s." % (who, OFFERED[actor], tname, RES_ACC.get(a.get("res"), a.get("res")),
+                                                  _num(a.get("qty")), _num(a.get("price_per_unit"), 2))
+        elif t == "loan":
+            line = "%s %s půjčku státu %s ve výši %s." % (who, OFFERED[actor], tname, _num(a.get("amount")))
+        elif t == "invade":
+            line = "%s vedl%s invazi proti státu %s." % (who, "a" if actor != "B" else "", tname)
+        elif t == "pressure":
+            line = "%s uvalil%s sankce na stát %s." % (who, "a" if actor != "B" else "", tname)
+        elif t == "declare_war":
+            war = any(actor in (w["aggressor"], w["defender"]) and tgt in (w["aggressor"], w["defender"])
+                      for w in state.get("wars", []))
+            out.append("%s vyhlásil%s válku státu %s. Válka: %s." % (who, "a" if actor != "B" else "", tname,
+                                                                     "ano" if war else "ne"))
+            continue
+        elif t == "cancel":
+            did = a.get("deal_id") or ""
+            if did.startswith("w"):
+                war = any(w.get("id") == did for w in state.get("wars", []))
+                out.append("%s poslal%s ke konci války %s. Válka trvá: %s." % (
+                    who, "a" if actor != "B" else "", did, "ano" if war else "ne"))
+            else:
+                gone = not any(d.get("id") == did for d in state["deals"])
+                out.append("%s zrušil%s závazek %s. Zrušeno: %s." % (who, "a" if actor != "B" else "", did,
+                                                                     "ano" if gone else "ne"))
+            continue
+        elif t == "admit":
+            line = "%s %s členství státu %s." % (who, OFFERED[actor], tname)
+        elif t == "accept_offer":
+            ev = next((e for e in snap.get("events") or [] if e.get("kind") == "offer_accepted"
+                       and e.get("player") == actor and (e.get("offer") or {}).get("offer_id") == a.get("offer_id")), None)
+            nid = (ev or {}).get("npc")
+            line = "%s přijal%s nabídku státu %s." % (who, "a" if actor != "B" else "", names.get(nid, nid)) if nid \
+                else "%s přijal%s nabídku jednoho ze států." % (who, "a" if actor != "B" else "")
+        elif t == "message":
+            out.append("%s poslal%s soukromou zprávu %s." % (who, "a" if actor != "B" else "",
+                                                             DATIVE.get(tgt) or "státu %s" % tname))
+            continue
+        elif t in engine.DOMESTIC_TYPES or t in ("invest_tech", "invest_law", "invest_industry", "invest_prod"):
+            what = {"invest_tech": "do technologie", "invest_law": "do institucí", "invest_industry": "do průmyslu",
+                    "invest_prod": "do těžby", "arm": "do zbrojení", "explore": "do průzkumu ložisek"}.get(t, t)
+            where = "u sebe" if not nid else "ve státě %s" % tname
+            out.append("%s investoval%s %s %s." % (who, "a" if actor != "B" else "", what, where))
+            continue
+        else:
+            line = "%s: %s%s." % (who, t, (" " + tname) if tname else "")
+        out.append(line + (" " + _target_state(state, npcdata, viewer, actor, nid, t, a) if nid else ""))
+    return out
+
+
+def memory_since_last(state, pid: str, npcdata=None) -> dict:
     """E10: fakta od minuleho tahu hrace z dat enginu, bez hodnoceni."""
     turn = next_turn(state)
     last = turn - 1
@@ -350,9 +460,8 @@ def memory_since_last(state, pid: str) -> dict:
         "souper": {
             "stat": opp,
             "projev": opp_move.get("public_statement", SILENT_STATEMENT),
-            "akce": [{k: v for k, v in a.items() if k != "text"} for a in snap.get("actions") or []
-                     if a.get("player") == opp],
-            "vysledky": [x for x in (_public_event(e, opp) for e in snap.get("events") or []) if x],
+            # akce soupere a verejny stav cile po kole, bez vysledku rozhodnuti a bez duvodu
+            "akce_a_verejny_stav": opponent_action_lines(state, npcdata, pid, opp, snap),
             "zpravy_sveta": list(snap.get("news") or []),
         },
         "ja": {
@@ -812,6 +921,7 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
     log = public_log(turn)
     msgs = private_messages(state, pid)
     memory = []
+    npcdata = json.loads(read_text(config.NPC_PATH))
     if pid in MEMORY_PLAYERS:
         memory = [
             "## tve_minule_uvahy (tvé vlastní úvahy z posledních %d tahů)" % MEMORY_TURNS,
@@ -821,7 +931,7 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
             "",
             "## od_tveho_minuleho_tahu (fakta z enginu, bez hodnocení)",
             "```json",
-            _compact(memory_since_last(state, pid)),
+            _compact(memory_since_last(state, pid, npcdata)),
             "```",
             "",
             "## tve_smlouvy (trvalé obchody a pakty, náklad nebo výnos za tah)",
