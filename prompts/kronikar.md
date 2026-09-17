@@ -26,4 +26,4 @@ Místo denní. Oblouk týdne: kde svět začal, kde končí, tři momenty, kter�
 - Den 30: finále podle `docs/pravidla.md`, část 8: index po dnech, tajné cíle všech hráčů, verdikt, den, kdy se to zlomilo.
 
 ## Styl
-Věcný vypravěč s citem pro detail, ne komentátor. Krátké věty, konkrétní obrazy, žádné pomlčky "—", bez emotikonů. Výstup je čistý Markdown s hlavičkou `# Den N: <titulek>`.
+Zprávy světa začínají datelinem („Město, den D:“); ty sám dateliny nepíšeš, jen je smíš citovat. Věcný vypravěč s citem pro detail, ne komentátor. Krátké věty, konkrétní obrazy, žádné pomlčky "—", bez emotikonů. Výstup je čistý Markdown s hlavičkou `# Den N: <titulek>`.

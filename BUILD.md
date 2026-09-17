@@ -44,7 +44,7 @@ Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER
 
 Klíč se čte z `ARDAN_API_KEY`, náhradně `ANTHROPIC_API_KEY`; nikdy není v repu.
 
-**v1.13 „hlas světa“ (17. 9. 2026):** věta důvodu NPC odpovídá výsledku (`engine.decision_reason`); projevy hráčů mají losované žánry (`GENRES`, `draw_genre`, `docs/zanry.md`) s otázkami rozhodčího před koly hráčů (`fill_questions`) a tvrdou kontrolou projevu (`statement_violations`, porušení jako poslední odstavec dalšího pokusu); žánr jde do `state["genre"]` a do `turns[hráč]["genre"]` ve snímku, web ho ukazuje nad projevem. Důvod: projevy byly výčtem kroků v jazyce pravidel a důvody NPC odporovaly výsledku.
+**v1.13 „hlas světa“ (17. 9. 2026):** věta důvodu NPC odpovídá výsledku (`engine.decision_reason`); projevy hráčů mají losované žánry (`GENRES`, `draw_genre`, `docs/zanry.md`) s otázkami rozhodčího před koly hráčů (`fill_questions`) a tvrdou kontrolou projevu (`statement_violations`, porušení jako poslední odstavec dalšího pokusu); žánr jde do `state["genre"]` a do `turns[hráč]["genre"]` ve snímku, web ho ukazuje nad projevem. Zprávy světa začínají datelinem hlavního města (`capital` v `npc.json`, `capitals()` a `names_block()` v `run_turn.py`). Důvod: projevy byly výčtem kroků v jazyce pravidel a důvody NPC odporovaly výsledku.
 
 **v1.12 (tah 4, 17. 9. 2026):** hráč A vrátil platný JSON s projevem, ale s prázdnou úvahou a bez akcí, a zpráva B dorazila prázdná, protože ji rozhodčí přeložil na akci bez `text`. Proto `valid_move()` odmítne odpověď s `private_reasoning` kratším než `MIN_REASONING_CHARS` (80) nebo bez akce, domácí akce i zprávy (schéma hráče nese `minLength`), a akci `message` skládá `player_messages()` přímo z pole `message` tahu hráče; rozhodčí zprávy nepřekládá.
 

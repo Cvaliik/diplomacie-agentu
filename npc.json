@@ -19,14 +19,16 @@
       "short": "Kalvera",
       "x": 150,
       "y": 340,
-      "color_hint": "modrá"
+      "color_hint": "modrá",
+      "capital": "Varenna"
     },
     "B": {
       "name": "Lidová republika Ostrogard",
       "short": "Ostrogard",
       "x": 850,
       "y": 360,
-      "color_hint": "červená"
+      "color_hint": "červená",
+      "capital": "Grodsk"
     },
     "C": {
       "name": "Unie (název zvolí Unie při vzniku)",
@@ -56,7 +58,8 @@
       "pop": 190,
       "pop_start": 190,
       "kind": "normal",
-      "openness": 5
+      "openness": 5,
+      "capital": "Velmir"
     },
     {
       "id": "N2",
@@ -77,7 +80,8 @@
       "pop": 160,
       "pop_start": 160,
       "kind": "normal",
-      "openness": 4
+      "openness": 4,
+      "capital": "Sarnov"
     },
     {
       "id": "N3",
@@ -98,7 +102,8 @@
       "pop": 120,
       "pop_start": 120,
       "kind": "normal",
-      "openness": 4
+      "openness": 4,
+      "capital": "Tulask"
     },
     {
       "id": "N4",
@@ -119,7 +124,8 @@
       "pop": 110,
       "pop_start": 110,
       "kind": "normal",
-      "openness": 6
+      "openness": 6,
+      "capital": "Haldmark"
     },
     {
       "id": "N5",
@@ -140,7 +146,8 @@
       "pop": 100,
       "pop_start": 100,
       "kind": "normal",
-      "openness": 6
+      "openness": 6,
+      "capital": "Brenna"
     },
     {
       "id": "N6",
@@ -161,7 +168,8 @@
       "pop": 90,
       "pop_start": 90,
       "kind": "normal",
-      "openness": 5
+      "openness": 5,
+      "capital": "Dorvik"
     },
     {
       "id": "N7",
@@ -182,7 +190,8 @@
       "pop": 110,
       "pop_start": 110,
       "kind": "normal",
-      "openness": 5
+      "openness": 5,
+      "capital": "Kessaret"
     },
     {
       "id": "N8",
@@ -203,7 +212,8 @@
       "pop": 80,
       "pop_start": 80,
       "kind": "normal",
-      "openness": 5
+      "openness": 5,
+      "capital": "Ilmara"
     },
     {
       "id": "N9",
@@ -224,7 +234,8 @@
       "pop": 60,
       "pop_start": 60,
       "kind": "normal",
-      "openness": 2
+      "openness": 2,
+      "capital": "Tarskov"
     },
     {
       "id": "N10",
@@ -245,7 +256,8 @@
       "pop": 85,
       "pop_start": 85,
       "kind": "normal",
-      "openness": 4
+      "openness": 4,
+      "capital": "Quenmar"
     },
     {
       "id": "N11",
@@ -266,7 +278,8 @@
       },
       "pop": 50,
       "pop_start": 50,
-      "openness": 9
+      "openness": 9,
+      "capital": "Aurum"
     },
     {
       "id": "N12",
@@ -287,7 +300,8 @@
       },
       "pop": 70,
       "pop_start": 70,
-      "openness": 3
+      "openness": 3,
+      "capital": "Ysmarod"
     },
     {
       "id": "N13",
@@ -308,7 +322,8 @@
       "pop": 120,
       "pop_start": 120,
       "kind": "normal",
-      "openness": 7
+      "openness": 7,
+      "capital": "Meridport"
     },
     {
       "id": "N14",
@@ -329,7 +344,8 @@
       "pop": 100,
       "pop_start": 100,
       "kind": "normal",
-      "openness": 5
+      "openness": 5,
+      "capital": "Tavra"
     },
     {
       "id": "N15",
@@ -350,7 +366,8 @@
       "pop": 80,
       "pop_start": 80,
       "kind": "normal",
-      "openness": 3
+      "openness": 3,
+      "capital": "Kaldon"
     },
     {
       "id": "N16",
@@ -371,7 +388,8 @@
       "pop": 90,
       "pop_start": 90,
       "kind": "normal",
-      "openness": 4
+      "openness": 4,
+      "capital": "Elmyra"
     }
   ],
   "adjacency": {

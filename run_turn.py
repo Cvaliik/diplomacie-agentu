@@ -79,15 +79,33 @@ PRECISE_KEYS = ("ceny", "clo", "clo_unie", "clo_od_pristiho_tahu", "price", "pri
 PLAYER_NAMES = {"A": "Kalverská federace", "B": "Lidová republika Ostrogard"}
 
 
+def capitals(npc: dict) -> dict:
+    """v1.13 (cast 3): hlavni mesta A, B a NPC z npc.json (pole capital)."""
+    out = {pid: (npc.get("players", {}).get(pid) or {}).get("capital") for pid in ("A", "B")}
+    out.update({x["id"]: x.get("capital") for x in npc.get("npc", [])})
+    return {k: v for k, v in out.items() if v}
+
+
+def union_capital(state, npc: dict) -> str | None:
+    """Zprava o Unii nese hlavni mesto prvniho clena (Unie vlastni mesto nema)."""
+    members = state["players"]["C"].get("members") or []
+    return capitals(npc).get(members[0]) if members else None
+
+
 def names_block(state) -> str:
-    """6 (v1.10.1): mapa ID na jmena statu pro rozhodciho a Zpravy sveta."""
+    """6 (v1.10.1): mapa ID na jmena statu pro rozhodciho a Zpravy sveta; v1.13 i hlavni mesta."""
     npc = json.loads(read_text(config.NPC_PATH))
     names = dict(PLAYER_NAMES)
     names["C"] = state["players"]["C"].get("name") or "Unie"
     names.update({x["id"]: x.get("name") for x in npc.get("npc", [])})
+    caps = {names[k]: v for k, v in capitals(npc).items()}
+    if union_capital(state, npc):
+        caps[names["C"]] = union_capital(state, npc)
     return "\n".join(["## Jména států (ID → jméno)", "```json",
                       json.dumps(names, ensure_ascii=False), "```",
-                      "Ve Zprávách piš jména států, nikdy ID."])
+                      "Ve Zprávách piš jména států, nikdy ID.", "",
+                      "## Hlavní města (stát → město, pro dateline)", "```json",
+                      json.dumps(caps, ensure_ascii=False), "```"])
 
 
 def fill_auto_block(state, views) -> None:
@@ -745,7 +763,10 @@ def _pick_leak(source: str, proposed: str) -> str:
 
 def leak_news(state, npcdata, pid: str, info: dict) -> str:
     names = _state_names(state, npcdata)
-    return "Uniklá depeše ze soukromé zprávy státu %s: „%s“" % (names[pid], info["leak"])
+    city = union_capital(state, npcdata) if pid == "C" else capitals(npcdata).get(pid)
+    text = "Uniklá depeše ze soukromé zprávy státu %s: „%s“" % (names[pid], info["leak"])
+    # v1.13 (cast 3): dateline hlavniho mesta odesilatele
+    return ("%s, den %d: %s" % (city, engine.day_of(info["turn"]), text)) if city else text
 
 
 def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> None:
@@ -885,7 +906,8 @@ def referee_news_prompt(state_after, events: list) -> str:
         dump([e for e in events if not e.get("private")]),
         "```",
         "",
-        "Vrať jediný JSON objekt {\"news\": [\"...\"]} s 1 až 3 zprávami.",
+        "Vrať jediný JSON objekt {\"news\": [\"...\"]} s 1 až 3 zprávami. Každá zpráva začíná datelinem "
+        "„Hlavní město, den %d:“ (město státu, o kterém zpráva je)." % engine.day_of(turn),
         "",
         names_block(state_after),
     ])

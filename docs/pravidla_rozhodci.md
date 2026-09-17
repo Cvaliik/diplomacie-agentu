@@ -142,7 +142,7 @@ Nabídka jde do pohledu hráče s `offer_id` a platí 2 tahy. Akce `accept_offer
 
 ## 6. Zprávy světa
 
-Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují jménem, nikdy ID. Generují se z prahů:
+Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují jménem, nikdy ID. **Dateline (v1.13):** každá zpráva začíná „Jméno hlavního města, den D:“, kde město patří státu, o kterém zpráva je (pole `capital` v `npc.json` pro A, B a všech 16 NPC; zpráva o Unii nese město jejího prvního člena), a D je den kola; zbytek zprávy se nemění. Uniklá depeše (`docs/zanry.md`, žánr 7) nese město odesílatele. Kronikář dateliny nepíše, jen je smí citovat. Šablony níže uvádějí text za datelinem. Generují se z prahů:
 
 - bída: "V N nepokoje." → další tah "V N hladomor." → pád vlády.
 - cena oritu > 2× výchozí: "Oritová horečka: banky v N půjčují bez záruk."
