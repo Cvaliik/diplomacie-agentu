@@ -13,6 +13,9 @@ Když pravidla situaci nepokrývají, rozhodni podle zjevného záměru hráče,
 ## 3. Zprávy světa
 Engine ti po přepočtu předá seznam událostí (bída v N4, první nesplácení N6 vůči A, cena oritu nad 20, invaze A do N8 tah 3/6, práh Unie vzrostl, změna fáze s prahem). Napiš z nich 1 až 3 zprávy podle šablon v pravidlech, část 6. Zpráva je fakt v jedné až dvou větách, bez hodnocení, bez rady, bez čísel, která hráči nevidí (právo, tech, index, práh, cizí vliv). Od displacementu vždy aspoň jedna zpráva o tom, co s oritem dělá druhá velmoc, i když je to drobnost. Každý čtvrtý tah jedna zpráva bez důsledku. Ve zprávách nepoužívej dlouhou pomlčku „—“ a státy jmenuj jejich jménem. Mapu ID na jména dostaneš v každé úloze; nikdy nepiš ID (N1, N3 a podobně).
 
+## 4. Otázky novinářů (v1.13)
+Před koly hráčů dostaneš podle vylosované formy vystoupení (`docs/zanry.md`) úkol napsat jednu nebo dvě otázky zahraničních novinářů. Každá otázka je jedna věta, vychází jen ze Zpráv světa a z projevu soupeře z minulého kola a neobsahuje skrytá data (právo, technologie, index, cizí vliv) ani čísla. U úniku vybereš z soukromé zprávy hráče jednu větu doslova.
+
 ## Co nesmíš
 Radit hráčům, vysvětlovat mechaniky, prozrazovat skryté hodnoty, měnit čísla ve stavu (to dělá engine), psát za hráče, komentovat kvalitu jejich tahů, odkazovat na reálný svět.
 

@@ -629,9 +629,64 @@ def test_duvody() -> bool:
     return all(ok for _, ok in checks)
 
 
+def test_zanry() -> bool:
+    """v1.13: los zanru projevu (omezeni, determinismus) a tvrda kontrola projevu, bez modelu."""
+    import copy
+    import json as _json
+    from collections import Counter
+    import run_turn
+    npcdata = _json.loads(config.NPC_PATH.read_text(encoding="utf-8"))
+    base, _ = run_turn.load_state(config.STATE_PATH)
+    checks = []
+    st = copy.deepcopy(base)
+    st["genre"] = {}
+    hist = {"A": [], "B": []}
+    orig_snapshot = run_turn.load_snapshot
+    run_turn.load_snapshot = lambda t: None   # bez spoustecu a uniku: cisty los
+    try:
+        for turn in range(1, 91):
+            for pid in ("A", "B"):
+                hist[pid].append((turn, run_turn.draw_genre(st, npcdata, pid, turn)["id"]))
+        again = copy.deepcopy(base)
+        again["genre"] = {}
+        prvni = [run_turn.draw_genre(again, npcdata, "A", t)["id"] for t in range(1, 31)]
+    finally:
+        run_turn.load_snapshot = orig_snapshot
+    for pid in ("A", "B"):
+        ids = [g for _, g in hist[pid]]
+        checks.append(("%s: žádný žánr dvakrát po sobě" % pid, all(a != b for a, b in zip(ids, ids[1:]))))
+        checks.append(("%s: ticho nikdy v 1. kole dne" % pid,
+                       all(not (g == 6 and engine.slot_of(t) == 1) for t, g in hist[pid])))
+        per_day = Counter((engine.day_of(t), g) for t, g in hist[pid] if g in (3, 4))
+        checks.append(("%s: tiskovka a projev doma nejvýš 1 za den" % pid, all(v <= 1 for v in per_day.values())))
+        checks.append(("%s: bez spouštěče žádné stanovisko a bez zprávy žádný únik" % pid,
+                       all(g not in (7, 8) for g in ids)))
+        checks.append(("%s: četnosti za 90 kol %s" % (pid, dict(sorted(Counter(ids).items()))), len(set(ids)) >= 5))
+    checks.append(("los je deterministický", prvni == [g for _, g in hist["A"][:30]]))
+    g1 = {"id": 1, "sentences": (2, 3)}
+    checks.append(("čistý komunikační projev projde",
+                   not run_turn.statement_violations("Vláda vítá klid na hranicích. Obchod s přáteli roste.", g1)))
+    spatne = run_turn.statement_violations(
+        "Uzavřeli jsme pakt s Haldenem. Cena 0,95 je férová. Roste o 5 %. Náš vliv sílí v tomto tahu.", g1)
+    checks.append(("zakázaná slova, čísla a procenta chycena: %s" % "; ".join(spatne), len(spatne) >= 5))
+    checks.append(("počet vět mimo rozsah chycen",
+                   bool(run_turn.statement_violations("Jedna. Dvě. Tři. Čtyři. Pět.", g1))))
+    checks.append(("ticho vyžaduje prázdný projev",
+                   bool(run_turn.statement_violations("Něco.", {"id": 6, "sentences": (0, 0)}))
+                   and not run_turn.statement_violations("", {"id": 6, "sentences": (0, 0)})))
+    ev = {"events": [{"kind": "coup", "stat": "N9", "coups": 1}]}
+    names = run_turn._state_names(base, npcdata)
+    checks.append(("puč vyvolá stanovisko: %s" % run_turn.find_trigger(base, ev, "A", names),
+                   run_turn.find_trigger(base, ev, "A", names) == "pád vlády ve státě Tarsk"))
+    print("TESTY ZANRU PROJEVU (v1.13)")
+    for name, ok in checks:
+        print("  [%s] %s" % ("OK " if ok else "NE ", name))
+    return all(ok for _, ok in checks)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "odpovedi", "duvody", "vse"], default="vse")
+    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "odpovedi", "duvody", "zanry", "vse"], default="vse")
     args = ap.parse_args()
     klice = ["0", "a", "b", "k"] if args.scenar == "vse" else [args.scenar]
 
@@ -642,6 +697,9 @@ def main() -> int:
     if args.scenar in ("duvody", "vse"):
         vysledek &= test_duvody()
         klice = [k for k in klice if k != "duvody"]
+    if args.scenar in ("zanry", "vse"):
+        vysledek &= test_zanry()
+        klice = [k for k in klice if k != "zanry"]
     for k in klice:
         fn, popis = SCENARE[k]
         print("=" * 78)

@@ -35,10 +35,12 @@ import copy
 import datetime
 import json
 import os
+import random
 import re
 import shutil
 import subprocess
 import sys
+import zlib
 from pathlib import Path
 
 import config
@@ -403,14 +405,382 @@ def memory_contracts(state, pid: str) -> dict:
 
 
 # --------------------------------------------------------------------------
+# zanry projevu (v1.13, docs/zanry.md)
+# --------------------------------------------------------------------------
+
+GENRE_PLAYERS = ("A", "B", "C")
+GENRE_SILENT = {"A": "Vláda dnes nevystoupila.", "B": "Vláda dnes nevystoupila.",
+                "C": "Unie dnes nevydala prohlášení."}
+LEAK_FROM_TURN = 22          # zanr 7 od 2. tydne (den 8)
+LEAK_UNION_DELAY = 3         # Unie: nejdrive 3. tah po zalozeni
+VARIANT_CHANCE = 1.0 / 3.0   # zanr 5: statni varianta misto dopisu
+
+GENRES = {
+    1: {"key": "komunike", "weight": {"A": 30, "B": 30, "C": 35}, "sentences": (2, 3), "questions": 0,
+        "daily_max": {},
+        "name": {"A": "Prohlášení federálního kabinetu", "B": "Sdělení tiskové agentury republiky",
+                 "C": "Společné prohlášení členských vlád"},
+        "form": {"A": "Úřední sdělení ve třetí osobě. Soupeře neoslovuješ.",
+                 "B": "Úřední sdělení ve třetí osobě. Soupeře neoslovuješ.",
+                 "C": "Úřední sdělení v množném čísle členských vlád („Členové Unie berou na vědomí...“). "
+                      "Nikdy nejmenuješ jednotlivého člena."}},
+    2: {"key": "otazka", "weight": {"A": 25, "B": 25, "C": 25}, "sentences": (2, 4), "questions": 1,
+        "daily_max": {},
+        "name": {p: "Odpověď zahraničnímu novináři" for p in GENRE_PLAYERS},
+        "form": {p: "Odpověď na jednu otázku zahraničního novináře. Smíš uhnout." for p in GENRE_PLAYERS}},
+    3: {"key": "tiskovka", "weight": {"A": 10, "B": 10, "C": 10}, "sentences": (4, 6), "questions": 2,
+        "daily_max": {"A": 1, "B": 1, "C": 1},
+        "name": {p: "Tisková konference" for p in GENRE_PLAYERS},
+        "form": {p: "Tisková konference se dvěma otázkami, jednou k soupeři a jednou ke světu. "
+                    "Odpověz na obě." for p in GENRE_PLAYERS}},
+    4: {"key": "projev_domu", "weight": {"A": 10, "B": 10, "C": 8}, "sentences": (4, 6), "questions": 0,
+        "daily_max": {"A": 1, "B": 1},
+        "name": {"A": "Projev v Radě federace", "B": "Projev na sjezdu",
+                 "C": "Projev předsedajícího na sněmu Unie"},
+        "form": {"A": "Projev k vlastním lidem. Soupeře zmiňuješ jen nepřímo.",
+                 "B": "Projev k vlastním lidem. Soupeře zmiňuješ jen nepřímo.",
+                 "C": "Projev předsedajícího k členským vládám, ne k lidu. Předsedá: {chair}."}},
+    5: {"key": "dopis", "weight": {"A": 15, "B": 15, "C": 15}, "sentences": (3, 4), "questions": 0,
+        "daily_max": {},
+        "name": {"A": "Otevřený dopis vládě", "B": "Otevřený dopis vládě", "C": "Dopis kandidátské zemi"},
+        "form": {"A": "Zveřejněný dopis jedné vládě, kterou si vybereš. Jmenuješ jen adresáta.",
+                 "B": "Zveřejněný dopis jedné vládě, kterou si vybereš. Jmenuješ jen adresáta.",
+                 "C": "Zveřejněný dopis jedné zemi. Jmenuješ jen adresáta. Přípustní adresáti: {addressees}."},
+        "variant_name": {"A": "Výroční zpráva obchodní komory", "B": "Úvodník stranického deníku",
+                         "C": "Usnesení rady č. {resolution}"},
+        "variant_form": {"A": "Suchá zpráva v tónu bankéře, jen hrubé poměry slovy.",
+                         "B": "Nepodepsaný úvodník; nikdy nepřizná neúspěch.",
+                         "C": "Suché usnesení nadepsané „Usnesení č. {resolution}“, s obratem „Rada rozhodla "
+                              "poměrem hlasů“, bez uvedení, kdo byl proti."}},
+    6: {"key": "ticho", "weight": {"A": 5, "B": 5, "C": 5}, "sentences": (0, 0), "questions": 0,
+        "daily_max": {},
+        "name": {"A": "Ticho", "B": "Ticho", "C": "Ticho"},
+        "form": {p: "Dnes nevystupuješ: `public_statement` musí být prázdný řetězec \"\". "
+                    "Engine zapíše „%s“." % GENRE_SILENT[p] for p in GENRE_PLAYERS}},
+    7: {"key": "unik", "weight": {"A": 5, "B": 5, "C": 5}, "sentences": (2, 4), "questions": 1,
+        "daily_max": {},
+        "name": {p: "Odpověď na otázku k uniklé depeši" for p in GENRE_PLAYERS},
+        "form": {p: "Zpráva světa dnes zveřejnila větu z tvé soukromé zprávy z minulého kola jako uniklou "
+                    "depeši: „{leak}“. Odpovídáš na jednu otázku zahraničního novináře k tomuto úniku. "
+                    "Smíš uhnout." for p in GENRE_PLAYERS}},
+    8: {"key": "stanovisko", "weight": {"A": 0, "B": 0, "C": 0}, "sentences": (2, 3), "questions": 0,
+        "daily_max": {},
+        "name": {p: "Stanovisko k události" for p in GENRE_PLAYERS},
+        "form": {p: "Stanovisko k jedné události, kterou v projevu pojmenuješ: {event}." for p in GENRE_PLAYERS}},
+}
+
+STATEMENT_RULES = (
+    "Pravidla vystoupení (platí pro každou formu): jedno téma; nejvýš dva jmenované státy; žádné ceny, "
+    "množství ani procenta, jen hrubé poměry slovy („třetina“, „většina“); nepoužívej slova pakt, vliv, "
+    "kontrakt, jednotka, slot, tah, nabídka číslo, offer, deal (místo nich smlouva, spojenectví, dodávky, "
+    "přátelé); o vlastních krocích z tohoto kola nemluv výčtem."
+)
+UNION_RULE = "V projevu nikdy nepíšeš, který člen jak hlasoval ani kdo byl proti."
+
+# tvrda kontrola projevu (2d)
+FORBIDDEN_PATTERNS = [
+    (r"\d+[.,]\d+", "číslo s desetinnou čárkou nebo tečkou"),
+    (r"%", "znak procenta"),
+    (r"\bpakt(u|y|em|ů|ech|ům)?\b", "zakázané slovo pakt"),
+    (r"\bvliv(u|em|y)?\b", "zakázané slovo vliv"),
+    (r"\bkontrakt\w*", "zakázané slovo kontrakt"),
+    (r"\bjednotk\w*", "zakázané slovo jednotka"),
+    (r"\bslot\w*", "zakázané slovo slot"),
+    (r"\b(tah|tahu|tahy|tahem|tazích|tahů|tahům)\b", "zakázané slovo tah"),
+    (r"\bnabídk\w*\s+(číslo|č\.)", "zakázaný obrat nabídka číslo"),
+    (r"\boffer\w*", "zakázané slovo offer"),
+    (r"\bdeal\w*", "zakázané slovo deal"),
+]
+
+# spoustece stanoviska (8): existujici event kinds enginu
+TRIGGER_KINDS = ("coup", "default", "invade_progress", "occupied", "war_declared", "war_end",
+                 "union_founded", "phase")
+UNION_TRIGGER_KINDS = ("poverty", "loan_given", "protect_started")
+
+
+def count_sentences(text: str) -> int:
+    return len([x for x in re.split(r"[.!?…]+(?=\s|$)", text.strip()) if x.strip()])
+
+
+def statement_violations(text: str, genre: dict) -> list[str]:
+    """2d: tvrda kontrola projevu podle zanru. Vraci seznam poruseni (prazdny = v poradku)."""
+    text = text or ""
+    if genre["id"] == 6:
+        return [] if not text.strip() else ["forma Ticho vyžaduje prázdný public_statement"]
+    out = []
+    for pattern, label in FORBIDDEN_PATTERNS:
+        m = re.search(pattern, text, re.IGNORECASE)
+        if m:
+            out.append("%s („%s“)" % (label, m.group(0)))
+    lo, hi = genre["sentences"]
+    n = count_sentences(text)
+    if not (lo - 1 <= n <= hi + 1):
+        out.append("počet vět %d mimo rozsah %d až %d" % (n, lo, hi))
+    return out
+
+
+def _state_names(state, npcdata) -> dict:
+    names = dict(PLAYER_NAMES)
+    names["C"] = state["players"]["C"].get("name") or "Unie"
+    names.update({x["id"]: x.get("name") for x in npcdata.get("npc", [])})
+    return names
+
+
+def _event_text(e: dict, names: dict) -> str:
+    n = lambda k: names.get(e.get(k), e.get(k) or "")
+    kind = e.get("kind")
+    if kind == "coup":
+        return "pád vlády ve státě %s" % n("stat")
+    if kind == "default":
+        return "%s poprvé nesplácí dluh vůči státu %s" % (n("npc"), n("creditor"))
+    if kind == "invade_progress":
+        return "%s zahájil invazi do státu %s" % (n("player"), n("target"))
+    if kind == "occupied":
+        return "%s obsadil stát %s" % (n("attacker"), n("target"))
+    if kind == "war_declared":
+        return "%s vyhlásil válku státu %s" % (n("aggressor"), n("defender"))
+    if kind == "war_end":
+        a, b = (e.get("between") or ["", ""])[:2]
+        return "příměří mezi státy %s a %s" % (names.get(a, a), names.get(b, b))
+    if kind == "union_founded":
+        return "vznik Unie"
+    if kind == "phase":
+        return "obrat hospodářské nálady ve světě"
+    if kind == "poverty":
+        return "bída v členském státě %s" % n("stat")
+    if kind == "loan_given":
+        return "členský stát %s přijal půjčku od státu %s" % (n("target"), n("player"))
+    if kind == "protect_started":
+        return "kandidátská země %s přijala ochranu státu %s" % (n("target"), n("player"))
+    return kind or ""
+
+
+def find_trigger(state, snap, pid: str, names: dict) -> str | None:
+    """8: udalost minuleho kola, ktera prebiji los. Unie ma navic tri vlastni spoustece."""
+    if not snap:
+        return None
+    C = state["players"]["C"]
+    members, candidates = set(C.get("members") or []), set(C.get("candidates") or [])
+    defaults = state.get("minsky", {}).get("defaults") or []
+    for e in snap.get("events") or []:
+        kind = e.get("kind")
+        if kind in TRIGGER_KINDS:
+            if kind == "default" and sum(1 for d in defaults if d.get("npc") == e.get("npc")
+                                         and d.get("creditor") == e.get("creditor")) != 1:
+                continue   # jen prvni nesplaceni
+            if kind == "invade_progress" and int(e.get("turns") or 0) != 1:
+                continue   # jen zahajeni invaze
+            if kind == "war_end" and e.get("how") != "primeri":
+                continue
+            return _event_text(e, names)
+        if pid == "C" and C.get("active") and kind in UNION_TRIGGER_KINDS:
+            if kind == "poverty" and e.get("stat") in members:
+                return _event_text(e, names)
+            if kind == "loan_given" and e.get("target") in members and e.get("player") in ("A", "B"):
+                return _event_text(e, names)
+            if kind == "protect_started" and e.get("target") in candidates and e.get("player") in ("A", "B"):
+                return _event_text(e, names)
+    return None
+
+
+def _genre_rng(state, turn: int, pid: str) -> random.Random:
+    # deterministicky jako hod NPC (_decision_roll): rng_seed + tah + CRC32(ID)
+    return random.Random(int(state["meta"]["rng_seed"]) + turn + zlib.crc32(pid.encode("utf-8")))
+
+
+def _union_addressees(state, npcdata) -> list[str]:
+    C = state["players"]["C"]
+    members = set(C.get("members") or [])
+    adj = npcdata.get("adjacency") or {}
+    out = set(C.get("candidates") or [])
+    for m in members:
+        for x in adj.get(m, []):
+            if engine.is_npc(x) and x not in members and state["npc"].get(x, {}).get("status") != "union":
+                out.add(x)
+    return sorted(out, key=lambda x: int(x[1:]))
+
+
+def draw_genre(state, npcdata, pid: str, turn: int) -> dict:
+    """2b: vazeny los zanru s omezenimi; vysledek se zapise do state["genre"][pid]."""
+    names = _state_names(state, npcdata)
+    slot = engine.slot_of(turn)
+    day = engine.day_of(turn)
+    rec = (state.get("genre") or {}).get(pid) or {}
+    today = rec.get("day_counts", {}) if rec.get("day") == day else {}
+    last_id = rec.get("id") if rec.get("turn") == turn - 1 else None
+    C = state["players"]["C"]
+    snap = load_snapshot(turn - 1)
+    rng = _genre_rng(state, turn, pid)
+    info = {"turn": turn}
+
+    event = find_trigger(state, snap, pid, names)
+    if event:
+        gid = 8
+        info["event"] = event
+    else:
+        pool = []
+        for gid_, g in GENRES.items():
+            w = g["weight"][pid]
+            if w <= 0 or gid_ == last_id:
+                continue
+            if g["daily_max"].get(pid) is not None and today.get(str(gid_), 0) >= g["daily_max"][pid]:
+                continue
+            if gid_ == 6:
+                if pid in ("A", "B") and slot == 1:
+                    continue
+                if pid == "C" and turn == int(C.get("founded_turn") or -9) + 1:
+                    continue   # zakladajici tah Unie: volba jmena
+            if gid_ == 7:
+                sent = ((snap or {}).get("turns") or {}).get(pid, {}).get("message")
+                if turn < LEAK_FROM_TURN or not (isinstance(sent, dict) and (sent.get("text") or "").strip()):
+                    continue
+                if pid == "C" and turn < int(C.get("founded_turn") or 10 ** 6) + LEAK_UNION_DELAY:
+                    continue
+            pool.append((gid_, w))
+        total = sum(w for _, w in pool)
+        pick = rng.uniform(0, total)
+        gid = pool[-1][0]
+        acc = 0.0
+        for gid_, w in pool:
+            acc += w
+            if pick <= acc:
+                gid = gid_
+                break
+    g = GENRES[gid]
+    info.update({"id": gid, "key": g["key"], "name": g["name"][pid], "sentences": list(g["sentences"]),
+                 "questions_needed": g["questions"], "questions": []})
+    form = g["form"][pid]
+    if gid == 4 and pid == "C":
+        members = sorted(C.get("members") or [], key=lambda x: int(x[1:]))
+        chair = random.Random(int(state["meta"]["rng_seed"]) + turn).choice(members) if members else None
+        info["chair"] = names.get(chair, chair) if chair else "předsedající"
+        form = form.format(chair=info["chair"])
+    if gid == 5:
+        addressees = _union_addressees(state, npcdata) if pid == "C" else []
+        variant = rng.random() < VARIANT_CHANCE or (pid == "C" and not addressees)
+        if variant:
+            info["variant"] = True
+            resolution = int(rec.get("resolution_no", 0)) + (1 if pid == "C" else 0)
+            info["name"] = g["variant_name"][pid].format(resolution=resolution)
+            form = g["variant_form"][pid].format(resolution=resolution)
+            if pid == "C":
+                info["resolution_no"] = resolution
+        elif pid == "C":
+            info["addressees"] = [names.get(x, x) for x in addressees]
+            form = form.format(addressees=", ".join(info["addressees"]))
+    if gid == 7:
+        info["leak_source"] = (snap["turns"][pid]["message"] or {}).get("text", "")
+    if gid == 8:
+        form = form.format(event=info["event"])
+    info["form"] = form
+
+    counts = dict(today)
+    counts[str(gid)] = counts.get(str(gid), 0) + 1
+    new_rec = {"id": gid, "key": g["key"], "turn": turn, "day": day, "day_counts": counts,
+               "resolution_no": info.get("resolution_no", rec.get("resolution_no", 0))}
+    state.setdefault("genre", {})[pid] = new_rec
+    return info
+
+
+def genre_block(pid: str, info: dict) -> str:
+    """2d: blok Forma dnesniho vystoupeni do promptu hrace."""
+    lo, hi = info["sentences"]
+    lines = ["## Forma dnešního vystoupení", "",
+             "**%s.** %s" % (info["name"], info["form"].replace("{leak}", info.get("leak") or "<větu vybere rozhodčí>"))]
+    if info["id"] != 6:
+        lines.append("Délka: %d až %d %s." % (lo, hi, "věty" if hi <= 4 else "vět"))
+    if info.get("questions"):
+        lines.append("Otázky:")
+        lines += ["- %s" % q for q in info["questions"]]
+    elif info.get("questions_needed"):
+        lines.append("Otázky: <otázky vygeneruje rozhodčí před tahem>")
+    if info["id"] != 6:
+        lines.append(STATEMENT_RULES)
+    if pid == "C":
+        lines.append(UNION_RULE)
+    return "\n".join(lines)
+
+
+QUESTIONS_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["questions"],
+                    "properties": {"questions": {"type": "array", "items": {"type": "string"}}}}
+LEAK_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["questions", "leak"],
+               "properties": {"questions": {"type": "array", "items": {"type": "string"}},
+                              "leak": {"type": "string"}}}
+FALLBACK_QUESTION = "Jak hodnotíte současné dění ve světě?"
+
+
+def questions_prompt(state, npcdata, pid: str, info: dict) -> str:
+    turn = info["turn"]
+    names = _state_names(state, npcdata)
+    snap = load_snapshot(turn - 1) or {}
+    others = ("A", "B") if pid == "C" else (OPPONENT[pid],)
+    speeches = {names[q]: ((snap.get("turns") or {}).get(q) or {}).get("public_statement", SILENT_STATEMENT)
+                for q in others}
+    n = info["questions_needed"]
+    lines = ["# Úloha: otázky novinářů pro stát %s, kolo %d (den %d)" % (names[pid], turn, engine.day_of(turn)), "",
+             "Napiš %d %s pro vystoupení „%s“. Každá otázka je jedna věta. Otázky vycházejí jen ze Zpráv světa "
+             "a z projevu soupeře níže; nepoužívej skrytá data (právo, technologie, index prosperity, cizí vliv) "
+             "ani čísla." % (n, "otázku" if n == 1 else "otázky", info["name"])]
+    if info["id"] == 3:
+        lines.append("První otázka míří k soupeři, druhá ke světu.")
+    if pid == "C" and info["id"] in (2, 3):
+        lines.append("Otázka smí mířit i na rozpory mezi členy Unie.")
+    if info["id"] == 7:
+        lines += ["Vyber z soukromé zprávy níže jednu větu, kterou svět zveřejní jako uniklou depeši, a vrať ji "
+                  "v poli leak doslova. Otázka se ptá na tento únik.", "", "## Soukromá zpráva", "",
+                  info.get("leak_source", "")]
+    lines += ["", "## Zprávy světa z minulého kola", "```json", dump(list(snap.get("news") or [])), "```",
+              "", "## Projev soupeře z minulého kola", "```json", dump(speeches), "```", "",
+              "Vrať JSON s polem questions%s." % (" a leak" if info["id"] == 7 else "")]
+    return "\n".join(lines)
+
+
+def _pick_leak(source: str, proposed: str) -> str:
+    norm = lambda t: re.sub(r"\s+", " ", t or "").strip()
+    if proposed and norm(proposed) in norm(source):
+        return norm(proposed)
+    first = re.split(r"(?<=[.!?…])\s+", norm(source))
+    return first[0] if first and first[0] else norm(source)
+
+
+def leak_news(state, npcdata, pid: str, info: dict) -> str:
+    names = _state_names(state, npcdata)
+    return "Uniklá depeše ze soukromé zprávy státu %s: „%s“" % (names[pid], info["leak"])
+
+
+def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> None:
+    """2c: mala uloha rozhodciho pred tahem hracu; jen pro zanry 2, 3 a 7."""
+    n = info["questions_needed"]
+    if not n:
+        return
+    schema = LEAK_SCHEMA if info["id"] == 7 else QUESTIONS_SCHEMA
+    try:
+        raw = call_model(config.REFEREE_MODEL, referee_system(), questions_prompt(state, npcdata, pid, info),
+                         max_tokens=4000, usage_log=usage_log, cache=True, label="rozhodci otazky %s" % pid,
+                         schema=schema)
+        data = parse_json(raw)
+    except (ValueError, json.JSONDecodeError):
+        data = {}
+    qs = [q.strip() for q in data.get("questions") or [] if isinstance(q, str) and q.strip()][:n]
+    while len(qs) < n:
+        qs.append(FALLBACK_QUESTION)
+        info["fallback_question"] = True
+    info["questions"] = qs
+    if info["id"] == 7:
+        info["leak"] = _pick_leak(info.get("leak_source", ""), data.get("leak", ""))
+
+
+# --------------------------------------------------------------------------
 # skladani promptu
 # --------------------------------------------------------------------------
 
-def player_prompt(state, views, pid: str) -> tuple[str, str]:
+def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[str, str]:
     """Vraci (system, user) pro hrace pid."""
     turn = next_turn(state)
     base = read_text(config.PROMPTS_DIR / PROMPT_FILES[pid])
     base = base.replace("{turn}", str(turn)).replace("{day}", str(engine.day_of(turn)))
+    # v1.13: blok Forma dnesniho vystoupeni podle vylosovaneho zanru
+    base = base.replace("{forma}", genre_block(pid, genre) if genre else "")
     secret = read_text(config.SECRETS_DIR / SECRET_FILES[pid])
     fmt = read_text(config.TURN_FORMAT_PATH)
     system = "\n\n".join([base.strip(), secret.strip(), fmt.strip()])
@@ -773,10 +1143,11 @@ def save_fail(turn: int, pid: str, k: int, raw: str, reason: str, usage: list) -
     (DEBUG_DIR / ("turn_%03d_%s_fail_%d.txt" % (turn, pid, k))).write_text(head + raw, encoding="utf-8")
 
 
-def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
+def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: dict | None = None) -> dict:
     """Tah hrace s opakovanim; po vycerpani mlceni podle pravidel 10.6."""
     attempts = []
     usage = []
+    base_user = user
     for attempt in range(retries + 1):
         raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage, label="hrac %s" % pid,
                          schema=player_schema(pid))
@@ -793,7 +1164,15 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0) -> dict:
                       "domaci akce ani zprava" % MIN_REASONING_CHARS,
                       usage)
             continue
+        violations = statement_violations(move["public_statement"], genre) if genre else []
+        if violations:
+            # v1.13 (2d): tvrda kontrola projevu; duvod jde do debug/ a jako posledni odstavec do dalsiho pokusu
+            save_fail(turn, pid, attempt + 1, raw, "projev porusuje formu: " + "; ".join(violations), usage)
+            user = base_user + "\n\nMinulá odpověď byla odmítnuta. Porušení v projevu: " + "; ".join(violations) + "."
+            continue
         if valid_move(move):
+            if genre and genre["id"] == 6:
+                move["public_statement"] = GENRE_SILENT[pid]
             move.setdefault("domestic_action", None)
             move.setdefault("message", None)
             move["silent"] = False
@@ -948,10 +1327,18 @@ def main() -> int:
     views = engine.build_views(state, npcdata)
     fill_auto_block(state, views)
     log = public_log(turn)
+    # v1.13: los zanru a otazky rozhodciho (pri --dry-model bez volani modelu)
+    genres = {pid: draw_genre(state, npcdata, pid, turn) for pid in players if pid in GENRE_PLAYERS}
+    q_usage = []
+    for pid, info in genres.items():
+        if not args.dry_model:
+            fill_questions(state, npcdata, pid, info, q_usage)
+        print("zanr %s: %d %s%s" % (pid, info["id"], info["name"],
+                                     " (otazky: %s)" % " | ".join(info["questions"]) if info["questions"] else ""))
     prompts = {}
     leaks = []
     for pid in players:
-        prompts[pid] = player_prompt(state, views, pid)
+        prompts[pid] = player_prompt(state, views, pid, genres.get(pid))
         leaks += ["%s: %s" % (pid, e) for e in check_player_input(state, views, pid, log)]
         leaks += ["%s: %s" % (pid, e) for e in check_foreign_reasoning(pid, turn, prompts[pid][1])]
     if leaks:
@@ -989,8 +1376,11 @@ def main() -> int:
     # 3. hraci paralelne
     retries = 0 if args.only else config.PLAYER_RETRIES   # --only: jedno volani na hrace
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(players)) as ex:
-        futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn) for pid in players}
+        futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn, genres.get(pid)) for pid in players}
         moves = {pid: f.result() for pid, f in futures.items()}
+    for pid, info in genres.items():
+        # v1.13 (2b): zanr, otazky a udalost do snimku (bez textu soukrome zpravy)
+        moves[pid]["genre"] = {k: v for k, v in info.items() if k not in ("leak_source", "form", "turn")}
     silent = [pid for pid, m in moves.items() if m.get("silent")]
     if args.fail_on_silent and silent and not (args.only or args.no_apply):
         # planovac: tah se nezapise a beh selze viditelne (misto mlceni podle pravidel 10.6)
@@ -1036,6 +1426,10 @@ def main() -> int:
         news = list(parse_json(news_raw).get("news") or [])[:3]
     except (ValueError, json.JSONDecodeError):
         news = []
+    for pid, info in genres.items():
+        if info["id"] == 7 and info.get("leak"):
+            # v1.13 (7): unikla veta ze soukrome zpravy hrace jde do Zprav sveta
+            news.insert(0, leak_news(state, npcdata, pid, info))
     new_state["news"] = news
     if new_state["meta"].get("started_at") is None:
         new_state["meta"]["started_at"] = datetime.datetime.now().astimezone().isoformat(timespec="seconds")
@@ -1046,7 +1440,7 @@ def main() -> int:
     snapshot = {"turn": turn, "state": new_state, "turns": moves, "actions": actions,
                 "rejected": ref.get("rejected") or [], "rulings": ref.get("rulings") or [],
                 "news": news, "events": events, "delivered_messages": delivered, "applied_rules": applied,
-                "usage": [u for m in moves.values() for u in m.get("usage", [])] + ref_usage}
+                "usage": q_usage + [u for m in moves.values() for u in m.get("usage", [])] + ref_usage}
     if errors:
         return fail(turn, "validate: %s" % "; ".join(errors[:5]), snapshot, args)
     if args.no_apply:

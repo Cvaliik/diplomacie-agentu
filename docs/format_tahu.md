@@ -7,8 +7,8 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 
 ```json
 {
-  "public_statement": "Diplomatický projev pro celý svět, 2 až 5 vět.",
-  "private_reasoning": "Skutečné uvažování, včetně toho, kde v projevu nemluvíš pravdu.",
+  "public_statement": "Vystoupení ve formě z bloku Forma dnešního vystoupení.",
+  "private_reasoning": "Skutečné uvažování. Kde v projevu nemluvíš pravdu: citace té věty a proč.",
   "actions": [
     { "type": "...", "...": "..." }
   ],
@@ -19,7 +19,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 
 | pole | typ | povinné | poznámka |
 |---|---|---|---|
-| `public_statement` | text | ano | 2 až 5 vět, vidí ho všichni |
+| `public_statement` | text | ano | vystoupení ve formě z bloku „Forma dnešního vystoupení“ (v1.13, `docs/zanry.md`); u formy Ticho prázdný řetězec |
 | `private_reasoning` | text | ano | vidí ho publikum, soupeř ne |
 | `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
 | `domestic_action` | objekt nebo `null` | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); Unie pole nemá |
@@ -37,6 +37,13 @@ Unie domácí akci nemá.
 na každých započatých 8 bohatství; `invest_law` a `explore` goods nepotřebují. Goods se berou ze zásoby, chybějící se
 v tomtéž tahu koupí na automatickém trhu. Když goods ani tak nejsou, investice čeká na další tah (nejvýš 3 tahy, pak
 propadne a goods se vrátí). Odloženou investici vidíš v pohledu jako `investice_cekajici`.
+
+**Forma vystoupení (v1.13):** engine ti každé kolo určí formu, délku ve větách a případně otázky novinářů.
+Pravidla pro každou formu: jedno téma; nejvýš dva jmenované státy; žádné ceny, množství a procenta, jen hrubé
+poměry slovy („třetina“, „většina“); nepoužívej slova pakt, vliv, kontrakt, jednotka, slot, tah, nabídka číslo,
+offer, deal (místo nich smlouva, spojenectví, dodávky, přátelé); o vlastních krocích kola nemluv výčtem.
+Projev s číslem s desetinnou čárkou nebo tečkou, se znakem %, se zakázaným slovem (i v českých tvarech) nebo s počtem
+vět mimo rozsah formy o víc než jednu je neplatný: odpověď se opakuje a do dalšího pokusu dostaneš výčet porušení.
 
 Neplatnou akci rozhodčí vyřadí a zapíše důvod. Zbytek tahu platí.
 Pokud odpověď není validní JSON ani po dvou opakováních, hráč v tahu mlčí (pravidla 10.6).

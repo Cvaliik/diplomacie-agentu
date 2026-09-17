@@ -74,6 +74,8 @@
   .hrac h3 { margin-top: 8px; }
   .hrac h3 .znacka { display: inline-block; width: 11px; height: 11px; border-radius: 50%; margin-right: 6px; vertical-align: 0; }
   .projev { font-style: italic; margin: 4px 0 6px; }
+  .zanr { font-family: var(--bezpatkove); font-size: 13.5px; color: var(--inkoust-2); margin: 4px 0 2px; }
+  .otazky { font-family: var(--bezpatkove); font-size: 14px; margin: 2px 0 4px; padding-left: 18px; color: var(--inkoust-2); }
   details { margin: 4px 0 8px; }
   summary { font-family: var(--bezpatkove); font-size: 14px; cursor: pointer; color: var(--inkoust-2); }
   details p { margin: 6px 0 0 12px; padding-left: 10px; border-left: 2px solid var(--linka); }
@@ -577,8 +579,18 @@ function panelTahu(snimek, t) {
     const npc = (plog[pid] || []).filter((r) => Number(r.turn) === t);
     let html = `<div class="hrac"><h3><span class="znacka" style="background:${BARVA[pid] || "#999"}"></span>${esc(jmeno)}</h3>`;
     const pokusy = m.attempts ? ` Počet pokusů: ${cis(m.attempts, 0)}.` : "";
-    html += m.silent ? `<p class="ticho">Vláda nevydala prohlášení.${pokusy}</p>`
-                     : `<p class="projev">${esc(m.public_statement)}</p>`;
+    // v1.13: zanr vystoupeni, otazky novinaru a udalost stanoviska
+    const g = m.genre || null;
+    if (g && !m.silent) {
+      const nazev = g.id === 8 ? "Stanovisko k události" : g.name;
+      html += `<p class="zanr"><em>${esc(nazev)}${g.id === 8 && g.event ? `: ${esc(g.event)}` : ""}${g.chair ? `, předsedá ${esc(g.chair)}` : ""}</em></p>`;
+      if ([2, 3, 7].includes(g.id) && (g.questions || []).length) {
+        html += `<ul class="otazky">${g.questions.map((q) => `<li>${esc(q)}</li>`).join("")}</ul>`;
+      }
+    }
+    if (m.silent) html += `<p class="ticho">Vláda nevydala prohlášení.${pokusy}</p>`;
+    else if (g && g.id === 6) html += `<p class="ticho">${esc(m.public_statement || "Vláda dnes nevystoupila.")}</p>`;
+    else html += `<p class="projev">${esc(m.public_statement)}</p>`;
     if (m.private_reasoning) {
       html += `<details><summary>Co si doopravdy myslel</summary><p>${esc(m.private_reasoning)}</p></details>`;
     } else if (!m.silent) {
