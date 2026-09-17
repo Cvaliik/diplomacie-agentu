@@ -55,8 +55,12 @@ SILENT_STATEMENT = "Vláda nevydala prohlášení."
 # v1.12: kratsi uvaha znamena neuplnou odpoved (tah 4: prazdna uvaha i akce pri platnem JSON)
 MIN_REASONING_CHARS = 80
 # delka odpovedi: strop tokenu pro hrace a rozhodciho
-PLAYER_MAX_TOKENS = 3000
-REFEREE_MAX_TOKENS = 3000
+PLAYER_MAX_TOKENS = 5000
+REFEREE_MAX_TOKENS = 4000
+# premysleni: hraci adaptivne s nizkym usilim (Opus 5 budget_tokens odmita), rozhodci bez premysleni
+PLAYER_THINKING = {"type": "adaptive"}
+PLAYER_EFFORT = "low"
+REFEREE_THINKING = {"type": "disabled"}
 OVER_LIMIT_REASON = "nad limit akcí"
 
 # Co hrac nikdy nesmi dostat (zadani 14. 9. 2026, bod 7). Klice se hledaji v pohledu
@@ -723,11 +727,6 @@ def genre_block(pid: str, info: dict) -> str:
     return "\n".join(lines)
 
 
-QUESTIONS_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["questions"],
-                    "properties": {"questions": {"type": "array", "items": {"type": "string"}}}}
-LEAK_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["questions", "leak"],
-               "properties": {"questions": {"type": "array", "items": {"type": "string"}},
-                              "leak": {"type": "string"}}}
 FALLBACK_QUESTION = "Jak hodnotíte současné dění ve světě?"
 
 
@@ -753,7 +752,8 @@ def questions_prompt(state, npcdata, pid: str, info: dict) -> str:
                   info.get("leak_source", "")]
     lines += ["", "## Zprávy světa z minulého kola", "```json", dump(list(snap.get("news") or [])), "```",
               "", "## Projev soupeře z minulého kola", "```json", dump(speeches), "```", "",
-              "Vrať JSON s polem questions%s." % (" a leak" if info["id"] == 7 else "")]
+              "Vrať JSON s polem questions%s. Pole actions, rejected, rulings a news nech prázdná%s."
+              % (" a leak" if info["id"] == 7 else "", "" if info["id"] == 7 else ", leak prázdný řetězec")]
     return "\n".join(lines)
 
 
@@ -778,12 +778,11 @@ def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> Non
     n = info["questions_needed"]
     if not n:
         return
-    schema = LEAK_SCHEMA if info["id"] == 7 else QUESTIONS_SCHEMA
     try:
         raw = call_model(config.REFEREE_MODEL, referee_system(), questions_prompt(state, npcdata, pid, info),
                          max_tokens=REFEREE_MAX_TOKENS, usage_log=usage_log, cache=True,
                          label="rozhodci otazky %s" % pid,
-                         schema=schema)
+                         schema=referee_schema(), thinking=REFEREE_THINKING)
         data = parse_json(raw)
     except (ValueError, json.JSONDecodeError):
         data = {}
@@ -893,7 +892,8 @@ def referee_actions_prompt(state, moves: dict) -> str:
         dump(ctx),
         "```",
         "",
-        "Vrať jediný JSON objekt s poli actions, rejected, rulings. Pole news nech prázdné, zprávy píšeš ve druhé úloze.",
+        "Vrať jediný JSON objekt s poli actions, rejected, rulings. Pole news a questions nech prázdná a leak "
+        "prázdný řetězec, zprávy píšeš ve druhé úloze.",
         "",
         names_block(state),
     ])
@@ -912,7 +912,8 @@ def referee_news_prompt(state_after, events: list) -> str:
         "```",
         "",
         "Vrať jediný JSON objekt {\"news\": [\"...\"]} s 1 až 3 zprávami. Každá zpráva začíná datelinem "
-        "„Hlavní město, den %d:“ (město státu, o kterém zpráva je)." % engine.day_of(turn),
+        "„Hlavní město, den %d:“ (město státu, o kterém zpráva je). Pole actions, rejected, "
+        "rulings a questions nech prázdná, leak prázdný řetězec." % engine.day_of(turn),
         "",
         names_block(state_after),
     ])
@@ -1039,14 +1040,16 @@ def player_schema(pid: str) -> dict:
 
 
 def referee_schema() -> dict:
-    """Uloha 1 rozhodciho: actions, rejected, rulings, news."""
+    """Jedno schema pro vsechny ulohy rozhodciho (preklad tahu, zpravy, otazky), aby sdilely cache;
+    nepouzita pole zustavaji prazdna."""
     action = {"type": "object", "additionalProperties": False, "required": ["player", "type"],
               "properties": {"player": {"type": "string", "enum": ["A", "B", "C"]},
                              "type": {"type": "string", "enum": list(ACTION_TYPES) + ["message"]},
                              "slot": {"type": "string", "enum": ["domestic"]},
                              "text": {"type": "string"}, **ACTION_PARAMS}}
     return {
-        "type": "object", "additionalProperties": False, "required": ["actions", "rejected", "rulings", "news"],
+        "type": "object", "additionalProperties": False,
+        "required": ["actions", "rejected", "rulings", "news", "questions", "leak"],
         "$defs": {"action": action},
         "properties": {
             "actions": {"type": "array", "items": {"$ref": "#/$defs/action"}},
@@ -1060,26 +1063,30 @@ def referee_schema() -> dict:
                 "properties": {"situation": {"type": "string"}, "ruling": {"type": "string"},
                                "reason": {"type": "string"}, "proposed": {"type": "boolean"}}}},
             "news": {"type": "array", "items": {"type": "string"}},
+            "questions": {"type": "array", "items": {"type": "string"}},
+            "leak": {"type": "string"},
         },
     }
 
 
-NEWS_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["news"],
-               "properties": {"news": {"type": "array", "items": {"type": "string"}}}}
-
-
 def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usage_log: list | None = None,
-               cache: bool = False, label: str = "", schema: dict | None = None) -> str:
+               cache: bool = False, label: str = "", schema: dict | None = None,
+               thinking: dict | None = None, effort: str | None = None) -> str:
     """Jedno volani Messages API. Vraci text odpovedi; pri odmitnuti prazdny retezec.
     Skutecne usage (input_tokens, output_tokens) se pripise do usage_log."""
     # prompt caching jen tam, kde se stejny system opakuje v kratke dobe (dve volani rozhodciho v tahu)
     sys_block = [{"type": "text", "text": system, **({"cache_control": {"type": "ephemeral"}} if cache else {})}]
     kwargs = dict(model=model, max_tokens=max_tokens, system=sys_block,
                   messages=[{"role": "user", "content": user}],
-                  thinking={"type": "adaptive"})
+                  thinking=thinking or {"type": "adaptive"})
+    out_cfg = {}
     if schema is not None:
         # strukturovany vystup: odpoved je validni JSON podle schematu (parser a retry zustavaji jako pojistka)
-        kwargs["output_config"] = {"format": {"type": "json_schema", "schema": schema}}
+        out_cfg["format"] = {"type": "json_schema", "schema": schema}
+    if effort:
+        out_cfg["effort"] = effort
+    if out_cfg:
+        kwargs["output_config"] = out_cfg
     import anthropic
 
     def send(kw):
@@ -1092,11 +1099,13 @@ def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usag
     try:
         resp = send(kwargs)
     except anthropic.BadRequestError as err:
-        if "output_config" not in kwargs:
+        if "format" not in kwargs.get("output_config", {}) or "schema" not in str(err).lower():
             raise
         # pojistka: API schema odmitlo, volani probehne bez strukturovaneho vystupu (parser a retry dal plati)
-        print("output_config odmitnut (%s): %s; volam bez schematu" % (label, str(err)[:200]))
-        kwargs.pop("output_config")
+        print("schema odmitnuto (%s): %s; volam bez schematu" % (label, str(err)[:200]))
+        kwargs["output_config"].pop("format")
+        if not kwargs["output_config"]:
+            kwargs.pop("output_config")
         resp = send(kwargs)
     if usage_log is not None:
         u = {"call": label, "model": resp.model, "input_tokens": resp.usage.input_tokens,
@@ -1213,7 +1222,8 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
     base_user = user
     for attempt in range(retries + 1):
         raw = call_model(config.PLAYER_MODEL, system, user, max_tokens=PLAYER_MAX_TOKENS, usage_log=usage,
-                         label="hrac %s" % pid, schema=player_schema(pid))
+                         label="hrac %s" % pid, schema=player_schema(pid),
+                         thinking=PLAYER_THINKING, effort=PLAYER_EFFORT)
         attempts.append(raw)
         try:
             move = parse_json(raw)
@@ -1469,7 +1479,7 @@ def main() -> int:
     ref_usage = []
     ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
                          max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True, label="rozhodci akce",
-                         schema=referee_schema())
+                         schema=referee_schema(), thinking=REFEREE_THINKING)
     try:
         ref = parse_json(ref_raw)
     except (ValueError, json.JSONDecodeError) as err:
@@ -1494,7 +1504,7 @@ def main() -> int:
     # 6. rozhodci: Zpravy sveta
     news_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_news_prompt(new_state, events),
                           max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True,
-                          label="rozhodci zpravy", schema=NEWS_SCHEMA)
+                          label="rozhodci zpravy", schema=referee_schema(), thinking=REFEREE_THINKING)
     try:
         news = list(parse_json(news_raw).get("news") or [])[:3]
     except (ValueError, json.JSONDecodeError):
