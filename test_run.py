@@ -595,9 +595,43 @@ def test_odpovedi() -> bool:
     return all(ok for _, ok in checks)
 
 
+def test_duvody() -> bool:
+    """v1.13: veta duvodu NPC odpovida vysledku (3.4), skore, hod ani prahy se nemeni."""
+    neg = set(engine.DECISION_REASONS.values())
+    pos = engine.DECISION_POSITIVE
+
+    def sedi(outcome, reason):
+        if outcome == "prijato":
+            return reason == pos
+        if outcome == "podminka":
+            return reason.startswith(pos) and (reason == pos or reason[len(pos):].startswith(" Zatím ale jen zčásti: "))
+        return pos not in reason and (reason in neg or reason == engine.DECISION_NEUTRAL)
+
+    checks = []
+    faktory = ({}, {"otevrenost": -4.0}, {"cena": -3.0, "vliv": -8.0}, {"vliv": 12.0, "sila": -15.0})
+    for outcome in ("prijato", "podminka", "protinavrh", "odmitnuto"):
+        vety = [engine.decision_reason(outcome, fk) for fk in faktory]
+        checks.append(("%s: věty %s" % (outcome, "; ".join(sorted(set(vety)))), all(sedi(outcome, v) for v in vety)))
+    checks.append(("podmínka uvádí nejhorší záporný faktor",
+                   engine.decision_reason("podminka", {"cena": -3.0, "vliv": -8.0})
+                   == pos + " Zatím ale jen zčásti: " + engine.DECISION_REASONS["vliv"]))
+    checks.append(("odmítnutí bez záporného faktoru je neutrální",
+                   engine.decision_reason("odmitnuto", {"vliv": 4.0}) == engine.DECISION_NEUTRAL))
+    # skutecna rozhodnuti: 30 tahu scenare (b), kazdy zapis v logu ma vetu podle vysledku
+    res = run(30, scenario_b)
+    zapisy = [r for p in ("A", "B") for r in res["state"].get("private_log", {}).get(p, [])
+              if r.get("outcome") in ("prijato", "podminka", "protinavrh", "odmitnuto")]
+    spatne = [r for r in zapisy if not sedi(r["outcome"], r["reason"])]
+    checks.append(("scénář (b), 30 tahů: %d rozhodnutí NPC, nesouhlasí %d" % (len(zapisy), len(spatne)), not spatne))
+    print("TESTY DUVODU NPC (v1.13)")
+    for name, ok in checks:
+        print("  [%s] %s" % ("OK " if ok else "NE ", name))
+    return all(ok for _, ok in checks)
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
-    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "odpovedi", "vse"], default="vse")
+    ap.add_argument("--scenar", choices=["0", "a", "b", "k", "odpovedi", "duvody", "vse"], default="vse")
     args = ap.parse_args()
     klice = ["0", "a", "b", "k"] if args.scenar == "vse" else [args.scenar]
 
@@ -605,6 +639,9 @@ def main() -> int:
     if args.scenar in ("odpovedi", "vse"):
         vysledek &= test_odpovedi()
         klice = [k for k in klice if k != "odpovedi"]
+    if args.scenar in ("duvody", "vse"):
+        vysledek &= test_duvody()
+        klice = [k for k in klice if k != "duvody"]
     for k in klice:
         fn, popis = SCENARE[k]
         print("=" * 78)

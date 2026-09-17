@@ -486,6 +486,18 @@ DECISION_POSITIVE = "Nabídka odpovídá našim zájmům."
 DECISION_NEUTRAL = "Nabídku jsme po zvážení nepřijali."
 
 
+def decision_reason(outcome: str, factors: dict) -> str:
+    """3.4 (v1.13): veta duvodu odpovida vysledku. Prijeti nikdy nenese zapornou vetu,
+    odmitnuti a protinavrh nikdy DECISION_POSITIVE."""
+    negatives = {k: v for k, v in factors.items() if v < 0 and k in DECISION_REASONS}
+    worst = DECISION_REASONS[min(negatives, key=negatives.get)] if negatives else None
+    if outcome == "prijato":
+        return DECISION_POSITIVE
+    if outcome == "podminka":
+        return DECISION_POSITIVE + (" Zatím ale jen zčásti: " + worst if worst else "")
+    return worst or DECISION_NEUTRAL
+
+
 def _npc_score(state, npcdata, pid, nid, atype, params, price_ratio=None, direction=None):
     """3.4: faktory a skore NPC bez hodu. Pouziva ho _npc_decide i soutez o cil (3.4a)."""
     turn = int(state["meta"]["turn"])
@@ -540,11 +552,7 @@ def _npc_decide(state, npcdata, pid, nid, atype, params, price_ratio=None,
         outcome = "protinavrh"
     else:
         outcome = "odmitnuto"
-    negatives = {k: v for k, v in f.items() if v < 0}
-    if negatives:
-        reason = DECISION_REASONS[min(negatives, key=negatives.get)]
-    else:
-        reason = DECISION_POSITIVE if outcome in ("prijato", "podminka") else DECISION_NEUTRAL
+    reason = decision_reason(outcome, f)
 
     counter = None
     if outcome == "protinavrh":
