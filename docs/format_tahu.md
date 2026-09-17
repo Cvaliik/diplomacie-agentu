@@ -13,7 +13,8 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
     { "type": "...", "...": "..." }
   ],
   "domestic_action": { "type": "invest_industry" },
-  "message": { "target": "B", "text": "Soukromá zpráva, nebo celé pole null." }
+  "message": { "target": "B", "text": "Soukromá zpráva, nebo celé pole null." },
+  "poznamky_pro_pristi_tah": "Co si chceš pamatovat do příštího tahu (nebo prázdný řetězec)."
 }
 ```
 
@@ -24,6 +25,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 | `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
 | `domestic_action` | objekt nebo `null` | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); Unie pole nemá |
 | `message` | objekt nebo `null` | ano | nejvýš 1 soukromá zpráva za tah mimo limit akcí: `target` a `text` |
+| `poznamky_pro_pristi_tah` | text | ano | tvé poznámky do spisu, nejvýš 300 slov, smí být prázdný řetězec; příště je dostaneš doslova v bloku `tve_poznamky`, soupeř je nevidí, publikum ano |
 
 Odpověď se kontroluje proti JSON schématu (strukturovaný výstup API): jiná pole ani jiné typy akcí projít nemohou.
 Zpráva se zadává jen v poli `message`, ne v seznamu `actions`.
@@ -281,6 +283,7 @@ Když nabídky téhož NPC třikrát po sobě ignoruješ, ubírá ti to u něj v
     { "type": "loan", "target": "N6", "amount": 10 }
   ],
   "domestic_action": { "type": "invest_tech" },
-  "message": { "target": "B", "text": "O Kessaru můžeme mluvit." }
+  "message": { "target": "B", "text": "O Kessaru můžeme mluvit." },
+  "poznamky_pro_pristi_tah": "Plán: držet ropu z Haldenu. Ověřit, zda Ostrogard dodrží slib o dodávkách."
 }
 ```

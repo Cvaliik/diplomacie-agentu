@@ -276,7 +276,8 @@ def private_messages(state, pid: str) -> list[dict]:
 # pamet hracu (v1.11, E9 az E11): jen z vlastnich uvah a dat enginu
 # --------------------------------------------------------------------------
 
-MEMORY_TURNS = 3
+MEMORY_TURNS = 1   # tve_minule_uvahy: jen minuly tah (dlouhodobou pamet si hrac vede v poznamkach)
+NOTES_FIELD = "poznamky_pro_pristi_tah"
 MEMORY_PLAYERS = ("A", "B")
 OPPONENT = {"A": "B", "B": "A"}
 # udalosti soupere, ktere jsou verejne (bez vlivu a soukromeho logu)
@@ -308,6 +309,13 @@ def memory_reasoning(turn: int, pid: str) -> list[dict]:
         if text:
             out.append({"tah": t, "uvaha": text})
     return out
+
+
+def memory_notes(turn: int, pid: str) -> str:
+    """Doslovne poznamky hrace pid z minuleho tahu (v tahu 1 prazdne); nikdy cizi."""
+    snap = load_snapshot(turn - 1)
+    move = ((snap or {}).get("turns") or {}).get(pid) or {}
+    return move.get(NOTES_FIELD) or ""
 
 
 def _compact(obj) -> str:
@@ -920,11 +928,18 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
     system = "\n\n".join([base.strip(), secret.strip(), fmt.strip()])
     log = public_log(turn)
     msgs = private_messages(state, pid)
-    memory = []
     npcdata = json.loads(read_text(config.NPC_PATH))
+    # vlastni poznamky z minuleho tahu doslova (A, B i Unie)
+    memory = [
+        "## tve_poznamky (tvé poznámky z minulého tahu, doslova; soupeř je nevidí)",
+        "```text",
+        memory_notes(turn, pid),
+        "```",
+        "",
+    ]
     if pid in MEMORY_PLAYERS:
-        memory = [
-            "## tve_minule_uvahy (tvé vlastní úvahy z posledních %d tahů)" % MEMORY_TURNS,
+        memory += [
+            "## tve_minule_uvahy (tvá vlastní úvaha z minulého tahu)",
             "```json",
             _compact(memory_reasoning(turn, pid)),
             "```",
@@ -1066,14 +1081,20 @@ def check_player_input(state, views, pid: str, log: list) -> list[str]:
 
 
 def check_foreign_reasoning(pid: str, turn: int, user: str) -> list[str]:
-    """v1.11 (E9): v promptu hrace nesmi byt cizi private_reasoning z pametovych tahu."""
+    """v1.11 (E9): v promptu hrace nesmi byt cizi private_reasoning ani cizi poznamky; vlastni poznamky
+    jsou prave ty z minuleho tahu hrace pid."""
     errors = []
     for t in range(max(1, turn - config.PUBLIC_LOG_TURNS - 1), turn):
         snap = load_snapshot(t)
         for q, move in ((snap or {}).get("turns") or {}).items():
-            text = (move.get("private_reasoning") or "").strip()
-            if q != pid and len(text) >= 20 and text[:200] in user:
-                errors.append("prompt obsahuje uvahu hrace %s z tahu %d" % (q, t))
+            for field, label in (("private_reasoning", "uvahu"), (NOTES_FIELD, "poznamky")):
+                text = (move.get(field) or "").strip()
+                if q != pid and len(text) >= 20 and text[:200] in user:
+                    errors.append("prompt obsahuje %s hrace %s z tahu %d" % (label, q, t))
+    own = memory_notes(turn, pid)
+    m = re.search(r"## tve_poznamky[^\n]*\n```text\n(.*?)\n```", user, re.S)
+    if m is None or m.group(1) != own:
+        errors.append("blok tve_poznamky neodpovida poznamkam hrace %s z minuleho tahu" % pid)
     return errors
 
 
@@ -1139,6 +1160,7 @@ def player_schema(pid: str) -> dict:
         "private_reasoning": {"type": "string", "minLength": MIN_REASONING_CHARS},
         "actions": {"type": "array", "items": action},
         "message": {"anyOf": [{"type": "null"}, MESSAGE_SCHEMA]},
+        NOTES_FIELD: {"type": "string"},
     }
     if pid in MEMORY_PLAYERS:
         props["domestic_action"] = {"anyOf": [{"type": "null"}, {
@@ -1245,7 +1267,8 @@ def valid_move(obj) -> bool:
     if not (isinstance(obj, dict) and isinstance(obj.get("public_statement"), str)
             and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list)
             and isinstance(obj.get("domestic_action"), (dict, type(None)))
-            and isinstance(obj.get("message"), (dict, type(None)))):
+            and isinstance(obj.get("message"), (dict, type(None)))
+            and isinstance(obj.get(NOTES_FIELD), str)):
         return False
     # v1.12: uvaha aspon MIN_REASONING_CHARS znaku a aspon jedna akce, domaci akce nebo zprava
     if len(obj["private_reasoning"].strip()) < MIN_REASONING_CHARS:
@@ -1343,7 +1366,7 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
         if not valid_move(move):
             save_fail(turn, pid, attempt + 1, raw,
                       "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action ci message "
-                      "neni objekt ani null, nebo (v1.12) private_reasoning kratsi nez %d znaku ci zadna akce, "
+                      "neni objekt ani null, chybi poznamky_pro_pristi_tah, nebo (v1.12) private_reasoning kratsi nez %d znaku ci zadna akce, "
                       "domaci akce ani zprava" % MIN_REASONING_CHARS,
                       usage)
             continue
@@ -1362,7 +1385,7 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
             move["attempts"] = attempt + 1
             move["usage"] = usage
             return move
-    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [], "domestic_action": None, "message": None,
+    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [], "domestic_action": None, "message": None, NOTES_FIELD: "",
             "silent": True, "attempts": len(attempts), "raw": attempts, "usage": usage}
 
 
@@ -1542,7 +1565,8 @@ def main() -> int:
                                  "private_reasoning": "<odpověď hráče %s>" % pid,
                                  "actions": ["<akce hráče %s>" % pid],
                                  "domestic_action": ("<domácí akce hráče %s nebo null>" % pid) if pid in MEMORY_PLAYERS else None,
-                                 "message": "<zpráva hráče %s nebo null>" % pid}
+                                 "message": "<zpráva hráče %s nebo null>" % pid,
+                                 NOTES_FIELD: "<poznámky hráče %s>" % pid}
                            for pid in players}
             path = DEBUG_DIR / ("turn_%03d_rozhodci.md" % turn)
             write_debug_prompt(path, "Prompt rozhodčího, tah %d, úloha 1 (tahy hráčů doplní běh)" % turn,

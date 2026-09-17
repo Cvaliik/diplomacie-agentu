@@ -596,6 +596,9 @@ function panelTahu(snimek, t) {
     } else if (!m.silent) {
       html += '<p class="ticho">Úvahy nezaznamenány (technická chyba, odpověď hráče dorazila neúplná).</p>';
     }
+    if (m.poznamky_pro_pristi_tah) {
+      html += `<details><summary>Poznámky do spisu</summary><p>${esc(m.poznamky_pro_pristi_tah)}</p></details>`;
+    }
     if (seznam.length) {
       html += `<p class="popis">Akce</p><ul class="seznam">${seznam.map((a) => `<li>${esc(akce(a))}${a.slot === "domestic" ? " (domácí akce)" : ""}</li>`).join("")}</ul>`;
     } else if (!m.silent) {

@@ -571,7 +571,7 @@ def test_odpovedi() -> bool:
     uvaha = "Ohlédnutí: soupeř uzavřel pakt s Haldenem, můj plán s ropou funguje, ale smlouvy mě stojí peníze."
     checks = []
     prazdny = {"public_statement": "Projev.", "private_reasoning": "", "actions": [],
-               "domestic_action": None, "message": None}
+               "domestic_action": None, "message": None, "poznamky_pro_pristi_tah": ""}
     checks.append(("prázdná úvaha a žádná akce neprojde", not run_turn.valid_move(prazdny)))
     checks.append(("krátká úvaha neprojde", not run_turn.valid_move(dict(prazdny, private_reasoning="Krátce.",
                                                                           domestic_action={"type": "invest_law"}))))
@@ -579,6 +579,22 @@ def test_odpovedi() -> bool:
                    not run_turn.valid_move(dict(prazdny, private_reasoning=uvaha))))
     checks.append(("úvaha se zprávou projde", run_turn.valid_move(dict(
         prazdny, private_reasoning=uvaha, message={"target": "A", "text": "Dobrý den."}))))
+    bez_poznamek = dict(prazdny, private_reasoning=uvaha, message={"target": "A", "text": "Dobrý den."})
+    bez_poznamek.pop("poznamky_pro_pristi_tah")
+    checks.append(("odpověď bez pole poznámek neprojde", not run_turn.valid_move(bez_poznamek)))
+    # unik poznamek: hrac dostane jen sve poznamky z minuleho tahu
+    snap = {"turns": {"A": {"private_reasoning": "", "poznamky_pro_pristi_tah": "Kalvera si pamatuje: ropa z Haldenu."},
+                      "B": {"private_reasoning": "", "poznamky_pro_pristi_tah": "Ostrogard si pamatuje: Tavros později."}}}
+    orig = run_turn.load_snapshot
+    run_turn.load_snapshot = lambda t: snap if t == 5 else None
+    try:
+        blok = lambda text: "## tve_poznamky (x)\n```text\n%s\n```\n" % text
+        ok_vlastni = not run_turn.check_foreign_reasoning("A", 6, blok(snap["turns"]["A"]["poznamky_pro_pristi_tah"]))
+        cizi = run_turn.check_foreign_reasoning("A", 6, blok(snap["turns"]["B"]["poznamky_pro_pristi_tah"]))
+    finally:
+        run_turn.load_snapshot = orig
+    checks.append(("hráč A dostane jen své poznámky", ok_vlastni))
+    checks.append(("cizí poznámky v promptu jsou únik: %s" % "; ".join(cizi), len(cizi) == 2))
     moves = {"A": {"message": None},
              "B": {"message": {"target": "A", "text": "Kessar je náš."}}}
     ref = [{"player": "B", "type": "message", "target": "A", "demand": "", "rate": 0},

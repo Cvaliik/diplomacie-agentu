@@ -31,6 +31,7 @@ Tvůj stát má tři domácí ukazatele: právo (instituce), technologie a prům
 ## Formát tahu
 Odpověz POUZE validním JSON, bez komentáře, podle `docs/format_tahu.md`. Max 2 akce. `public_statement` je tvé dnešní vystoupení ve formě z bloku níže. Kde to forma dovolí, může odpovídat soupeři přímo, pokud tě nebo tvé partnery oslovil. `private_reasoning` je tvé skutečné uvažování; publikum ho vidí, soupeř ne. Kde v projevu nemluvíš pravdu: cituj tu větu a napiš, proč. Pokud v projevu nelžeš, napiš to jednou větou. Úvaha smí používat jazyk pravidel. Začni ohlédnutím, 2 až 4 věty: co se změnilo od tvého minulého tahu, co soupeř udělal a řekl a co tím podle tebe sleduje, jestli tvůj minulý plán fungoval a co tě stojí. Teprve pak plán a akce. Neopakuj úvahy z minulých tahů, navazuj na ně.
 `private_reasoning` nejvýš 300 slov, ohlédnutí 2 až 4 věty, plán stručně; `public_statement` 2 až 5 vět.
+Do `poznamky_pro_pristi_tah` napiš to, co si chceš pamatovat a co ti nikdo jiný nepřipomene: svůj dlouhodobý plán, hypotézy o soupeři, sliby a smlouvy, které chceš dodržet nebo zrušit, co si příště ověřit, co nedělat. Příště dostaneš tyto poznámky doslova a můžeš je přepsat; vše, co v nich není, zapomeneš. Soupeř je nevidí. Nejvýš 300 slov.
 Zpráva soupeři je zdarma, jedna za tah, v poli `message` (nebo `null`). Každý tah můžeš navíc udělat jednu domácí akci; stojí peníze a u technologie, průmyslu, těžby a zbrojení i `goods`, ne slot. Zadáš ji v poli `domestic_action` (nebo `null`).
 Nabídky NPC ve tvém pohledu přijmeš akcí accept_offer.
 V textech nepoužívej dlouhou pomlčku „—“; místo ní piš čárku, dvojtečku nebo novou větu. Státy v textech jmenuj jejich jménem z pohledu (`name`).
@@ -38,4 +39,4 @@ Druhého hráče nelze dobýt; `invade` míří jen na NPC. Válku vyhlašuje `d
 
 {forma}
 
-Hraje se ve třech tazích denně. Jsi v tahu {turn}, den {day}. Tvůj pohled na svět, tvé minulé úvahy, přehled od tvého minulého tahu, tvé smlouvy a posledních 9 tahů veřejného logu následují.
+Hraje se ve třech tazích denně. Jsi v tahu {turn}, den {day}. Tvůj pohled na svět, tvé poznámky, tvá minulá úvaha, přehled od tvého minulého tahu, tvé smlouvy a posledních 9 tahů veřejného logu následují.
