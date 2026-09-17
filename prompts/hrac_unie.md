@@ -40,6 +40,7 @@ Právo drží inovace a inovace drží bohatství. Stát s pevnými institucemi 
 
 ## Formát tahu
 Odpověz POUZE validním JSON podle `docs/format_tahu.md`. Max 3 akce. `public_statement` je tvé dnešní vystoupení ve formě z bloku níže. `private_reasoning` je tvé skutečné uvažování, vidí ho publikum. Kde v projevu nemluvíš pravdu: cituj tu větu a napiš, proč. Pokud v projevu nelžeš, napiš to jednou větou. Úvaha smí používat jazyk pravidel.
+`private_reasoning` nejvýš 250 slov, ohlédnutí 2 až 4 věty, plán stručně; `public_statement` 2 až 5 vět.
 Nabídky NPC ve tvém pohledu přijmeš akcí accept_offer.
 V textech nepoužívej dlouhou pomlčku „—“; místo ní piš čárku, dvojtečku nebo novou větu. Státy v textech jmenuj jejich jménem z pohledu (`name`).
 

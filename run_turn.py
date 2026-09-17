@@ -54,6 +54,10 @@ SECRET_FILES = {"A": "cil_A.md", "B": "cil_B.md", "C": "cil_C.md"}
 SILENT_STATEMENT = "Vláda nevydala prohlášení."
 # v1.12: kratsi uvaha znamena neuplnou odpoved (tah 4: prazdna uvaha i akce pri platnem JSON)
 MIN_REASONING_CHARS = 80
+# delka odpovedi: strop tokenu pro hrace a rozhodciho
+PLAYER_MAX_TOKENS = 3000
+REFEREE_MAX_TOKENS = 3000
+OVER_LIMIT_REASON = "nad limit akcí"
 
 # Co hrac nikdy nesmi dostat (zadani 14. 9. 2026, bod 7). Klice se hledaji v pohledu
 # a ve verejnem logu; law a tech se hlidaji zvlast, protoze C je u clenu a kandidatu vidi.
@@ -777,7 +781,8 @@ def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> Non
     schema = LEAK_SCHEMA if info["id"] == 7 else QUESTIONS_SCHEMA
     try:
         raw = call_model(config.REFEREE_MODEL, referee_system(), questions_prompt(state, npcdata, pid, info),
-                         max_tokens=4000, usage_log=usage_log, cache=True, label="rozhodci otazky %s" % pid,
+                         max_tokens=REFEREE_MAX_TOKENS, usage_log=usage_log, cache=True,
+                         label="rozhodci otazky %s" % pid,
                          schema=schema)
         data = parse_json(raw)
     except (ValueError, json.JSONDecodeError):
@@ -1142,6 +1147,42 @@ def player_messages(actions: list, moves: dict) -> list:
     return out
 
 
+def trim_player_actions(pid: str, move: dict) -> list:
+    """Limit akci vynucuje skript: v tahu hrace zustane prvnich ACTION_LIMIT zahranicnich akci,
+    domaci akce je jedna uz podle formatu. Vraci vyrazene akce."""
+    acts = list(move.get("actions") or [])
+    limit = engine.ACTION_LIMIT[pid]
+    move["actions"] = acts[:limit]
+    return acts[limit:]
+
+
+def enforce_limits(actions: list) -> tuple[list, list]:
+    """Limit akci po rozhodcim: v kazdem slotu (zahranicni, domaci, zprava) prvni akce do limitu,
+    zbytek vyrazen. Vraci (platne, vyrazene)."""
+    counts, keep, over = {}, [], []
+    for a in actions:
+        pid = a.get("player")
+        slot = engine.action_slot(a)
+        key = (pid, slot)
+        if pid in engine.ACTION_LIMIT and counts.get(key, 0) >= engine.slot_limit(pid, slot):
+            over.append(a)
+            continue
+        counts[key] = counts.get(key, 0) + 1
+        keep.append(a)
+    return keep, over
+
+
+def limit_rejections(state, turn: int, over: list) -> list:
+    """Vyrazene akce nad limit: zaznam do rejected a do soukromeho logu hrace."""
+    out = []
+    for pid, a in over:
+        out.append({"player": pid, "action": a, "reason": OVER_LIMIT_REASON})
+        state.setdefault("private_log", {"A": [], "B": [], "C": []}).setdefault(pid, []).append(
+            {"turn": turn, "npc": a.get("target"), "action": a.get("type"), "outcome": "vyrazeno",
+             "reason": OVER_LIMIT_REASON, "counter": None})
+    return out
+
+
 def mark_domestic(actions: list, moves: dict) -> list:
     """v1.11 (C7): domaci akce A a B nese slot domestic; C domaci akci nema. Rozhodci ji oznaci,
     engine ji uzna jen pro povoleny typ na vlastni stat (action_slot)."""
@@ -1171,8 +1212,8 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
     usage = []
     base_user = user
     for attempt in range(retries + 1):
-        raw = call_model(config.PLAYER_MODEL, system, user, usage_log=usage, label="hrac %s" % pid,
-                         schema=player_schema(pid))
+        raw = call_model(config.PLAYER_MODEL, system, user, max_tokens=PLAYER_MAX_TOKENS, usage_log=usage,
+                         label="hrac %s" % pid, schema=player_schema(pid))
         attempts.append(raw)
         try:
             move = parse_json(raw)
@@ -1400,6 +1441,10 @@ def main() -> int:
     with concurrent.futures.ThreadPoolExecutor(max_workers=len(players)) as ex:
         futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn, genres.get(pid)) for pid in players}
         moves = {pid: f.result() for pid, f in futures.items()}
+    # limit akci pred rozhodcim: prebytecne zahranicni akce hrace se vyradi
+    over_limit = []
+    for pid, m in moves.items():
+        over_limit += [(pid, a) for a in trim_player_actions(pid, m)]
     for pid, info in genres.items():
         # v1.13 (2b): zanr, otazky a udalost do snimku (bez textu soukrome zpravy)
         moves[pid]["genre"] = {k: v for k, v in info.items() if k not in ("leak_source", "form", "turn")}
@@ -1423,7 +1468,8 @@ def main() -> int:
                     for pid, m in moves.items()}
     ref_usage = []
     ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
-                         usage_log=ref_usage, cache=True, label="rozhodci akce", schema=referee_schema())
+                         max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True, label="rozhodci akce",
+                         schema=referee_schema())
     try:
         ref = parse_json(ref_raw)
     except (ValueError, json.JSONDecodeError) as err:
@@ -1434,16 +1480,21 @@ def main() -> int:
     actions = [a for a in ref.get("actions") or [] if isinstance(a, dict) and a.get("player") in players]
     actions = mark_domestic(actions, moves)
     actions = player_messages(actions, moves)
+    # limit akci po rozhodcim: v kazdem slotu jen prvni akce do limitu
+    actions, over_ref = enforce_limits(actions)
+    over_limit += [(a.get("player"), a) for a in over_ref]
 
     # 5. prepocet
     delivered = list(state.get("messages_pending", []))
     work = copy.deepcopy(state)
     work["messages_pending"] = []
+    limit_rejected = limit_rejections(work, turn, over_limit)
     new_state, events, applied = engine.apply_turn(work, npcdata, actions)
 
     # 6. rozhodci: Zpravy sveta
     news_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_news_prompt(new_state, events),
-                          usage_log=ref_usage, cache=True, label="rozhodci zpravy", schema=NEWS_SCHEMA)
+                          max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True,
+                          label="rozhodci zpravy", schema=NEWS_SCHEMA)
     try:
         news = list(parse_json(news_raw).get("news") or [])[:3]
     except (ValueError, json.JSONDecodeError):
@@ -1460,7 +1511,7 @@ def main() -> int:
     new_views = engine.build_views(new_state, npcdata)
     errors = validate(state, new_state, applied, actions=actions, views=new_views)
     snapshot = {"turn": turn, "state": new_state, "turns": moves, "actions": actions,
-                "rejected": ref.get("rejected") or [], "rulings": ref.get("rulings") or [],
+                "rejected": (ref.get("rejected") or []) + limit_rejected, "rulings": ref.get("rulings") or [],
                 "news": news, "events": events, "delivered_messages": delivered, "applied_rules": applied,
                 "usage": q_usage + [u for m in moves.values() for u in m.get("usage", [])] + ref_usage}
     if errors:
