@@ -125,6 +125,8 @@ Trvalé vztahy (obchody, pakty, sankce) drží seznam `deals`, kde každý zázn
 
 Hra má 3 tahy denně (7:00, 13:00, 20:00), 90 tahů celkem, den 30 = tahy 88 až 90.
 
+**Herní čas (v1.14):** kolo = 4 měsíce, den = rok, hra = 30 let. Zpráva doručená v příštím kole je dobová stylizace (kurýr, sněm), ne chyba. Slot 1 je jaro, 2 léto, 3 zima; převod dělá jediná funkce `engine.game_time()`.
+
 `slot` je 1 pro ráno, 2 pro poledne, 3 pro večer. Den se počítá jako `((turn - 1) // 3) + 1`,
 slot jako `((turn - 1) % 3) + 1`.
 
@@ -144,7 +146,7 @@ Pořadí v tahu:
 
 ```json
 {
-  "public_statement": "Diplomatický projev, vidí ho všichni. 2 až 5 vět.",
+  "public_statement": "Diplomatický projev, vidí ho všichni; délka podle žánru.",
   "private_reasoning": "Skutečné zdůvodnění, vidí ho jen publikum. Upřímně, včetně lží v projevu.",
   "actions": [ { "type": "...", ... }, { "type": "...", ... } ],
   "domestic_action": { "type": "invest_industry" },
@@ -155,6 +157,10 @@ Pořadí v tahu:
 Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí ignoruje a zapíše důvod.
 
 **Domácí akce (v1.11):** hráči A a B smějí navíc jednu domácí akci v poli `domestic_action` (objekt; bez domácí akce `{"type": "zadna"}`). Akci provede jen toto pole, ne zmínka v úvaze. Povolené typy: `invest_tech`, `invest_law`, `invest_industry`, `invest_prod`, `arm`, `explore`, vždy na vlastní stát. Do limitu 2 akcí se nepočítá; akci sestaví `run_turn.py` přímo z tahu hráče (typ a parametry hlídá schéma odpovědi, náklady a podmínky engine), rozhodčí ji nepřekládá. Investice do NPC ve sféře zůstávají běžnými akcemi v limitu. Unie domácí akci nemá.
+
+**Mlčení (v1.14):** Hráč smí mlčet; prázdný projev je platný a engine zapíše pevnou větu. Žánr ticho se proto nelosuje.
+
+**Obsah vystoupení (v1.14):** Vystoupení nese závazek, podmínku, hrozbu, nabídku nebo ujištění s adresátem a každá jeho věta nový fakt; katalog v docs/zanry.md. V zimním kole (slot 3) vystoupení hodnotí rok a je o dvě věty delší.
 
 **Žánry vystoupení (v1.13):** `public_statement` není volný projev. Engine každé kolo vylosuje hráči A, B i Unii formu vystoupení (komuniké, otázka novináře, tisková konference, projev doma, dopis nebo státní varianta, ticho, únik, stanovisko k události) s délkou ve větách; katalog, váhy, omezení losu a spouštěče stanoviska jsou v `docs/zanry.md`. Pro žánry s otázkami je před koly hráčů vytvoří rozhodčí. Pravidla vystoupení: jedno téma; nejvýš dva jmenované státy; žádné ceny, množství a procenta, jen hrubé poměry slovy; zakázaná slova pakt, vliv, kontrakt, jednotka, slot, tah, nabídka číslo, offer, deal; o vlastních krocích kola se nemluví výčtem. **Tvrdá kontrola:** projev s číslem s desetinnou čárkou nebo tečkou, se znakem %, se zakázaným slovem (i v českých tvarech) nebo s počtem vět mimo rozsah žánru ±1 je neplatná odpověď a opakuje se jako podle 10.6; u žánru ticho musí být projev prázdný a engine zapíše pevnou větu. `private_reasoning`: kde hráč v projevu nemluví pravdu, cituje tu větu a napíše proč; pokud nelže, napíše to jednou větou.
 
@@ -428,7 +434,7 @@ Pokud do tahu 45 nenastane `boom` (nikdo nepůjčil), engine vynutí `boom` a ro
 
 ## 6. Zprávy světa
 
-Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují jménem, nikdy ID. **Dateline (v1.13):** každá zpráva začíná „Jméno hlavního města, den D:“, kde město patří státu, o kterém zpráva je (pole `capital` v `npc.json` pro A, B a všech 16 NPC; zpráva o Unii nese město jejího prvního člena), a D je den kola; zbytek zprávy se nemění. Uniklá depeše (`docs/zanry.md`, žánr 7) nese město odesílatele. Kronikář dateliny nepíše, jen je smí citovat. Šablony níže uvádějí text za datelinem. Generují se z prahů:
+Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují jménem, nikdy ID. **Dateline (v1.13):** každá zpráva začíná „Jméno hlavního města, rok R:“ (v1.14, herní rok kola), kde město patří státu, o kterém zpráva je (pole `capital` v `npc.json` pro A, B a všech 16 NPC; zpráva o Unii nese město jejího prvního člena), a R je herní rok kola; zbytek zprávy se nemění. Uniklá depeše (`docs/zanry.md`, žánr 7) nese město odesílatele. Kronikář dateliny nepíše, jen je smí citovat. Šablony níže uvádějí text za datelinem. Generují se z prahů:
 
 - bída: "V N nepokoje." → další tah "V N hladomor." → pád vlády.
 - cena oritu > 2× výchozí: "Oritová horečka: banky v N půjčují bez záruk."

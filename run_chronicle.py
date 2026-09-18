@@ -62,26 +62,28 @@ def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
         events.append({"turn": snap["turn"], "events": snap.get("events", [])})
     phase = state_after["phase"]
     parts = [
-        "# Den %d (%s), fáze %s" % (day, {"denni": "denní kronika", "tydenni": "týdenní kronika",
-                                          "finale": "finále"}[kind], phase),
+        "# %s (%s), fáze %s" % (engine.game_time(day_turns(day)[0], season=False).capitalize(),
+                                   {"denni": "roční kronika", "tydenni": "bilance sedmi let",
+                                    "finale": "finále"}[kind], phase),
         "",
-        "## Tahy dne (projevy, skrytá zdůvodnění, poznámky hráčů do spisu, akce, vyřazené akce, Zprávy světa)",
+        "## Kola roku: jaro, léto, zima (projevy, skrytá zdůvodnění, poznámky hráčů do spisu, akce, vyřazené akce, "
+        "Zprávy světa)",
         "```json", dump(turns), "```", "",
         "## Události od enginu",
         "```json", dump(events), "```", "",
-        "## Stav před dnem",
+        "## Stav před rokem",
         "```json", dump(_state_for_chronicle(state_before)), "```", "",
-        "## Stav po dni",
+        "## Stav po roce",
         "```json", dump(_state_for_chronicle(state_after)), "```", "",
-        "## Včerejší kronika",
+        "## Loňská kronika",
         prev_chronicle or "(žádná)",
     ]
     if week_chronicles:
-        parts += ["", "## Kroniky týdne"]
+        parts += ["", "## Kroniky sedmi let"]
         for d in sorted(week_chronicles):
-            parts += ["", "### Den %d" % d, week_chronicles[d]]
+            parts += ["", "### %s" % engine.game_time(day_turns(d)[0], season=False).capitalize(), week_chronicles[d]]
     if metrics_by_day:
-        parts += ["", "## Metriky po dnech", "```json", dump(metrics_by_day), "```"]
+        parts += ["", "## Metriky po letech (den rozvrhu = herní rok)", "```json", dump(metrics_by_day), "```"]
     return system, "\n".join(parts)
 
 

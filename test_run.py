@@ -712,6 +712,24 @@ def test_zanry() -> bool:
     checks.append(("ticho vyžaduje prázdný projev",
                    bool(run_turn.statement_violations("Něco.", {"id": 6, "sentences": (0, 0)}))
                    and not run_turn.statement_violations("", {"id": 6, "sentences": (0, 0)})))
+    vse = [g for p in ("A", "B") for _, g in hist[p]]
+    checks.append(("v1.14: ticho se nelosuje", 6 not in vse))
+    checks.append(("v1.14: prázdný projev (mlčení) projde v každém žánru",
+                   not run_turn.statement_violations("", {"id": 1, "sentences": (2, 3)})))
+    orig2 = run_turn.load_snapshot
+    run_turn.load_snapshot = lambda t: None
+    try:
+        st3 = copy.deepcopy(base)
+        st3["genre"] = {}
+        zima = run_turn.draw_genre(st3, npcdata, "A", 9)      # kolo 9 = rok 3, zima
+        jaro = run_turn.draw_genre(copy.deepcopy(st3), npcdata, "A", 10)
+    finally:
+        run_turn.load_snapshot = orig2
+    zakl = list(run_turn.GENRES[zima["id"]]["sentences"])
+    checks.append(("v1.14: zima o dvě věty delší (%s: %s -> %s)" % (zima["name"], zakl, zima["sentences"]),
+                   zima["sentences"] == [zakl[0] + 2, zakl[1] + 2] and zima["zima"] and not jaro["zima"]))
+    checks.append(("v1.14: herní čas %s, %s" % (engine.game_time(9), engine.game_time(10)),
+                   engine.game_time(9) == "rok 3, zima" and engine.game_time(10) == "rok 4, jaro"))
     ev = {"events": [{"kind": "coup", "stat": "N9", "coups": 1}]}
     names = run_turn._state_names(base, npcdata)
     checks.append(("puč vyvolá stanovisko: %s" % run_turn.find_trigger(base, ev, "A", names),

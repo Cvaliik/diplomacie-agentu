@@ -600,7 +600,8 @@ GENRES = {
                          "B": "Nepodepsaný úvodník; nikdy nepřizná neúspěch.",
                          "C": "Suché usnesení nadepsané „Usnesení č. {resolution}“, s obratem „Rada rozhodla "
                               "poměrem hlasů“, bez uvedení, kdo byl proti."}},
-    6: {"key": "ticho", "weight": {"A": 5, "B": 5, "C": 5}, "sentences": (0, 0), "questions": 0,
+    # v1.14: ticho se nelosuje; mlceni je volba hrace (prazdny projev), engine zapise pevnou vetu
+    6: {"key": "ticho", "weight": {"A": 0, "B": 0, "C": 0}, "sentences": (0, 0), "questions": 0,
         "daily_max": {},
         "name": {"A": "Ticho", "B": "Ticho", "C": "Ticho"},
         "form": {p: "Dnes nevystupuješ: `public_statement` musí být prázdný řetězec \"\". "
@@ -624,6 +625,22 @@ STATEMENT_RULES = (
     "přátelé); o vlastních krocích z tohoto kola nemluv výčtem."
 )
 UNION_RULE = "V projevu nikdy nepíšeš, který člen jak hlasoval ani kdo byl proti."
+WINTER_RULE = "Je konec roku. Vystoupení hodnotí celý rok: co se změnilo a co z toho pro příští rok plyne."
+# v1.14 (3): obsah vet, spolecne pro vsechny zanry (docs/zanry.md)
+CONTENT_RULES = "\n".join([
+    "Obsah vět:",
+    "- Každé vystoupení nese závazek, po kterém někdo čeká něco jiného než před ním: slib, podmínka, hrozba, "
+    "nabídka, ujištění. Ne stejný tvar dvakrát po sobě; hrozba nejvýš jednou za rok.",
+    "- Adresát se střídá: soupeř, jmenovaný stát, vlastní lidé, situace (ceny, trh, krize, orit, instituce). "
+    "Soupeře adresuj nejvýš v každém čtvrtém vystoupení.",
+    "- Každá věta nese nový fakt, důsledek nebo podmínku. Věta, která říká zřejmé nebo mlží, se škrtá. Test: šla "
+    "by věta přečíst kterýmkoli státem v kterýkoli rok? Pak je prázdná.",
+    "- Celé věty jako tiskový mluvčí: spojky, vedlejší věty, normální slovosled, žádná hesla bez slovesa. První "
+    "věta říká, co děláš nebo co chceš, ne co se stalo; událost a Zprávy světa publikum zná.",
+    "- Čísla nahrazují jména a lhůty slovy v herním čase.",
+    "- Zakázané tvary: přísloví, aforismy, protiklady typu „X je krátké, Y je dlouhé“, řečnické otázky, věty "
+    "začínající „Pojmenuji“, „Svět mluví“, „Dnešní událost“.",
+])
 
 # tvrda kontrola projevu (2d)
 FORBIDDEN_PATTERNS = [
@@ -651,8 +668,11 @@ def count_sentences(text: str) -> int:
 
 
 def statement_violations(text: str, genre: dict) -> list[str]:
-    """2d: tvrda kontrola projevu podle zanru. Vraci seznam poruseni (prazdny = v poradku)."""
+    """2d: tvrda kontrola projevu podle zanru. Vraci seznam poruseni (prazdny = v poradku).
+    v1.14: prazdny projev je platne mlceni v kazdem zanru."""
     text = text or ""
+    if not text.strip():
+        return []
     if genre["id"] == 6:
         return [] if not text.strip() else ["forma Ticho vyžaduje prázdný public_statement"]
     out = []
@@ -795,8 +815,11 @@ def draw_genre(state, npcdata, pid: str, turn: int) -> dict:
                 gid = gid_
                 break
     g = GENRES[gid]
-    info.update({"id": gid, "key": g["key"], "name": g["name"][pid], "sentences": list(g["sentences"]),
-                 "questions_needed": g["questions"], "questions": []})
+    sentences = list(g["sentences"])
+    if slot == 3 and gid != 6:
+        sentences = [sentences[0] + 2, sentences[1] + 2]   # v1.14: zimni kolo hodnoti rok, o dve vety delsi
+    info.update({"id": gid, "key": g["key"], "name": g["name"][pid], "sentences": sentences,
+                 "questions_needed": g["questions"], "questions": [], "zima": slot == 3})
     form = g["form"][pid]
     if gid == 4 and pid == "C":
         members = sorted(C.get("members") or [], key=lambda x: int(x[1:]))
@@ -837,6 +860,8 @@ def genre_block(pid: str, info: dict) -> str:
              "**%s.** %s" % (info["name"], info["form"].replace("{leak}", info.get("leak") or "<větu vybere rozhodčí>"))]
     if info["id"] != 6:
         lines.append("Délka: %d až %d %s." % (lo, hi, "věty" if hi <= 4 else "vět"))
+    if info.get("zima"):
+        lines.append(WINTER_RULE)
     if info.get("questions"):
         lines.append("Otázky:")
         lines += ["- %s" % q for q in info["questions"]]
@@ -844,6 +869,7 @@ def genre_block(pid: str, info: dict) -> str:
         lines.append("Otázky: <otázky vygeneruje rozhodčí před tahem>")
     if info["id"] != 6:
         lines.append(STATEMENT_RULES)
+        lines.append(CONTENT_RULES)
     if pid == "C":
         lines.append(UNION_RULE)
     return "\n".join(lines)
@@ -860,7 +886,7 @@ def questions_prompt(state, npcdata, pid: str, info: dict) -> str:
     speeches = {names[q]: ((snap.get("turns") or {}).get(q) or {}).get("public_statement", SILENT_STATEMENT)
                 for q in others}
     n = info["questions_needed"]
-    lines = ["# Úloha: otázky novinářů pro stát %s, kolo %d (den %d)" % (names[pid], turn, engine.day_of(turn)), "",
+    lines = ["# Úloha: otázky novinářů pro stát %s, kolo %d (%s)" % (names[pid], turn, engine.game_time(turn)), "",
              "Napiš %d %s pro vystoupení „%s“. Každá otázka je jedna věta. Otázky vycházejí jen ze Zpráv světa "
              "a z projevu soupeře níže; nepoužívej skrytá data (právo, technologie, index prosperity, cizí vliv) "
              "ani čísla." % (n, "otázku" if n == 1 else "otázky", info["name"])]
@@ -892,7 +918,7 @@ def leak_news(state, npcdata, pid: str, info: dict) -> str:
     city = union_capital(state, npcdata) if pid == "C" else capitals(npcdata).get(pid)
     text = "Uniklá depeše ze soukromé zprávy státu %s: „%s“" % (names[pid], info["leak"])
     # v1.13 (cast 3): dateline hlavniho mesta odesilatele
-    return ("%s, den %d: %s" % (city, engine.day_of(info["turn"]), text)) if city else text
+    return ("%s, %s: %s" % (city, engine.game_time(info["turn"], season=False), text)) if city else text
 
 
 def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> None:
@@ -926,6 +952,7 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
     turn = next_turn(state)
     base = read_text(config.PROMPTS_DIR / PROMPT_FILES[pid])
     base = base.replace("{turn}", str(turn)).replace("{day}", str(engine.day_of(turn)))
+    base = base.replace("{cas}", engine.game_time(turn))   # v1.14: herni cas
     # v1.13: blok Forma dnesniho vystoupeni podle vylosovaneho zanru
     base = base.replace("{forma}", genre_block(pid, genre) if genre else "")
     secret = read_text(config.SECRETS_DIR / SECRET_FILES[pid])
@@ -961,7 +988,7 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
             "",
         ]
     user = "\n".join([
-        "# Tah %d, den %d" % (turn, engine.day_of(turn)),
+        "# Kolo %d, %s" % (turn, engine.game_time(turn)),
         "",
         "## Tvůj pohled na svět",
         "```json",
@@ -1042,8 +1069,8 @@ def referee_news_prompt(state_after, events: list) -> str:
         "```",
         "",
         "Vrať jediný JSON objekt {\"news\": [\"...\"]} s 1 až 3 zprávami. Každá zpráva začíná datelinem "
-        "„Hlavní město, den %d:“ (město státu, o kterém zpráva je). Pole actions, rejected, "
-        "rulings a questions nech prázdná, leak prázdný řetězec." % engine.day_of(turn),
+        "„Hlavní město, %s:“ (město státu, o kterém zpráva je). Pole actions, rejected, "
+        "rulings a questions nech prázdná, leak prázdný řetězec." % engine.game_time(turn, season=False),
         "",
         names_block(state_after),
     ])
@@ -1451,8 +1478,10 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
             user = base_user + "\n\nMinulá odpověď byla odmítnuta. Porušení v projevu: " + "; ".join(violations) + "."
             continue
         if valid_move(move):
-            if genre and genre["id"] == 6:
+            if not move["public_statement"].strip():
+                # v1.14: hrac mlci; engine zapise pevnou vetu zanru ticho
                 move["public_statement"] = GENRE_SILENT[pid]
+                move["mlci"] = True
             move.setdefault("domestic_action", None)
             move.setdefault("message", None)
             move["silent"] = False

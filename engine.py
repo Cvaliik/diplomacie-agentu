@@ -117,6 +117,16 @@ def slot_of(turn: int) -> int:
     return ((turn - 1) % 3) + 1
 
 
+SEASONS = {1: "jaro", 2: "léto", 3: "zima"}
+
+
+def game_time(turn: int, season: bool = True) -> str:
+    """Herni cas (v1.14), jedine misto prevodu: kolo = 4 mesice, den rozvrhu = rok, hra = 30 let.
+    Vraci "rok R, jaro | léto | zima" (slot 1, 2, 3; R = den), bez rocni doby jen "rok R"."""
+    r = day_of(int(turn))
+    return "rok %d, %s" % (r, SEASONS[slot_of(int(turn))]) if season else "rok %d" % r
+
+
 def npc_ids(state) -> list[str]:
     return list(state["npc"].keys())
 
@@ -3490,6 +3500,7 @@ def build_views(state, npcdata) -> dict:
             mine["clo_od_pristiho_tahu"] = C.get("tariff_next")
         views[pid] = {
             "turn": state["meta"]["turn"],
+            "cas": game_time(int(state["meta"]["turn"]) + 1),   # v1.14: herni cas kola, ktere hrac hraje
             "day": state["meta"]["day"],
             "slot": state["meta"]["slot"],
             "ja": mine,

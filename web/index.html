@@ -242,6 +242,7 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const cis = (n, d = 1) => (n === null || n === undefined || isNaN(Number(n))) ? "–"
   : Number(n).toLocaleString("cs-CZ", { maximumFractionDigits: d });
 const jm = (id) => hra.jmena[id] || id || "";
+const velke = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "");
 /* vysvetlivka: maly znak ? u pojmu, veta ze slovniku (slovnik.js) */
 const vys = (pojem) => `<button type="button" class="vys" data-pojem="${esc(pojem)}" aria-label="Co je ${esc(pojem)}">?</button>`;
 
@@ -391,7 +392,7 @@ async function ukaz(t) {
   hra.tah = t;
   const s = radek(t);
   if (!s) return;
-  $("tah-cislo").textContent = `tah ${t}`;
+  $("tah-cislo").textContent = (radek(t) && radek(t).cas) || `kolo ${t}`;
   hlavicka(s);
   mapa(s);
   zpravy(s);
@@ -420,9 +421,9 @@ async function snimekTahu(t) {
 
 function hlavicka(s) {
   const casti = [
-    `<span>Den <b>${s.day}</b></span>`,
-    `<span>tah <b>${s.turn}</b></span>`,
-    `<span>${SLOT[s.slot] || ""}</span>`,
+    // v1.14: herni cas z web_data (engine.game_time), zde se neprepocitava
+    `<span><b>${esc(velke(s.cas || `rok ${s.day}`))}</b></span>`,
+    `<span>kolo <b>${s.turn}</b></span>`,
     `<span>${esc(FAZE[s.phase] || s.phase)} (${esc(s.phase)})${vys("fáze")}</span>`
   ];
   if (s.union && s.union.active) casti.push(`<span>Unie: <b>${esc(s.union.name || "Unie")}</b></span>`);
@@ -721,6 +722,7 @@ function panelTahu(snimek, t) {
       }
     }
     if (m.silent) html += `<p class="ticho">Vláda nevydala prohlášení.${pokusy}</p>`;
+    else if (m.mlci) html += `<p class="ticho">${esc(m.public_statement)} (vláda se rozhodla mlčet)</p>`;
     else if (g && g.id === 6) html += `<p class="ticho">${esc(m.public_statement || "Vláda dnes nevystoupila.")}</p>`;
     else html += `<p class="projev">${esc(m.public_statement)}</p>`;
     if (m.private_reasoning) {
@@ -764,10 +766,11 @@ const kronikyCache = new Map();
 async function kronika(s) {
   const den = s.day;
   const zaznam = hra.kroniky.find((k) => Number(k.day) === Number(den));
-  $("kronika-nadpis").textContent = zaznam && zaznam.typ !== "denní" ? `Kronika dne ${den} (${zaznam.typ})` : `Kronika dne ${den}`;
+  const rokK = (zaznam && zaznam.cas) || (s.cas ? s.cas.split(",")[0] : `rok ${den}`);
+  $("kronika-nadpis").textContent = zaznam && zaznam.typ !== "roční" ? `Kronika, ${rokK} (${zaznam.typ})` : `Kronika, ${rokK}`;
   const box = $("kronika");
   if (!zaznam) {
-    box.innerHTML = `<p class="ticho">Kronika dne ${den} ještě nevyšla; píše se po večerním tahu.</p>`;
+    box.innerHTML = `<p class="ticho">Kronika, ${esc(rokK)}, ještě nevyšla; píše se po zimním kole.</p>`;
     return;
   }
   if (!kronikyCache.has(zaznam.file)) kronikyCache.set(zaznam.file, nacti(`chronicle/${zaznam.file}`));

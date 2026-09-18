@@ -79,6 +79,7 @@ def write_index(played_turn=None) -> None:
         st = _load(p)["state"]
         played_at = (now if turn == played_turn else None) or (known.get(turn) or {}).get("played_at") or _git_time(p)
         entries.append({"turn": turn, "day": st["meta"]["day"], "slot": st["meta"]["slot"],
+                        "cas": engine.game_time(turn),
                         "phase": st["phase"], "file": "turn_%03d.json" % turn, "played_at": played_at})
     _write(path, {"turns": entries})
 
@@ -126,6 +127,7 @@ def turn_summary(snap) -> dict:
                 migration.append(pair)
     return {
         "turn": meta["turn"], "day": meta["day"], "slot": meta["slot"], "phase": st["phase"],
+        "cas": engine.game_time(meta["turn"]),
         "prices": {k: _r(v, 4) for k, v in (st.get("prices") or {}).items()},
         "metrics": {k: v for k, v in (st.get("metrics") or {}).items()},
         "union": {"name": C.get("name"), "active": bool(C.get("active")),
@@ -178,8 +180,8 @@ def write_chronicle_index() -> None:
         if not m:
             continue
         day = int(m.group(1))
-        typ = "finále" if day == FINAL_DAY else ("týdenní" if day in WEEKLY_DAYS else "denní")
-        entries.append({"day": day, "file": p.name, "typ": typ})
+        typ = "finále" if day == FINAL_DAY else ("bilance sedmi let" if day in WEEKLY_DAYS else "roční")
+        entries.append({"day": day, "file": p.name, "typ": typ, "cas": engine.game_time(3 * day, season=False)})
     config.CHRONICLE_DIR.mkdir(exist_ok=True)
     _write(config.CHRONICLE_DIR / "index.json", {"days": entries})
 
