@@ -640,6 +640,22 @@ async function panelStatu(id) {
   box.querySelector("button").addEventListener("click", () => vyber(id));
 }
 
+/* domaci akce hrace (v1.11): vlastni radek s vysledkem podle udalosti enginu */
+function domaciAkce(pid, m, snimek) {
+  const d = m.domestic_action;
+  if (!d || !d.type) return '<p class="popis">Domácí akce</p><p class="ticho">V tomto tahu žádná.</p>';
+  const ev = (snimek.events || []).filter((e) => e.player === pid);
+  const hotovo = { arm: "arm", explore: "explore" }[d.type] || `${d.type}_done`;
+  let vysledek = "nepřevzata";
+  if (ev.some((e) => e.kind === hotovo)) vysledek = "provedena";
+  else {
+    const odl = ev.find((e) => (e.kind === "investment_postponed" || e.kind === "investment_cancelled") && e.type === d.type);
+    if (odl) vysledek = (odl.kind === "investment_postponed" ? "odložena" : "propadla") + (odl.reason ? `: ${odl.reason}` : "");
+    else if ((snimek.actions || []).some((a) => a.player === pid && a.slot === "domestic")) vysledek = "zadána";
+  }
+  return `<p class="popis">Domácí akce</p><ul class="seznam"><li>${esc(akce(d))}: <span class="duvod">${esc(vysledek)}</span></li></ul>`;
+}
+
 /* suroviny ze snimku tahu, kdyz je summary.json jeste nema: efektivni vyroba podle 4.1 */
 function surovinyZeSnimku(e) {
   const out = {};
@@ -715,11 +731,13 @@ function panelTahu(snimek, t) {
     if (m.poznamky_pro_pristi_tah) {
       html += `<details><summary>Poznámky do spisu</summary><p>${esc(m.poznamky_pro_pristi_tah)}</p></details>`;
     }
-    if (seznam.length) {
-      html += `<p class="popis">Akce</p><ul class="seznam">${seznam.map((a) => `<li>${esc(akce(a))}${a.slot === "domestic" ? " (domácí akce)" : ""}</li>`).join("")}</ul>`;
-    } else if (!m.silent) {
+    const zahranicni = seznam.filter((a) => a.slot !== "domestic");
+    if (zahranicni.length) {
+      html += `<p class="popis">Akce</p><ul class="seznam">${zahranicni.map((a) => `<li>${esc(akce(a))}</li>`).join("")}</ul>`;
+    } else if (!m.silent && !m.domestic_action) {
       html += '<p class="ticho">Bez akcí (technická chyba, odpověď hráče dorazila neúplná).</p>';
     }
+    if ((pid === "A" || pid === "B") && !m.silent) html += domaciAkce(pid, m, snimek);
     if (vyrazene.length) {
       html += `<p class="popis">Vyřazeno rozhodčím</p><ul class="seznam">${vyrazene.map((r) =>
         `<li>${esc(r.action ? akce(r.action) : "akce")}: <span class="duvod">${esc(r.reason)}</span></li>`).join("")}</ul>`;
