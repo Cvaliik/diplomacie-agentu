@@ -610,6 +610,13 @@ def test_odpovedi() -> bool:
                    [a["type"] for a in vysl if a.get("slot") == "domestic"] == ["invest_prod", "invest_law"] and not nad))
     checks.append(("akce, kterou rozhodčí vynechal, doplněna z tahu hráče",
                    [(d["player"], d["action"]["type"]) for d in dopl] == [("B", "accept_offer")]))
+    zadna = dict(prazdny, private_reasoning=uvaha, domestic_action={"type": "zadna"})
+    run_turn.normalize_domestic(zadna)
+    checks.append(("volba zadna je bez domácí akce a sama tah nenese",
+                   zadna["domestic_action"] is None and not run_turn.valid_move(zadna)))
+    checks.append(("schéma hráče nepovoluje null u domácí akce",
+                   "zadna" in run_turn.player_schema("A")["properties"]["domestic_action"]["properties"]["type"]["enum"]
+                   and "anyOf" not in run_turn.player_schema("A")["properties"]["domestic_action"]))
     moves = {"A": {"message": None},
              "B": {"message": {"target": "A", "text": "Kessar je náš."}}}
     ref = [{"player": "B", "type": "message", "target": "A", "demand": "", "rate": 0},

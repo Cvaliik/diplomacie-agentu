@@ -23,7 +23,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 | `public_statement` | text | ano | vystoupení ve formě z bloku „Forma dnešního vystoupení“ (v1.13, `docs/zanry.md`); u formy Ticho prázdný řetězec |
 | `private_reasoning` | text | ano | vidí ho publikum, soupeř ne |
 | `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
-| `domestic_action` | objekt nebo `null` | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); Unie pole nemá |
+| `domestic_action` | objekt | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); bez domácí akce `{ "type": "zadna" }`; Unie pole nemá |
 | `message` | objekt nebo `null` | ano | nejvýš 1 soukromá zpráva za tah mimo limit akcí: `target` a `text` |
 | `poznamky_pro_pristi_tah` | text | ano | tvé poznámky do spisu, nejvýš 300 slov, smí být prázdný řetězec; příště je dostaneš doslova v bloku `tve_poznamky`, soupeř je nevidí, publikum ano |
 

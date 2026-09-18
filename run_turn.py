@@ -66,6 +66,7 @@ REFEREE_ACTIONS_THINKING = {"type": "adaptive"}
 REFEREE_ACTIONS_EFFORT = "low"
 NOT_TAKEN_NOTE = "rozhodčí akci nepřevzal, převzata z tahu hráče"
 OVER_LIMIT_REASON = "nad limit akcí"
+NO_DOMESTIC = "zadna"   # vyslovna volba bez domaci akce; dal se zpracuje jako null
 
 # Co hrac nikdy nesmi dostat (zadani 14. 9. 2026, bod 7). Klice se hledaji v pohledu
 # a ve verejnem logu; law a tech se hlidaji zvlast, protoze C je u clenu a kandidatu vidi.
@@ -1167,11 +1168,12 @@ def player_schema(pid: str) -> dict:
         NOTES_FIELD: {"type": "string"},
     }
     if pid in MEMORY_PLAYERS:
-        props["domestic_action"] = {"anyOf": [{"type": "null"}, {
+        # domaci akce je vzdy vyslovna volba: investice, nebo "zadna" (null model volil i tam, kde investovat chtel)
+        props["domestic_action"] = {
             "type": "object", "additionalProperties": False, "required": ["type"],
-            "properties": {"type": {"type": "string", "enum": list(engine.DOMESTIC_TYPES)},
+            "properties": {"type": {"type": "string", "enum": list(engine.DOMESTIC_TYPES) + [NO_DOMESTIC]},
                            "amount": {"type": "number"},
-                           "res": {"type": "string", "enum": ["grain", "oil", "metal"]}}}]}
+                           "res": {"type": "string", "enum": ["grain", "oil", "metal"]}}}
     return {"type": "object", "additionalProperties": False, "required": list(props), "properties": props}
 
 
@@ -1265,6 +1267,12 @@ def parse_json(text: str):
     if start < 0 or end < start:
         raise ValueError("odpoved neobsahuje JSON objekt")
     return json.loads(t[start:end + 1])
+
+
+def normalize_domestic(move) -> None:
+    """Vedoma volba bez domaci akce ({"type": "zadna"}) se dal zpracuje jako null."""
+    if isinstance(move, dict) and isinstance(move.get("domestic_action"), dict)             and move["domestic_action"].get("type") == NO_DOMESTIC:
+        move["domestic_action"] = None
 
 
 def valid_move(obj) -> bool:
@@ -1428,6 +1436,7 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
         except (ValueError, json.JSONDecodeError) as err:
             save_fail(turn, pid, attempt + 1, raw, "neplatny JSON: %s" % err, usage)
             continue
+        normalize_domestic(move)
         if not valid_move(move):
             save_fail(turn, pid, attempt + 1, raw,
                       "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action ci message "
