@@ -94,7 +94,30 @@
   a { color: var(--inkoust); }
   .chyba { font-family: var(--bezpatkove); color: var(--b-tmava); }
 
+  .radek-h1 { display: flex; align-items: baseline; justify-content: space-between; gap: 12px; }
+  .odkaz-hra { font-family: var(--bezpatkove); font-size: 14px; color: var(--inkoust); }
+  #faze-popis { font-family: var(--patkove); font-size: 15px; font-style: italic; color: var(--inkoust-2); margin-top: 2px; }
+  .uvod { background: var(--papir-tmavy); border: 1px solid var(--linka); border-radius: 3px;
+          padding: 8px 12px; margin: 0 0 10px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px 14px; }
+  .uvod p { margin: 0; flex: 1 1 420px; font-size: 16px; line-height: 1.45; }
+  .uvod-tlacitka { display: flex; gap: 8px; flex: 0 0 auto; }
+  .tlacitko { font-family: var(--bezpatkove); font-size: 14px; color: var(--inkoust); text-decoration: none;
+              border: 1px solid var(--inkoust-2); border-radius: 3px; padding: 6px 10px; }
+  .tlacitko:hover { background: var(--papir); }
+  .vys { font-family: var(--bezpatkove); font-size: 11px; line-height: 1; padding: 1px 4px; margin-left: 3px;
+         border: 1px solid var(--inkoust-2); border-radius: 50%; color: var(--inkoust-2); background: transparent;
+         vertical-align: 1px; cursor: pointer; }
+  .vys:hover, .vys[aria-expanded="true"] { background: var(--inkoust); color: var(--papir); }
+  #bublina { position: absolute; z-index: 20; max-width: min(300px, calc(100vw - 24px)); background: var(--papir);
+             border: 1px solid var(--inkoust-2); border-radius: 3px; padding: 8px 10px; font-family: var(--patkove);
+             font-size: 15px; line-height: 1.45; box-shadow: 0 2px 6px rgba(0,0,0,.12); }
+  #bublina b { font-weight: bold; }
+
   @media (max-width: 600px) {
+    .uvod { padding: 6px 10px; gap: 4px 10px; }
+    .uvod p { flex-basis: 100%; font-size: 14px; line-height: 1.35;
+              display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .uvod-tlacitka .tlacitko, .uvod-tlacitka button { padding: 3px 8px; font-size: 13px; }
     #mapa .jmeno { font-size: 25px; }
     #mapa .krajina { font-size: 20px; }
     #mapa .stitek { font-size: 18px; }
@@ -108,12 +131,17 @@
 </head>
 <body>
 <header>
-  <h1>Ardan</h1>
+  <div class="radek-h1"><h1>Ardan</h1><a class="odkaz-hra" href="o-hre.html">O hře</a></div>
   <div class="meta" id="hlavicka">Načítám hru…</div>
+  <div id="faze-popis"></div>
   <div class="meta" id="aktualizace"></div>
 </header>
 
 <main>
+  <div class="uvod" id="uvod" hidden>
+    <p>Ardan je smyšlený svět, kde tři vlády řídí umělé inteligence. Každý den udělají tři tahy: obchodují, uzavírají pakty, půjčují a lžou. Vy vidíte i to, co si doopravdy myslí. Sledujte, komu věřit.</p>
+    <div class="uvod-tlacitka"><a class="tlacitko" href="o-hre.html">Jak to číst</a><button type="button" id="uvod-zavrit">Zavřít</button></div>
+  </div>
   <div class="horni" id="horni">
     <div>
       <svg id="mapa" viewBox="0 0 1000 700" role="img" aria-label="Mapa světa Ardan">
@@ -132,12 +160,12 @@
         <g id="vrstva-popisky"></g>
       </svg>
       <div class="legenda">
-        <span><i style="background:linear-gradient(90deg,rgba(64,103,168,.25),rgba(64,103,168,1))"></i>vliv Kalvery</span>
+        <span><i style="background:linear-gradient(90deg,rgba(64,103,168,.25),rgba(64,103,168,1))"></i>vliv Kalvery<button type="button" class="vys" data-pojem="vliv" aria-label="Co je vliv">?</button></span>
         <span><i style="background:linear-gradient(90deg,rgba(186,84,74,.25),rgba(186,84,74,1))"></i>vliv Ostrogardu</span>
         <span><i style="background:linear-gradient(90deg,rgba(64,103,168,.8) 45%,rgba(186,84,74,.8) 55%)"></i>vliv obou</span>
         <span>sytost = síla vlivu, poměr barev = kdo vede</span>
-        <span><i style="background:var(--zeme);border:3px solid #4067a8"></i>sféra (tlustý obrys)</span>
-        <span><i style="background:var(--zeme);border:2px solid #ba544a"></i>pakt (obrys barvy ochránce)</span>
+        <span><i style="background:var(--zeme);border:3px solid #4067a8"></i>sféra (tlustý obrys)<button type="button" class="vys" data-pojem="sféra" aria-label="Co je sféra">?</button></span>
+        <span><i style="background:var(--zeme);border:2px solid #ba544a"></i>pakt (obrys barvy ochránce)<button type="button" class="vys" data-pojem="pakt" aria-label="Co je pakt">?</button></span>
         <span><i style="background:#6f9e73"></i>Unie</span>
         <span><i style="background:var(--zeme);border:2px solid var(--unie)"></i>kandidát Unie</span>
         <span><i style="background:var(--zeme);border:2px solid var(--zlata)"></i>padlá říše</span>
@@ -178,6 +206,7 @@
 </footer>
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
+<script src="slovnik.js"></script>
 <script>
 "use strict";
 const ZAKLAD = "..";
@@ -213,6 +242,8 @@ const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<
 const cis = (n, d = 1) => (n === null || n === undefined || isNaN(Number(n))) ? "–"
   : Number(n).toLocaleString("cs-CZ", { maximumFractionDigits: d });
 const jm = (id) => hra.jmena[id] || id || "";
+/* vysvetlivka: maly znak ? u pojmu, veta ze slovniku (slovnik.js) */
+const vys = (pojem) => `<button type="button" class="vys" data-pojem="${esc(pojem)}" aria-label="Co je ${esc(pojem)}">?</button>`;
 
 async function nacti(cesta) {
   const r = await fetch(`${ZAKLAD}/${cesta}`, { cache: "no-cache" });
@@ -220,7 +251,62 @@ async function nacti(cesta) {
   return cesta.endsWith(".md") ? r.text() : r.json();
 }
 
+/* ------------------------------ vysvetlivky a uvodni lista ------------------------------ */
+
+function textPojmu(pojem) {
+  if (pojem === "fáze") {
+    const c = window.ARDAN_CYKLUS;
+    return c ? [c.uvod, ...Object.values(c.faze)].join(" ") : "";
+  }
+  return window.ardanPojem ? window.ardanPojem(pojem) : "";
+}
+
+function zavriBublinu() {
+  const b = $("bublina");
+  if (b) b.remove();
+  document.querySelectorAll('.vys[aria-expanded="true"]').forEach((x) => x.setAttribute("aria-expanded", "false"));
+}
+
+function ukazBublinu(tl) {
+  const otevrena = tl.getAttribute("aria-expanded") === "true";
+  zavriBublinu();
+  if (otevrena) return;   // dalsi klik na tentyz znak bublinu zavre
+  const pojem = tl.dataset.pojem;
+  const b = document.createElement("div");
+  b.id = "bublina";
+  b.setAttribute("role", "note");
+  b.innerHTML = `<b>${esc(pojem)}</b>: ${esc(textPojmu(pojem))}`;
+  document.body.appendChild(b);
+  const r = tl.getBoundingClientRect();
+  const sirka = b.offsetWidth;
+  const vlevo = Math.max(8, Math.min(r.left + window.scrollX, window.scrollX + document.documentElement.clientWidth - sirka - 8));
+  b.style.left = vlevo + "px";
+  b.style.top = (r.bottom + window.scrollY + 6) + "px";
+  tl.setAttribute("aria-expanded", "true");
+}
+
+document.addEventListener("click", (ev) => {
+  const tl = ev.target.closest(".vys");
+  if (tl) { ev.stopPropagation(); ev.preventDefault(); ukazBublinu(tl); return; }
+  if (!ev.target.closest("#bublina")) zavriBublinu();
+}, true);
+document.addEventListener("keydown", (ev) => { if (ev.key === "Escape") zavriBublinu(); });
+window.addEventListener("resize", zavriBublinu);
+
+function uvodniLista() {
+  const KLIC = "ardan-uvod-zavreno";
+  let zavreno = false;
+  try { zavreno = window.localStorage.getItem(KLIC) === "1"; } catch (e) { zavreno = false; }
+  if (zavreno) return;
+  $("uvod").hidden = false;
+  $("uvod-zavrit").addEventListener("click", () => {
+    $("uvod").hidden = true;
+    try { window.localStorage.setItem(KLIC, "1"); } catch (e) { /* bez ulozeni se lista ukaze znovu */ }
+  });
+}
+
 async function start() {
+  uvodniLista();
   try {
     hra.npc = await nacti("npc.json");
     for (const [id, p] of Object.entries(hra.npc.players || {})) {
@@ -337,12 +423,14 @@ function hlavicka(s) {
     `<span>Den <b>${s.day}</b></span>`,
     `<span>tah <b>${s.turn}</b></span>`,
     `<span>${SLOT[s.slot] || ""}</span>`,
-    `<span>${esc(FAZE[s.phase] || s.phase)} (${esc(s.phase)})</span>`
+    `<span>${esc(FAZE[s.phase] || s.phase)} (${esc(s.phase)})${vys("fáze")}</span>`
   ];
   if (s.union && s.union.active) casti.push(`<span>Unie: <b>${esc(s.union.name || "Unie")}</b></span>`);
   const idx = s.metrics && s.metrics.prosperity_index;
-  if (idx != null) casti.push(`<span>index prosperity <b>${cis(idx, 1)}</b></span>`);
+  if (idx != null) casti.push(`<span>index prosperity${vys("index prosperity")} <b>${cis(idx, 1)}</b></span>`);
   $("hlavicka").innerHTML = casti.join("");
+  const cyklus = window.ARDAN_CYKLUS;
+  $("faze-popis").textContent = cyklus ? (cyklus.faze[cyklus.podle_enginu[s.phase]] || "") : "";
   if (s.union && s.union.name) hra.jmena.C = s.union.name;
 }
 
@@ -508,10 +596,10 @@ async function panelStatu(id) {
       .map(([k, v]) => `${STATEK[k] || k} ${cis(v, 1)}`).join(", ");
     radky.push(["produkce", prod || "–"]);
     if (e.influence) {
-      radky.push(["vliv Kalvery", cis(e.influence.A, 1)]);
-      radky.push(["vliv Ostrogardu", cis(e.influence.B, 1)]);
+      radky.push(["vliv Kalvery", cis(e.influence.A, 1), "vliv"]);
+      radky.push(["vliv Ostrogardu", cis(e.influence.B, 1), "vliv"]);
     }
-    if (e.status) radky.push(["postavení", STATUS[e.status] || e.status]);
+    if (e.status) radky.push(["postavení", STATUS[e.status] || e.status, "sféra"]);
   }
   // v1.11: ukazatele pro publikum u vsech statu (summary.json, pro starsi tahy ze snimku)
   const ind = zakl && zakl.goods ? zakl : (e ? {
@@ -519,10 +607,10 @@ async function panelStatu(id) {
     industry: e.industry, law: e.law, tech: e.tech } : null);
   if (ind && id !== "C") {
     const g = ind.goods || {};
-    radky.push(["zboží (goods)", `zásoba ${cis(g.stock, 1)}, výroba ${cis(g.vyroba, 1)}, potřeba ${cis(g.potreba, 1)}`]);
-    radky.push(["průmysl", cis(ind.industry, 2)]);
-    radky.push(["právo", cis(ind.law, 2)]);
-    radky.push(["technologie", cis(ind.tech, 2)]);
+    radky.push(["zboží (goods)", `zásoba ${cis(g.stock, 1)}, výroba ${cis(g.vyroba, 1)}, potřeba ${cis(g.potreba, 1)}`, "zboží (goods)"]);
+    radky.push(["průmysl", cis(ind.industry, 2), "průmysl"]);
+    radky.push(["právo", cis(ind.law, 2), "právo"]);
+    radky.push(["technologie", cis(ind.tech, 2), "technologie"]);
   }
   if (e) {
     const namorni = ((hra.mapa && hra.mapa.sea_links) || []).filter((p) => p.includes(id))
@@ -532,7 +620,7 @@ async function panelStatu(id) {
     if (e.coups) radky.push(["pády vlády", cis(e.coups, 0)]);
   }
   box.innerHTML = `<button type="button" aria-label="Zavřít">zavřít</button><h3>${esc(id in HRACI ? HRACI[id] : jm(id))}</h3>
-    <table>${radky.map(([k, v]) => `<tr><td>${esc(k)}</td><td>${esc(v)}</td></tr>`).join("")}</table>`;
+    <table>${radky.map(([k, v, p]) => `<tr><td>${esc(k)}${p ? vys(p) : ""}</td><td>${esc(v)}</td></tr>`).join("")}</table>`;
   box.querySelector("button").addEventListener("click", () => vyber(id));
 }
 
@@ -613,6 +701,7 @@ function panelTahu(snimek, t) {
         const kdo = r.npc ? jm(r.npc) : "";
         const co = AKCE_KRATCE[r.action] || r.action || "";
         return `<li>${esc(kdo)}${co ? ` (${esc(co)})` : ""}: ${esc(VYSLEDEK[r.outcome] || r.outcome)}` +
+               (r.outcome === "protinavrh" ? vys("protinávrh") : "") +
                (r.reason && r.outcome !== "prednost_druhe_strany" ? `. <span class="duvod">„${esc(r.reason)}“</span>` : "") + "</li>";
       }).join("")}</ul>`;
     }
