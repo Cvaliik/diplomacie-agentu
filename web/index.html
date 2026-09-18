@@ -607,6 +607,22 @@ async function panelStatu(id) {
     industry: e.industry, law: e.law, tech: e.tech } : null);
   if (ind && id !== "C") {
     const g = ind.goods || {};
+    const sur = ind.suroviny || (e ? surovinyZeSnimku(e) : {});
+    let vydrzi = Infinity, omezuje = "";
+    for (const res of ["grain", "oil", "metal"]) {
+      const r = sur[res];
+      if (!r) continue;
+      radky.push([STATEK[res], `zásoba ${cis(r.stock, 1)}, výroba ${cis(r.vyroba, 1)}, potřeba ${cis(r.potreba, 1)}`]);
+      const chybi = Number(r.potreba || 0) - Number(r.vyroba || 0);
+      if (chybi > 1e-9) {
+        const tahu = Math.max(0, Number(r.stock || 0)) / chybi;
+        if (tahu < vydrzi) { vydrzi = tahu; omezuje = STATEK[res]; }
+      }
+    }
+    if (Object.keys(sur).length) {
+      radky.push(["vydrží bez dovozu", vydrzi === Infinity ? "neomezeně"
+        : `${Math.floor(vydrzi)} ${tahuSlovo(Math.floor(vydrzi))} (${omezuje})`]);
+    }
     radky.push(["zboží (goods)", `zásoba ${cis(g.stock, 1)}, výroba ${cis(g.vyroba, 1)}, potřeba ${cis(g.potreba, 1)}`, "zboží (goods)"]);
     radky.push(["průmysl", cis(ind.industry, 2), "průmysl"]);
     radky.push(["právo", cis(ind.law, 2), "právo"]);
@@ -623,6 +639,18 @@ async function panelStatu(id) {
     <table>${radky.map(([k, v, p]) => `<tr><td>${esc(k)}${p ? vys(p) : ""}</td><td>${esc(v)}</td></tr>`).join("")}</table>`;
   box.querySelector("button").addEventListener("click", () => vyber(id));
 }
+
+/* suroviny ze snimku tahu, kdyz je summary.json jeste nema: efektivni vyroba podle 4.1 */
+function surovinyZeSnimku(e) {
+  const out = {};
+  const tech = Number(e.tech || 0), pop = Number(e.pop || 0), start = Number(e.pop_start || 0) || 100;
+  for (const res of ["grain", "oil", "metal"]) {
+    out[res] = { stock: (e.stock || {})[res], vyroba: Number((e.prod || {})[res] || 0) * (1 + tech / 20) * (pop / start),
+                 potreba: (e.need || {})[res] };
+  }
+  return out;
+}
+const tahuSlovo = (n) => (n === 1 ? "tah" : (n >= 2 && n <= 4 ? "tahy" : "tahů"));
 
 /* ------------------------------ tah ------------------------------ */
 

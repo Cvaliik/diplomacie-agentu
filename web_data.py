@@ -18,6 +18,7 @@ import subprocess
 import sys
 
 import config
+import engine
 
 WEEKLY_DAYS = (7, 14, 21, 28)
 FINAL_DAY = 30
@@ -87,11 +88,17 @@ def write_index(played_turn=None) -> None:
 # --------------------------------------------------------------------------
 
 def _indicators(e) -> dict:
-    """v1.11 (F13): goods (zasoba, vyroba, potreba), industry, law a tech pro panel statu."""
+    """v1.11 (F13): goods (zasoba, vyroba, potreba), industry, law a tech pro panel statu; suroviny obdobne."""
     return {"goods": {"stock": _r((e.get("stock") or {}).get("goods", 0), 1),
                       "vyroba": _r(e.get("goods_out"), 1) if e.get("goods_out") is not None else None,
                       "potreba": _r((e.get("need") or {}).get("goods"), 1) if (e.get("need") or {}).get("goods") is not None else None},
-            "industry": _r(e.get("industry"), 2), "law": _r(e.get("law"), 2), "tech": _r(e.get("tech"), 2)}
+            "industry": _r(e.get("industry"), 2), "law": _r(e.get("law"), 2), "tech": _r(e.get("tech"), 2),
+            # suroviny: zasoba, efektivni vyroba (4.1) a potreba tahu
+            "suroviny": {res: {"stock": _r((e.get("stock") or {}).get(res, 0), 1),
+                               "vyroba": _r(engine.eff_prod(e, res), 1),
+                               "potreba": _r((e.get("need") or {}).get(res), 1)
+                               if (e.get("need") or {}).get(res) is not None else None}
+                         for res in ("grain", "oil", "metal")}}
 
 
 def turn_summary(snap) -> dict:
