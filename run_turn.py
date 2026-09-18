@@ -61,6 +61,10 @@ REFEREE_MAX_TOKENS = 4000
 PLAYER_THINKING = {"type": "adaptive"}
 PLAYER_EFFORT = "low"
 REFEREE_THINKING = {"type": "disabled"}
+# preklad tahu: rozhodci bez premysleni zahazoval akce (tahy 6 az 8), proto adaptivne s nizkym usilim
+REFEREE_ACTIONS_THINKING = {"type": "adaptive"}
+REFEREE_ACTIONS_EFFORT = "low"
+NOT_TAKEN_NOTE = "rozhodčí akci nepřevzal, převzata z tahu hráče"
 OVER_LIMIT_REASON = "nad limit akcí"
 
 # Co hrac nikdy nesmi dostat (zadani 14. 9. 2026, bod 7). Klice se hledaji v pohledu
@@ -1325,6 +1329,67 @@ def limit_rejections(state, turn: int, over: list) -> list:
     return out
 
 
+def _is_self_domestic(a: dict, state) -> bool:
+    """Akce typu domaci akce bez ciloveho NPC (tedy na vlastni stat)."""
+    return a.get("type") in engine.DOMESTIC_TYPES and a.get("target") not in state["npc"]
+
+
+def player_domestic(actions: list, moves: dict, state) -> list:
+    """Domaci akci A a B sklada skript primo z pole domestic_action tahu hrace (typy a parametry hlida schema,
+    naklady engine). Rozhodcim prelozene kopie se zahodi; akce stejneho typu na vlastni stat, ktere hrac dal
+    do actions, zustanou v poctu, v jakem je hrac poslal."""
+    out = []
+    kept = {}
+    for a in actions:
+        pid = a.get("player")
+        move = moves.get(pid) or {}
+        if pid in MEMORY_PLAYERS and _is_self_domestic(a, state):
+            own = sum(1 for x in move.get("actions") or [] if _is_self_domestic(x, state))
+            if a.get("slot") == "domestic" or kept.get(pid, 0) >= own:
+                continue
+            kept[pid] = kept.get(pid, 0) + 1
+            a = {k: v for k, v in a.items() if k != "slot"}
+        out.append(a)
+    for pid, move in moves.items():
+        dom = (move or {}).get("domestic_action")
+        if pid in MEMORY_PLAYERS and isinstance(dom, dict) and dom.get("type") in engine.DOMESTIC_TYPES:
+            act = {"player": pid, "type": dom["type"], "slot": "domestic"}
+            for k in ("amount", "res"):
+                if dom.get(k) is not None:
+                    act[k] = dom[k]
+            out.append(act)
+    return out
+
+
+def _action_key(a: dict) -> tuple:
+    return (a.get("type"), a.get("target") or a.get("offer_id") or a.get("deal_id") or "")
+
+
+def restore_dropped(actions: list, rejected: list, moves: dict) -> tuple[list, list]:
+    """Pojistka: akce hrace, kterou rozhodci neprevzal ani nevyradil s duvodem, se prevezme z tahu hrace
+    (kontrolou enginu projde, nebo ji engine vyradi s duvodem). Vraci (akce, seznam doplnenych)."""
+    have = {}
+    for a in actions:
+        k = (a.get("player"),) + _action_key(a)
+        have[k] = have.get(k, 0) + 1
+    for r in rejected or []:
+        ra = r.get("action") if isinstance(r, dict) else None
+        if isinstance(ra, dict):
+            k = (r.get("player"),) + _action_key(ra)
+            have[k] = have.get(k, 0) + 1
+    restored = []
+    for pid, move in moves.items():
+        for a in (move or {}).get("actions") or []:
+            k = (pid,) + _action_key(a)
+            if have.get(k, 0) > 0:
+                have[k] -= 1
+                continue
+            act = dict(a, player=pid)
+            actions.append(act)
+            restored.append({"player": pid, "action": act, "note": NOT_TAKEN_NOTE})
+    return actions, restored
+
+
 def mark_domestic(actions: list, moves: dict) -> list:
     """v1.11 (C7): domaci akce A a B nese slot domestic; C domaci akci nema. Rozhodci ji oznaci,
     engine ji uzna jen pro povoleny typ na vlastni stat (action_slot)."""
@@ -1613,7 +1678,7 @@ def main() -> int:
     ref_usage = []
     ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
                          max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True, label="rozhodci akce",
-                         schema=referee_schema(), thinking=REFEREE_THINKING)
+                         schema=referee_schema(), thinking=REFEREE_ACTIONS_THINKING, effort=REFEREE_ACTIONS_EFFORT)
     try:
         ref = parse_json(ref_raw)
     except (ValueError, json.JSONDecodeError) as err:
@@ -1623,7 +1688,11 @@ def main() -> int:
         return 0
     actions = [a for a in ref.get("actions") or [] if isinstance(a, dict) and a.get("player") in players]
     actions = mark_domestic(actions, moves)
+    actions = player_domestic(actions, moves, state)
     actions = player_messages(actions, moves)
+    actions, restored = restore_dropped(actions, ref.get("rejected") or [], moves)
+    for r in restored:
+        print("pojistka: %s %s %s" % (r["player"], r["action"].get("type"), NOT_TAKEN_NOTE))
     # limit akci po rozhodcim: v kazdem slotu jen prvni akce do limitu
     actions, over_ref = enforce_limits(actions)
     over_limit += [(a.get("player"), a) for a in over_ref]
@@ -1656,6 +1725,7 @@ def main() -> int:
     errors = validate(state, new_state, applied, actions=actions, views=new_views)
     snapshot = {"turn": turn, "state": new_state, "turns": moves, "actions": actions,
                 "rejected": (ref.get("rejected") or []) + limit_rejected, "rulings": ref.get("rulings") or [],
+                "restored": restored,
                 "news": news, "events": events, "delivered_messages": delivered, "applied_rules": applied,
                 "usage": q_usage + [u for m in moves.values() for u in m.get("usage", [])] + ref_usage}
     if errors:

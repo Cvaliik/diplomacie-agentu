@@ -595,6 +595,21 @@ def test_odpovedi() -> bool:
         run_turn.load_snapshot = orig
     checks.append(("hráč A dostane jen své poznámky", ok_vlastni))
     checks.append(("cizí poznámky v promptu jsou únik: %s" % "; ".join(cizi), len(cizi) == 2))
+    # domaci akce primo z tahu hrace a pojistka proti tise zahozenym akcim (tahy 6 az 8)
+    st_mini = {"npc": {"N1": {}, "N4": {}}}
+    tah = {"A": {"actions": [{"type": "trade_offer", "target": "N1", "res": "oil", "qty": 1, "price_per_unit": 1.0}],
+                 "domestic_action": {"type": "invest_prod", "res": "oil"}, "message": None},
+           "B": {"actions": [{"type": "accept_offer", "offer_id": "o20"}], "domestic_action": {"type": "invest_law"},
+                 "message": None}}
+    rozhodci = [{"player": "A", "type": "trade_offer", "target": "N1", "res": "oil", "qty": 1, "price_per_unit": 1.0},
+                {"player": "A", "type": "invest_prod", "res": "oil", "deal_id": "domestic", "demand": "A"}]
+    vysl = run_turn.player_domestic(rozhodci, tah, st_mini)
+    vysl, dopl = run_turn.restore_dropped(vysl, [], tah)
+    vysl, nad = run_turn.enforce_limits(vysl)
+    checks.append(("domácí akce z tahu hráče jako domácí, bez kopie rozhodčího",
+                   [a["type"] for a in vysl if a.get("slot") == "domestic"] == ["invest_prod", "invest_law"] and not nad))
+    checks.append(("akce, kterou rozhodčí vynechal, doplněna z tahu hráče",
+                   [(d["player"], d["action"]["type"]) for d in dopl] == [("B", "accept_offer")]))
     moves = {"A": {"message": None},
              "B": {"message": {"target": "A", "text": "Kessar je náš."}}}
     ref = [{"player": "B", "type": "message", "target": "A", "demand": "", "rate": 0},
