@@ -156,6 +156,7 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují
 - první nesplácení: vždy zpráva s jménem NPC a věřitele.
 - koncentrace: hráč drží > 50 % obchodu nebo zdrojů: "Menší státy se tiše radí o společném postupu."
 - orit: od displacementu každý tah aspoň jedna zpráva o krocích soupeře s oritem, i když jsou malé.
+- displacement (v1.14b): v kole displacementu vedle zprávy o nálezu druhá zpráva s příběhem zisku, faktická, bez rady: „Obchodníci v Dorvanu platí za orit desetinásobek ceny kovu a berou vše, co se vytěží.“
 - Unie: při vzniku "Unie zveřejnila přístupová kritéria: nezávislé soudy, vymahatelnost smluv."; při růstu prahu "Unie zpřísnila kritéria."; při investici do kandidáta "N zahájilo reformu soudů."; při odmítnutí "Přihláška N odmítnuta."
 - invaze: "Uprchlíci z N míří do M."
 - válka hráčů (3.3a): vyhlášení, nabídka příměří (jednostranný `cancel`), příměří, ústup i kapitulace vždy jako zpráva, např. "Ostrogard nabízí Kalveře příměří."
@@ -191,7 +192,7 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují
 2. **Populace:** efektivní produkce každého zdroje = `prod × pop / pop_start`. Migrace tedy reálně přesouvá výrobu.
 3. **Papírové bohatství věřitelů:** `paper_wealth` hráče = součet nesplacených půjček státům s `prod.orit > 0` × (cena oritu / 10). Ve fázi `panic` jde na 0 jako všude.
 4. **Konec války hráčů:** platí 3.3a (v1.10): ústup je `cancel` na válku s `"retreat": true` a stojí 30 % vlivu u všech NPC; příměří je `cancel` od obou stran; kapitulace při `power` 0.
-5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu; obchody s oritem 2×.
+5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu.
 6. **Neplatný výstup hráče:** až 2 opakování volání; poté hráč v tomto tahu mlčí: žádné akce, `public_statement` = "Vláda nevydala prohlášení.", zapsáno do snímku s příznakem `silent: true`.
 7. **Kronika:** píše se jen, pokud existují všechny tři snímky dne; jinak se přeskočí a doplní po opravě.
 8. **Týdenní kronika:** herní dny 7, 14, 21, 28 (ne kalendářní neděle).

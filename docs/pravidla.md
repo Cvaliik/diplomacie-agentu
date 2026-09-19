@@ -408,7 +408,7 @@ Pole `phase` a `minsky` v `state.json`. Rozhodčí posouvá fázi jen podle prah
 | fáze | vstupní podmínka | efekty každý tah |
 |---|---|---|
 | `pre` | start | nic |
-| `displacement` | tah 7 (3. den, ráno) | zdroj `orit` se objeví: N6 `prod.orit = 6`, N3, N8, N9 `prod.orit = 1`. Cena oritu 10. Všichni hráči i běžná NPC dostanou `need.orit = 2`. Každá spotřebovaná jednotka oritu: `tech +0.1` a `power +1` (reálný, ale malý efekt). Papírové bohatství držitelů roste s cenou (velký, ale iluzorní efekt). Obchod s oritem se do metriky A počítá 2×, zásoby oritu do metriky B 3×. Běžná NPC s `wealth ≥ 20` automaticky každý tah utrácí 2 wealth za `explore`, se stejnou patnáctiprocentní šancí jako hráčova akce v 3.2. Padlé říše orit ignorují. Rozhodčí od tohoto tahu vydává každý tah aspoň jednu zprávu o tom, co s oritem dělá soupeř. |
+| `displacement` | tah 7 (3. den, ráno) | zdroj `orit` se objeví: N6 `prod.orit = 6`, N3, N8, N9 `prod.orit = 1`. Cena oritu 10. Všichni hráči i běžná NPC dostanou `need.orit = 2`. Každá spotřebovaná jednotka oritu: `tech +0.1` a `power +1` (reálný, ale malý efekt). Papírové bohatství držitelů roste s cenou (velký, ale iluzorní efekt). Váhu oritu v metrikách určuje část 8 (v1.14b: tržní cena, žádné pevné násobky). Běžná NPC s `wealth ≥ 20` automaticky každý tah utrácí 2 wealth za `explore`, se stejnou patnáctiprocentní šancí jako hráčova akce v 3.2. Padlé říše orit ignorují. Rozhodčí od tohoto tahu vydává každý tah aspoň jednu zprávu o tom, co s oritem dělá soupeř. |
 | `boom` | první `loan` kteréhokoli hráče po displacementu | cena oritu `×1.15/tah`. Každé NPC s `prod.orit > 0` dostává `paper_wealth = prod.orit × price`. Migrace: každé NPC s `prod.orit ≥ 2` `pop +2/tah`, čerpá se z NPC bez oritu (`pop −1`, `prod.grain −0.5` dočasně). |
 | `euphoria` | cena oritu ≥ 20 | cena `×1.2/tah`. NPC v boomu automaticky žádají půjčky: každý tah rozhodčí generuje nabídku "N chce půjčku X od A i B" ve Zprávách; hráč ji může přijmout akcí `loan`. `law −0.15/tah` u NPC s dluhem > 30. `paper_wealth` roste s cenou. |
 | `overtrading` | součet dluhů NPC > 40 % součtu jejich reálného `wealth` | cena `×1.1/tah`. NPC s dluhem > 50 % wealth přestává splácet reálně a "splácí" novým dluhem (dluh ×1.15/tah). Ukazatel `fragility` = dluh/wealth roste. |
@@ -418,7 +418,7 @@ Pole `phase` a `minsky` v `state.json`. Rozhodčí posouvá fázi jen podle prah
 | `depression` | 6 tahů po crash | obchod se vrací na 100 %. Cena oritu 5. Konec automatu. Revolty okupovaných v bídě povoleny (3.3). |
 | `recovery` | 12 tahů po crash | normální pravidla. Zdroj orit zůstává obyčejný čtvrtý zdroj s cenou 5. |
 
-**Trvalost efektů řádku `displacement`:** řádek míchá jednorázové nastavení s trvalými efekty. Jednorázově se při vstupu do fáze objeví orit, nastaví ložiska a cena 10. Trvale, tedy od `displacement` až do konce hry, platí bonus `tech +0.1` a `power +1` za každou spotřebovanou jednotku oritu, automatický `explore` NPC a povinnost rozhodčího vydat každý tah aspoň jednu zprávu o krocích soupeře s oritem.
+**Trvalost efektů řádku `displacement`:** řádek míchá jednorázové nastavení s trvalými efekty. Jednorázově se při vstupu do fáze objeví orit, nastaví ložiska a cena 10. Trvale, tedy od `displacement` až do konce hry, platí bonus `tech +0.1` a `power +1` za každou spotřebovanou jednotku oritu, automatický `explore` NPC a povinnost rozhodčího vydat každý tah aspoň jednu zprávu o krocích soupeře s oritem. Váhu oritu v metrikách A a B určuje část 8.
 
 **Dárci migrace v boomu:** příjemce s `prod.orit ≥ 2` dostane `pop +2`, což při `pop −1` na dárce znamená přesně dva dárce za tah. Dárci se vybírají z NPC bez oritu deterministicky přes `random.Random(rng_seed + turn)`, bez padlých říší (7a) a bez států s `pop ≤ 0`. Součet `pop` světa se tím nemění. Dočasná srážka `prod.grain −0.5` u dárce trvá, dokud se migrant nevrátí, tedy do fáze `crash`.
 
@@ -442,6 +442,7 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují
 - první nesplácení: vždy zpráva s jménem NPC a věřitele.
 - koncentrace: hráč drží > 50 % obchodu nebo zdrojů: "Menší státy se tiše radí o společném postupu."
 - orit: od displacementu každý tah aspoň jedna zpráva o krocích soupeře s oritem, i když jsou malé.
+- displacement (v1.14b): v kole displacementu vedle zprávy o nálezu druhá zpráva s příběhem zisku, faktická, bez rady: „Obchodníci v Dorvanu platí za orit desetinásobek ceny kovu a berou vše, co se vytěží.“
 - Unie: při vzniku "Unie zveřejnila přístupová kritéria: nezávislé soudy, vymahatelnost smluv."; při růstu prahu "Unie zpřísnila kritéria."; při investici do kandidáta "N zahájilo reformu soudů."; při odmítnutí "Přihláška N odmítnuta."
 - invaze: "Uprchlíci z N míří do M."
 - válka hráčů (3.3a): vyhlášení, nabídka příměří (jednostranný `cancel`), příměří, ústup i kapitulace vždy jako zpráva, např. "Ostrogard nabízí Kalveře příměří."
@@ -492,8 +493,8 @@ Z Unie se odchází jen vykoupením: člen odejde do sféry velmoci X, když `in
 
 Počítá rozhodčí každý tah, ukládá do `state.json.metrics`.
 
-- **A_trade_share**: (objem obchodu, kde je A stranou + 0.5 × objem obchodu NPC ve sphere_A) / světový objem obchodu. Světový objem zahrnuje i obchod NPC mezi sebou podle 4.1a.
-- **B_resource_share**: (jednotky produkce B + okupovaných B + 0.5 × sphere_B) / světová produkce. Jednotkami produkce se rozumí **efektivní** produkce podle 4.1, tedy po započtení `tech` a `pop`. `goods` je produkt, ne zdroj, a do metriky B se nepočítá; do objemu obchodu v metrice A se počítá.
+- **A_trade_share**: (objem obchodu, kde je A stranou + 0.5 × objem obchodu NPC ve sphere_A) / světový objem obchodu. Světový objem zahrnuje i obchod NPC mezi sebou podle 4.1a. Obchod se počítá `qty × price` a orit nemá žádný násobek; cena oritu ho váží sama (v1.14b).
+- **B_resource_share**: (jednotky produkce B + okupovaných B + 0.5 × sphere_B) / světová produkce. Jednotkami produkce se rozumí **efektivní** produkce podle 4.1, tedy po započtení `tech` a `pop`. `goods` je produkt, ne zdroj, a do metriky B se nepočítá; do objemu obchodu v metrice A se počítá. **Orit (v1.14b):** produkce i zásoby oritu vstupují do B_resource_share s váhou `cena oritu / základ kovu (1.2)`, přepočítanou každé kolo z aktuální tržní ceny; ostatní zdroje mají váhu 1.
 - **C_min_member**: nejnižší `wealth` člena Unie (před vznikem null).
 - **prosperity_index** = 100 × **min(1.5, W_real / W_0)** × (1 − max_share) × (1 − n_bída / 18), kde W_real je součet `wealth` všech 18 států (bez `paper_wealth` a bez fondu Unie), W_0 součet na startu (864), max_share podíl nejbohatšího aktéra (hráč včetně okupovaných území) na W_real, n_bída počet států v bídě podle definice 4.3. Index je veřejný na stránce; hráči ho nevidí.
 
@@ -521,7 +522,7 @@ Národní cíle (`secrets/`) se vyhodnotí také a zveřejní, ale nemají vliv 
 2. **Populace:** efektivní produkce každého zdroje = `prod × pop / pop_start`. Migrace tedy reálně přesouvá výrobu.
 3. **Papírové bohatství věřitelů:** `paper_wealth` hráče = součet nesplacených půjček státům s `prod.orit > 0` × (cena oritu / 10). Ve fázi `panic` jde na 0 jako všude.
 4. **Konec války hráčů:** platí 3.3a (v1.10): ústup je `cancel` na válku s `"retreat": true` a stojí 30 % vlivu u všech NPC; příměří je `cancel` od obou stran; kapitulace při `power` 0.
-5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu; obchody s oritem 2×.
+5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu.
 6. **Neplatný výstup hráče:** až 2 opakování volání; poté hráč v tomto tahu mlčí: žádné akce, `public_statement` = "Vláda nevydala prohlášení.", zapsáno do snímku s příznakem `silent: true`.
 7. **Kronika:** píše se jen, pokud existují všechny tři snímky dne; jinak se přeskočí a doplní po opravě.
 8. **Týdenní kronika:** herní dny 7, 14, 21, 28 (ne kalendářní neděle).

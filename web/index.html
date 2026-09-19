@@ -195,6 +195,7 @@
     </div>
     <div>
       <h2 id="kronika-nadpis">Kronika</h2>
+      <div class="meta" id="kronika-cas"></div>
       <section id="kronika"></section>
     </div>
   </div>
@@ -243,6 +244,8 @@ const cis = (n, d = 1) => (n === null || n === undefined || isNaN(Number(n))) ? 
   : Number(n).toLocaleString("cs-CZ", { maximumFractionDigits: d });
 const jm = (id) => hra.jmena[id] || id || "";
 const velke = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "");
+/* v1.14b: realny cas kola z history/index.json (engine.real_time), zde se nic neprepocitava */
+const realnyCas = (t) => ((hra.index || []).find((x) => Number(x.turn) === Number(t)) || {}).real || "";
 /* vysvetlivka: maly znak ? u pojmu, veta ze slovniku (slovnik.js) */
 const vys = (pojem) => `<button type="button" class="vys" data-pojem="${esc(pojem)}" aria-label="Co je ${esc(pojem)}">?</button>`;
 
@@ -422,7 +425,7 @@ async function snimekTahu(t) {
 function hlavicka(s) {
   const casti = [
     // v1.14: herni cas z web_data (engine.game_time), zde se neprepocitava
-    `<span><b>${esc(velke(s.cas || `rok ${s.day}`))}</b></span>`,
+    `<span><b>${esc(velke(s.cas || `rok ${s.day}`))}</b>${realnyCas(s.turn) ? ` · ${esc(realnyCas(s.turn))}` : ""}</span>`,
     `<span>kolo <b>${s.turn}</b></span>`,
     `<span>${esc(FAZE[s.phase] || s.phase)} (${esc(s.phase)})${vys("fáze")}</span>`
   ];
@@ -768,6 +771,7 @@ async function kronika(s) {
   const zaznam = hra.kroniky.find((k) => Number(k.day) === Number(den));
   const rokK = (zaznam && zaznam.cas) || (s.cas ? s.cas.split(",")[0] : `rok ${den}`);
   $("kronika-nadpis").textContent = zaznam && zaznam.typ !== "roční" ? `Kronika, ${rokK} (${zaznam.typ})` : `Kronika, ${rokK}`;
+  $("kronika-cas").textContent = zaznam ? [velke(zaznam.cas || rokK), zaznam.real].filter(Boolean).join(" · ") : "";
   const box = $("kronika");
   if (!zaznam) {
     box.innerHTML = `<p class="ticho">Kronika, ${esc(rokK)}, ještě nevyšla; píše se po zimním kole.</p>`;

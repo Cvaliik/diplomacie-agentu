@@ -76,10 +76,12 @@ def write_index(played_turn=None) -> None:
     now = datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds")
     entries = []
     for turn, p in _turn_files():
-        st = _load(p)["state"]
-        played_at = (now if turn == played_turn else None) or (known.get(turn) or {}).get("played_at") or _git_time(p)
+        snap = _load(p)
+        st = snap["state"]
+        played_at = snap.get("played_at") or (now if turn == played_turn else None) \
+            or (known.get(turn) or {}).get("played_at") or _git_time(p)
         entries.append({"turn": turn, "day": st["meta"]["day"], "slot": st["meta"]["slot"],
-                        "cas": engine.game_time(turn),
+                        "cas": engine.game_time(turn), "real": engine.real_time(turn, played_at),
                         "phase": st["phase"], "file": "turn_%03d.json" % turn, "played_at": played_at})
     _write(path, {"turns": entries})
 
@@ -181,7 +183,10 @@ def write_chronicle_index() -> None:
             continue
         day = int(m.group(1))
         typ = "finále" if day == FINAL_DAY else ("bilance sedmi let" if day in WEEKLY_DAYS else "roční")
-        entries.append({"day": day, "file": p.name, "typ": typ, "cas": engine.game_time(3 * day, season=False)})
+        last = config.HISTORY_DIR / ("turn_%03d.json" % (3 * day))
+        stamp = (_load(last).get("played_at") or _git_time(last)) if last.exists() else None
+        entries.append({"day": day, "file": p.name, "typ": typ, "cas": engine.game_time(3 * day, season=False),
+                        "real": engine.real_time(3 * day, stamp).replace(", večer", "")})
     config.CHRONICLE_DIR.mkdir(exist_ok=True)
     _write(config.CHRONICLE_DIR / "index.json", {"days": entries})
 

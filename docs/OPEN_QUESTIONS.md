@@ -4670,6 +4670,13 @@ NPC, u kterého má hráč vliv aspoň 3, mu s pravděpodobností 50 % pošle so
 výsledku a důvodu. Vliv by se tím stal zdrojem zpravodajství. **Otázka pro v2:** zavést informátory jako cestu, jak
 se hráč dozví výsledek soupeřovy nabídky, který dnes zůstává v soukromém logu soupeře.
 
+### v1.14b: přehrání od displacementu (19. 9. 2026)
+
+Kola 7 až 10 odehraná před v1.14b se zahazují, přehráno od kola 7 s pravidly v1.14b, rozhodnutí Adama 19. 9. 2026.
+Důvod: hráči na objevení oritu nereagovali (nic o něm nevěděli) a pevné násobky oritu v metrikách (obchod 2×, zásoby 3×)
+by po krizi zůstaly absurdní. Metriky se nově řídí tržní cenou oritu (část 8). Původní snímky kol 7 až 10 a kronika
+dne 3 jsou v `debug/pred_v114b/` (mimo git). Kontrola: metriky kol 1 až 6 vyšly po změně stejně jako dosud.
+
 ### V16. Typy zboží (v2)
 
 `goods` je v v1.11 jediný průmyslový statek pro spotřebu i investice. **Otázka pro v2:** rozlišit spotřební a kapitálové

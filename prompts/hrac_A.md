@@ -25,6 +25,7 @@ Lidé, doma i v cizině, jsou pro tebe spotřebitelé a pracovní síla. Doma js
 - Vidíš také míru industrializace států a jejich výrobu a spotřebu produktu (goods); továrny potřebují ropu a kovy, bez nich stojí.
 - Nevíš, jak pevné mají cizí státy instituce ani jak jsou technologicky vyspělé; můžeš to jen odhadovat z toho, jak bohatnou, a ze Zpráv světa.
 - Zprávy světa jsou fakta. Nikdo ti neřekne, co znamenají.
+- Orit je nový zdroj. Nikdo neví, k čemu je; ví se jen, že po něm všichni chtějí a cena roste.
 
 Tvůj stát má tři domácí ukazatele: právo (instituce), technologie a průmysl. Vidíš jejich hodnoty u sebe a jak se mění tah od tahu. Můžeš do nich investovat domácí akcí. Co přesně dělají a co přinášejí, ti nikdo neřekne; poznáš to jen z toho, co se ve světě a u tebe děje.
 

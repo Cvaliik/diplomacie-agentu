@@ -118,6 +118,7 @@ def slot_of(turn: int) -> int:
 
 
 SEASONS = {1: "jaro", 2: "léto", 3: "zima"}
+SLOT_NAMES = {1: "ráno", 2: "poledne", 3: "večer"}
 
 
 def game_time(turn: int, season: bool = True) -> str:
@@ -125,6 +126,26 @@ def game_time(turn: int, season: bool = True) -> str:
     Vraci "rok R, jaro | léto | zima" (slot 1, 2, 3; R = den), bez rocni doby jen "rok R"."""
     r = day_of(int(turn))
     return "rok %d, %s" % (r, SEASONS[slot_of(int(turn))]) if season else "rok %d" % r
+
+
+def real_time(turn: int, played_at: str | None = None) -> str:
+    """Realny cas kola (v1.14b): "3. den hry, ráno", s casovym razitkem snimku navic "· 18. 9. 2026 7:00"
+    v prazskem case (bez tzdata pevne UTC+2, hra bezi v letnim case)."""
+    out = "%d. den hry, %s" % (day_of(int(turn)), SLOT_NAMES[slot_of(int(turn))])
+    if not played_at:
+        return out
+    import datetime as _dt
+    try:
+        t = _dt.datetime.fromisoformat(str(played_at).replace("Z", "+00:00"))
+    except ValueError:
+        return out
+    try:
+        from zoneinfo import ZoneInfo
+        tz = ZoneInfo("Europe/Prague")
+    except Exception:
+        tz = _dt.timezone(_dt.timedelta(hours=2))
+    t = t.astimezone(tz)
+    return out + " · %d. %d. %d %d:%02d" % (t.day, t.month, t.year, t.hour, t.minute)
 
 
 def npc_ids(state) -> list[str]:
@@ -2079,7 +2100,7 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
         if owner == "C":
             # 7.2 (v1.9): obchod Unie za cleny z poolu clenu
             value = _union_deal_execute(state, d, needs, imports, exports, trade_mult, trace)
-            weight = 2.0 if res == "orit" else 1.0
+            weight = 1.0   # 8 (v1.14b): bez nasobku, orit vazi sama cena (qty x price)
             trade_volume += value
             trade_volume_weighted += value * weight
             if res == GOODS:
@@ -2117,7 +2138,7 @@ def step_resources(state, npcdata, trace: Trace, events: list) -> dict:
                    "clo_plati": payer})
         if res == GOODS and seller in imports:
             state["_goods_sold"][seller] = state["_goods_sold"].get(seller, 0.0) + qty
-        weight = 2.0 if res == "orit" else 1.0
+        weight = 1.0   # 8 (v1.14b): bez nasobku, orit vazi sama cena (qty x price)
         trade_volume += value
         trade_volume_weighted += value * weight
         if res == GOODS:
@@ -3328,8 +3349,13 @@ def step_metrics(state, trace: Trace) -> None:
     a_share = (a_vol / world_vol) if world_vol > 0 else 0.0
 
     # B_resource_share (efektivni produkce, viz OPEN_QUESTIONS C5)
+    # 8 (v1.14b): orit (produkce i zasoby) s vahou cena oritu / zaklad kovu, kazde kolo z trzni ceny
+    orit_w = (market_price(state, "orit") or 0.0) / BASE_PRICE["metal"] if state.get("prices", {}).get("orit") else 0.0
+
     def prod_units(e):
-        return sum(eff_prod(e, r) for r in RESOURCES)
+        base = sum(eff_prod(e, r) for r in BASE_RESOURCES)
+        orit = eff_prod(e, "orit") + float((e.get("stock") or {}).get("orit", 0.0))
+        return base + orit_w * orit
 
     world_prod = sum(prod_units(ent(state, i)) for i in world_ids(state))
     b_units = prod_units(state["players"]["B"])

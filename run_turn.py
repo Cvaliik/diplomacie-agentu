@@ -1761,7 +1761,8 @@ def main() -> int:
     # 7. validace a zapis
     new_views = engine.build_views(new_state, npcdata)
     errors = validate(state, new_state, applied, actions=actions, views=new_views)
-    snapshot = {"turn": turn, "state": new_state, "turns": moves, "actions": actions,
+    snapshot = {"turn": turn, "played_at": datetime.datetime.now(datetime.timezone.utc).isoformat(timespec="seconds"),
+                "state": new_state, "turns": moves, "actions": actions,
                 "rejected": (ref.get("rejected") or []) + limit_rejected, "rulings": ref.get("rulings") or [],
                 "restored": restored,
                 "news": news, "events": events, "delivered_messages": delivered, "applied_rules": applied,
