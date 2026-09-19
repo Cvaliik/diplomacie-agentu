@@ -1,0 +1,5505 @@
+{
+  "turn": 11,
+  "played_at": "2026-09-19T11:02:03+00:00",
+  "state": {
+    "meta": {
+      "version": "v1",
+      "turn": 11,
+      "day": 4,
+      "slot": 2,
+      "rng_seed": 20260910,
+      "started_at": "2026-09-16T18:43:09+00:00",
+      "paused": false,
+      "day1_date": "2026-09-16"
+    },
+    "phase": "displacement",
+    "minsky": {
+      "orit_price": 10.0,
+      "orit_price_start": 10,
+      "boom_started_turn": null,
+      "crash_turn": null,
+      "fragility": 0.0,
+      "defaults": [],
+      "phase_log": [
+        {
+          "turn": 7,
+          "from": "pre",
+          "to": "displacement",
+          "threshold": "tah 7",
+          "value": 7
+        }
+      ],
+      "next_invest_id": 20,
+      "next_war_id": 1,
+      "fallen_touched": [],
+      "migration_ledger": [],
+      "npc_trade_last": [
+        [
+          "N3",
+          "N9"
+        ],
+        [
+          "N14",
+          "N3"
+        ],
+        [
+          "N3",
+          "N5"
+        ],
+        [
+          "N12",
+          "N15"
+        ],
+        [
+          "N2",
+          "N7"
+        ],
+        [
+          "N4",
+          "N7"
+        ],
+        [
+          "N1",
+          "N6"
+        ],
+        [
+          "N14",
+          "N5"
+        ],
+        [
+          "A",
+          "N1"
+        ],
+        [
+          "N12",
+          "N7"
+        ],
+        [
+          "N3",
+          "N6"
+        ],
+        [
+          "A",
+          "B"
+        ],
+        [
+          "A",
+          "N3"
+        ],
+        [
+          "N2",
+          "N4"
+        ],
+        [
+          "N16",
+          "N4"
+        ],
+        [
+          "N3",
+          "N8"
+        ],
+        [
+          "N1",
+          "N3"
+        ],
+        [
+          "N13",
+          "N3"
+        ],
+        [
+          "N10",
+          "N4"
+        ],
+        [
+          "N11",
+          "N3"
+        ],
+        [
+          "N16",
+          "N7"
+        ],
+        [
+          "N6",
+          "N8"
+        ],
+        [
+          "N15",
+          "N9"
+        ],
+        [
+          "B",
+          "N6"
+        ],
+        [
+          "B",
+          "N16"
+        ],
+        [
+          "A",
+          "N8"
+        ],
+        [
+          "B",
+          "N2"
+        ],
+        [
+          "B",
+          "N10"
+        ],
+        [
+          "A",
+          "N14"
+        ]
+      ],
+      "next_deal_id": 16,
+      "next_invasion_id": 1,
+      "pressure_log": [],
+      "next_offer_id": 45,
+      "offer_ignored": {
+        "A": {
+          "N1": 2,
+          "N3": 1,
+          "N2": 1,
+          "N4": 1,
+          "N10": 1
+        },
+        "B": {
+          "N5": 0,
+          "N1": 2,
+          "N4": 2,
+          "N2": 1
+        },
+        "C": {}
+      }
+    },
+    "players": {
+      "A": {
+        "name": "Kalverská federace",
+        "wealth": 38.10604032139571,
+        "paper_wealth": 0,
+        "power": 80,
+        "law": 7.8999999999999995,
+        "tech": 7.650000000000004,
+        "industry": 10.0,
+        "prod": {
+          "oil": 3,
+          "grain": 3,
+          "metal": 8,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 50.025,
+          "oil": 51.5667,
+          "metal": 54.0984,
+          "goods": 36.9435,
+          "orit": 0.0
+        },
+        "pop": 230,
+        "pop_start": 230,
+        "active": true,
+        "occupied": [],
+        "poverty_streak": 0,
+        "coups": 0,
+        "last_coup_turn": null,
+        "goods_capacity": 17.5,
+        "goods_planned": 11.7308,
+        "need": {
+          "grain": 6.9,
+          "goods": 3.6944,
+          "oil": 7.2454,
+          "metal": 4.6692,
+          "orit": 2.0
+        },
+        "goods_out": 11.7308,
+        "coverage": 1.0,
+        "goods_sold_last": 0.9429,
+        "auto_last": {
+          "goods": {
+            "prodano": {
+              "mnozstvi": 0.523,
+              "prumerna_cena": 1.0497
+            }
+          },
+          "grain": {
+            "nakoupeno": {
+              "mnozstvi": 2.775,
+              "prumerna_cena": 0.7553
+            }
+          },
+          "metal": {
+            "prodano": {
+              "mnozstvi": 1.274,
+              "prumerna_cena": 0.8399
+            }
+          },
+          "oil": {
+            "nakoupeno": {
+              "mnozstvi": 5.575,
+              "prumerna_cena": 0.8074
+            }
+          }
+        }
+      },
+      "B": {
+        "name": "Lidová republika Ostrogard",
+        "wealth": 24.533143482258644,
+        "paper_wealth": 0,
+        "power": 62.0,
+        "law": 4.499999999999999,
+        "tech": 5.3,
+        "industry": 6,
+        "prod": {
+          "oil": 9,
+          "grain": 5.0,
+          "metal": 2,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 39.985,
+          "oil": 25.3299,
+          "metal": 14.4,
+          "goods": 22.8235,
+          "orit": 0.0
+        },
+        "pop": 210,
+        "pop_start": 210,
+        "active": true,
+        "occupied": [],
+        "poverty_streak": 0,
+        "coups": 0,
+        "last_coup_turn": null,
+        "goods_capacity": 9.18,
+        "goods_planned": 9.18,
+        "need": {
+          "grain": 6.3,
+          "goods": 2.6963,
+          "oil": 5.85,
+          "metal": 3.804,
+          "orit": 2.0
+        },
+        "goods_out": 9.18,
+        "coverage": 1.0,
+        "goods_sold_last": 1.9616,
+        "auto_last": {
+          "goods": {
+            "prodano": {
+              "mnozstvi": 1.961,
+              "prumerna_cena": 1.0505
+            }
+          },
+          "metal": {
+            "nakoupeno": {
+              "mnozstvi": 1.274,
+              "prumerna_cena": 0.9239
+            }
+          },
+          "oil": {
+            "prodano": {
+              "mnozstvi": 5.535,
+              "prumerna_cena": 0.7339
+            }
+          }
+        }
+      },
+      "C": {
+        "name": null,
+        "wealth": 0,
+        "paper_wealth": 0,
+        "power": 0,
+        "law": null,
+        "tech": null,
+        "members": [],
+        "fund": 0,
+        "active": false,
+        "founded_turn": null,
+        "law_threshold": null,
+        "candidates": [],
+        "tariff_rate": 0.1,
+        "tariff_next": null
+      }
+    },
+    "npc": {
+      "N1": {
+        "wealth": 43.22445233715868,
+        "paper_wealth": 0,
+        "power": 8,
+        "law": 6.499999999999995,
+        "tech": 4.950000000000002,
+        "industry": 2.348,
+        "prod": {
+          "oil": 0,
+          "grain": 10.0,
+          "metal": 1,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 53.0825,
+          "oil": 8.5269,
+          "metal": 5.9141,
+          "goods": 10.9894,
+          "orit": 0.0
+        },
+        "pop": 190,
+        "pop_start": 190,
+        "influence": {
+          "A": 14.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "sphere_A",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          42.6471,
+          42.9795,
+          43.2245
+        ],
+        "influence_history": [
+          {
+            "A": 12.0,
+            "B": 0.0
+          },
+          {
+            "A": 13.0,
+            "B": 0.0
+          },
+          {
+            "A": 14.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 59.378766019818286,
+        "goods_capacity": 3.475,
+        "goods_planned": 3.261,
+        "need": {
+          "grain": 5.7,
+          "goods": 3.261,
+          "oil": 2.7705,
+          "metal": 1.9283,
+          "orit": 2.0
+        },
+        "goods_out": 3.261,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N2": {
+        "wealth": 37.18573346736942,
+        "paper_wealth": 0,
+        "power": 6,
+        "law": 4.999999999999998,
+        "tech": 2,
+        "industry": 2,
+        "prod": {
+          "oil": 0,
+          "grain": 8,
+          "metal": 0,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 48.0,
+          "oil": 7.68,
+          "metal": 6.08,
+          "goods": 20.9613,
+          "orit": 0.0
+        },
+        "pop": 160,
+        "pop_start": 160,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          40.0797,
+          39.1063,
+          37.1857
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 43.42908021666121,
+        "goods_capacity": 2.4,
+        "goods_planned": 2.4,
+        "need": {
+          "grain": 4.8,
+          "goods": 2.6428,
+          "oil": 2.16,
+          "metal": 1.52,
+          "orit": 2.0
+        },
+        "goods_out": 2.4,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N3": {
+        "wealth": 92.20871242401184,
+        "paper_wealth": 0,
+        "power": 18.0,
+        "law": 4.3,
+        "tech": 3.8000000000000007,
+        "industry": 4,
+        "prod": {
+          "oil": 10,
+          "grain": 1,
+          "metal": 0,
+          "orit": 3.0
+        },
+        "stock": {
+          "grain": 13.22,
+          "oil": 27.5419,
+          "metal": 5.5731,
+          "goods": 25.4161,
+          "orit": 5.98
+        },
+        "pop": 120,
+        "pop_start": 120,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          86.8549,
+          90.5407,
+          92.2087
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 92.20871242401184,
+        "goods_capacity": 5.44,
+        "goods_planned": 4.0251,
+        "need": {
+          "grain": 3.6,
+          "goods": 3.0108,
+          "oil": 2.7325,
+          "metal": 1.8075,
+          "orit": 2.0
+        },
+        "goods_out": 4.0251,
+        "coverage": 1.0,
+        "goods_sold_last": 0.3942
+      },
+      "N4": {
+        "wealth": 76.50924462233733,
+        "paper_wealth": 0,
+        "power": 29.0,
+        "law": 4.4999999999999964,
+        "tech": 5.500000000000003,
+        "industry": 4.324,
+        "prod": {
+          "oil": 10.0,
+          "grain": 2,
+          "metal": 0,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 10.65,
+          "oil": 24.0769,
+          "metal": 4.7958,
+          "goods": 10.0868,
+          "orit": 0.0
+        },
+        "pop": 110,
+        "pop_start": 110,
+        "influence": {
+          "A": 0.0,
+          "B": 20.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "sphere_B",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          72.5778,
+          74.477,
+          76.5092
+        ],
+        "influence_history": [
+          {
+            "A": 0.8,
+            "B": 16.0
+          },
+          {
+            "A": 0.0,
+            "B": 18.0
+          },
+          {
+            "A": 0.0,
+            "B": 20.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 83.37646954136274,
+        "goods_capacity": 6.7022,
+        "goods_planned": 3.1356,
+        "need": {
+          "grain": 3.3,
+          "goods": 2.4654,
+          "oil": 2.2278,
+          "metal": 1.4907,
+          "orit": 2.0
+        },
+        "goods_out": 3.1356,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N5": {
+        "wealth": 40.01633922445729,
+        "paper_wealth": 0,
+        "power": 35.0,
+        "law": 4.399999999999998,
+        "tech": 5.450000000000002,
+        "industry": 3,
+        "prod": {
+          "oil": 0,
+          "grain": 2,
+          "metal": 7,
+          "orit": 4.0
+        },
+        "stock": {
+          "grain": 9.495,
+          "oil": 4.8,
+          "metal": 10.1612,
+          "goods": 9.33,
+          "orit": 3.555
+        },
+        "pop": 100,
+        "pop_start": 100,
+        "influence": {
+          "A": 0.0,
+          "B": 22.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "sphere_B",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          38.6368,
+          40.1689,
+          40.0163
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 17.0
+          },
+          {
+            "A": 0.0,
+            "B": 19.0
+          },
+          {
+            "A": 0.0,
+            "B": 22.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 43.46529600353874,
+        "goods_capacity": 4.575,
+        "goods_planned": 1.6695,
+        "need": {
+          "grain": 3.0,
+          "goods": 1.6695,
+          "oil": 1.4347,
+          "metal": 1.0008,
+          "orit": 2.0
+        },
+        "goods_out": 1.6695,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N6": {
+        "wealth": 70.82041401249921,
+        "paper_wealth": 0,
+        "power": 11.0,
+        "law": 2,
+        "tech": 1.7999999999999998,
+        "industry": 1,
+        "prod": {
+          "oil": 0,
+          "grain": 2,
+          "metal": 2,
+          "orit": 10.0
+        },
+        "stock": {
+          "grain": 8.1,
+          "oil": 3.161,
+          "metal": 5.4075,
+          "goods": 6.1641,
+          "orit": 17.86
+        },
+        "pop": 90,
+        "pop_start": 90,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          76.9792,
+          72.3183,
+          70.8204
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.64
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 77.47920471499167,
+        "goods_capacity": 1.16,
+        "goods_planned": 0.9924,
+        "need": {
+          "grain": 2.7,
+          "goods": 1.9848,
+          "oil": 1.0362,
+          "metal": 0.7477,
+          "orit": 2.0
+        },
+        "goods_out": 0.9924,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N7": {
+        "wealth": 43.63247251055152,
+        "paper_wealth": 0,
+        "power": 14.0,
+        "law": 4.8999999999999995,
+        "tech": 3.6000000000000005,
+        "industry": 3,
+        "prod": {
+          "oil": 0,
+          "grain": 2,
+          "metal": 6,
+          "orit": 4.0
+        },
+        "stock": {
+          "grain": 15.005,
+          "oil": 5.199,
+          "metal": 11.199,
+          "goods": 9.0334,
+          "orit": 5.62
+        },
+        "pop": 110,
+        "pop_start": 110,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          40.2012,
+          41.4537,
+          43.6325
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 44.93147602140624,
+        "goods_capacity": 4.02,
+        "goods_planned": 1.86,
+        "need": {
+          "grain": 3.3,
+          "goods": 1.86,
+          "oil": 1.59,
+          "metal": 1.108,
+          "orit": 2.0
+        },
+        "goods_out": 1.86,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N8": {
+        "wealth": 18.152141650880125,
+        "paper_wealth": 0,
+        "power": 8.231605131250001,
+        "law": 3,
+        "tech": 1.423160513125,
+        "industry": 1,
+        "prod": {
+          "oil": 0,
+          "grain": 4,
+          "metal": 0,
+          "orit": 1.0
+        },
+        "stock": {
+          "grain": 24.0,
+          "oil": 0.96,
+          "metal": 0.8,
+          "goods": 2.19,
+          "orit": 0.0
+        },
+        "pop": 80,
+        "pop_start": 80,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          18.7148,
+          18.4341,
+          18.1521
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 22.0,
+        "goods_capacity": 1.1317,
+        "goods_planned": 0.5229,
+        "need": {
+          "grain": 2.4,
+          "goods": 1.0458,
+          "oil": 0.7414,
+          "metal": 0.5569,
+          "orit": 2.0
+        },
+        "goods_out": 0.5229,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N9": {
+        "wealth": 19.297567588984393,
+        "paper_wealth": 0,
+        "power": 11.10525,
+        "law": 2,
+        "tech": 1.610525,
+        "industry": 1,
+        "prod": {
+          "oil": 3,
+          "grain": 2,
+          "metal": 0,
+          "orit": 3.0
+        },
+        "stock": {
+          "grain": 5.4,
+          "oil": 5.627,
+          "metal": 0.6,
+          "goods": 1.6,
+          "orit": 2.3932
+        },
+        "pop": 60,
+        "pop_start": 60,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          18.376,
+          18.8287,
+          19.2976
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 20.50911273839163,
+        "goods_capacity": 1.1411,
+        "goods_planned": 0.3941,
+        "need": {
+          "grain": 1.8,
+          "goods": 0.7883,
+          "oil": 0.5571,
+          "metal": 0.4182,
+          "orit": 2.0
+        },
+        "goods_out": 0.3941,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N10": {
+        "wealth": 19.551613983579944,
+        "paper_wealth": 0,
+        "power": 4,
+        "law": 4.399999999999999,
+        "tech": 2,
+        "industry": 1,
+        "prod": {
+          "oil": 0,
+          "grain": 3,
+          "metal": 2,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 21.0,
+          "oil": 2.55,
+          "metal": 6.0554,
+          "goods": 6.02,
+          "orit": 0.0
+        },
+        "pop": 85,
+        "pop_start": 85,
+        "influence": {
+          "A": 3.2,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          19.2312,
+          19.4012,
+          19.5516
+        ],
+        "influence_history": [
+          {
+            "A": 1.6,
+            "B": 0.0
+          },
+          {
+            "A": 2.4,
+            "B": 0.0
+          },
+          {
+            "A": 3.2,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 25.0,
+        "goods_capacity": 1.2,
+        "goods_planned": 0.5624,
+        "need": {
+          "grain": 2.55,
+          "goods": 1.1249,
+          "oil": 0.7912,
+          "metal": 0.5937,
+          "orit": 2.0
+        },
+        "goods_out": 0.5624,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N11": {
+        "wealth": 105.09639091540492,
+        "paper_wealth": 0,
+        "power": 6,
+        "law": 9,
+        "tech": 9.650000000000004,
+        "industry": 8.099999999999996,
+        "prod": {
+          "oil": 1,
+          "grain": 2,
+          "metal": 1
+        },
+        "stock": {
+          "grain": 18.0,
+          "oil": 5.2971,
+          "metal": 11.2942,
+          "goods": 15.0,
+          "orit": 0.0
+        },
+        "pop": 50,
+        "pop_start": 50,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "fallen",
+        "coups": 0,
+        "wealth_history": [
+          104.0178,
+          104.5665,
+          105.0964
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 104.2630575820716,
+        "goods_capacity": 15.6,
+        "goods_planned": 2.9314,
+        "need": {
+          "grain": 1.5,
+          "goods": 1.3714,
+          "oil": 1.7657,
+          "metal": 1.1294,
+          "orit": 0.0
+        },
+        "goods_out": 2.9314,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N12": {
+        "wealth": 93.81263600833339,
+        "paper_wealth": 0,
+        "power": 7,
+        "law": 8,
+        "tech": 8.650000000000004,
+        "industry": 8.099999999999996,
+        "prod": {
+          "oil": 2,
+          "grain": 1,
+          "metal": 2
+        },
+        "stock": {
+          "grain": 15.7105,
+          "oil": 21.98,
+          "metal": 14.36,
+          "goods": 19.6,
+          "orit": 0.0
+        },
+        "pop": 70,
+        "pop_start": 70,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "fallen",
+        "coups": 0,
+        "wealth_history": [
+          90.7108,
+          92.2632,
+          93.8126
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 92.64596934166671,
+        "goods_capacity": 14.8,
+        "goods_planned": 3.2564,
+        "need": {
+          "grain": 2.1,
+          "goods": 1.7764,
+          "oil": 2.0482,
+          "metal": 1.3269,
+          "orit": 0.0
+        },
+        "goods_out": 3.2564,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N13": {
+        "wealth": 24.068871572655684,
+        "paper_wealth": 0,
+        "power": 12.0,
+        "law": 6,
+        "tech": 7.350000000000004,
+        "industry": 6.459999999999996,
+        "prod": {
+          "oil": 0,
+          "grain": 3,
+          "metal": 2,
+          "orit": 4.0
+        },
+        "stock": {
+          "grain": 32.0775,
+          "oil": 6.663,
+          "metal": 14.4249,
+          "goods": 17.1871,
+          "orit": 1.365
+        },
+        "pop": 120,
+        "pop_start": 120,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          27.7429,
+          25.9356,
+          24.0689
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 50.0,
+        "goods_capacity": 10.812,
+        "goods_planned": 2.7999,
+        "need": {
+          "grain": 3.6,
+          "goods": 1.7187,
+          "oil": 2.12,
+          "metal": 1.44,
+          "orit": 2.0
+        },
+        "goods_out": 2.7999,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N14": {
+        "wealth": 31.293987779118446,
+        "paper_wealth": 0,
+        "power": 10.0,
+        "law": 5,
+        "tech": 5.150000000000002,
+        "industry": 3.3,
+        "prod": {
+          "oil": 3,
+          "grain": 4,
+          "metal": 2,
+          "orit": 4.0
+        },
+        "stock": {
+          "grain": 28.0961,
+          "oil": 15.9392,
+          "metal": 11.064,
+          "goods": 6.7033,
+          "orit": 0.48
+        },
+        "pop": 100,
+        "pop_start": 100,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          29.293,
+          28.9747,
+          31.294
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 41.66660438222222,
+        "goods_capacity": 4.884,
+        "goods_planned": 1.4829,
+        "need": {
+          "grain": 3.0,
+          "goods": 1.4829,
+          "oil": 1.3415,
+          "metal": 0.9449,
+          "orit": 2.0
+        },
+        "goods_out": 1.4829,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N15": {
+        "wealth": 35.67543550138411,
+        "paper_wealth": 0,
+        "power": 7,
+        "law": 3,
+        "tech": 2,
+        "industry": 2,
+        "prod": {
+          "oil": 2,
+          "grain": 1,
+          "metal": 6,
+          "orit": 2.0
+        },
+        "stock": {
+          "grain": 8.5,
+          "oil": 11.5269,
+          "metal": 8.0361,
+          "goods": 6.33,
+          "orit": 0.0
+        },
+        "pop": 80,
+        "pop_start": 80,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          38.1121,
+          36.8832,
+          35.6754
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 40.819426176607784,
+        "goods_capacity": 2.4,
+        "goods_planned": 1.2918,
+        "need": {
+          "grain": 2.4,
+          "goods": 1.2918,
+          "oil": 1.1259,
+          "metal": 0.7875,
+          "orit": 2.0
+        },
+        "goods_out": 1.2918,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      },
+      "N16": {
+        "wealth": 17.5473633121458,
+        "paper_wealth": 0,
+        "power": 4,
+        "law": 4,
+        "tech": 1,
+        "industry": 1,
+        "prod": {
+          "oil": 0,
+          "grain": 5,
+          "metal": 0,
+          "orit": 0.0
+        },
+        "stock": {
+          "grain": 27.0,
+          "oil": 1.08,
+          "metal": 0.9,
+          "goods": 2.46,
+          "orit": 0.0
+        },
+        "pop": 90,
+        "pop_start": 90,
+        "influence": {
+          "A": 0.0,
+          "B": 0.0
+        },
+        "debt": {
+          "A": 0,
+          "B": 0,
+          "C": 0
+        },
+        "status": "independent",
+        "poverty_streak": 0,
+        "kind": "normal",
+        "coups": 0,
+        "wealth_history": [
+          18.166,
+          17.8572,
+          17.5474
+        ],
+        "influence_history": [
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          },
+          {
+            "A": 0.0,
+            "B": 0.0
+          }
+        ],
+        "last_coup_turn": null,
+        "wealth_peak": 22.0,
+        "goods_capacity": 1.1,
+        "goods_planned": 0.5839,
+        "need": {
+          "grain": 2.7,
+          "goods": 1.1679,
+          "oil": 0.832,
+          "metal": 0.6252,
+          "orit": 2.0
+        },
+        "goods_out": 0.5839,
+        "coverage": 1.0,
+        "goods_sold_last": 0.0
+      }
+    },
+    "deals": [
+      {
+        "id": "d3",
+        "type": "protect",
+        "owner": "B",
+        "target": "N5",
+        "since": 1
+      },
+      {
+        "id": "d6",
+        "type": "protect",
+        "owner": "B",
+        "target": "N4",
+        "since": 2
+      },
+      {
+        "id": "d7",
+        "type": "trade",
+        "owner": "A",
+        "target": "N1",
+        "res": "oil",
+        "qty": 2.455,
+        "price": 1.0,
+        "direction": "npc_buys",
+        "since": 3
+      },
+      {
+        "id": "d13",
+        "type": "trade",
+        "owner": "A",
+        "target": "N10",
+        "res": "goods",
+        "qty": 0.42,
+        "price": 1.0,
+        "direction": "npc_buys",
+        "since": 8
+      }
+    ],
+    "invasions": [],
+    "messages_pending": [
+      {
+        "from": "A",
+        "to": "B",
+        "text": "Ostrogarde, příměří i otevřený trh držím dál; o orit soutěžím jen cenou a hotově, plot nestavím.",
+        "turn": 11
+      },
+      {
+        "from": "B",
+        "to": "A",
+        "text": "Kalvero, příměří držím také. Soutěžte cenou, jak říkáte; do zázemí mých přátel ale kapitál nepatří.",
+        "turn": 11
+      }
+    ],
+    "news": [
+      "Meridport, rok 4: V Meridii i v Tavře a Kalderě objeveny nové zásoby oritu.",
+      "Dorvik, rok 4: V Dorvanu nalezena ložiska oritu a obchodníci v Dorvanu platí za orit desetinásobek ceny kovu a berou vše, co se vytěží.",
+      "Sarnov, rok 4: V Sarnii zvolen nový starosta hlavního města."
+    ],
+    "metrics": {
+      "prosperity_index": 83.99,
+      "A_trade_share": 0.3496,
+      "B_resource_share": 0.0833,
+      "C_min_member": null,
+      "W0": 864,
+      "W_real": 830.73,
+      "n_bida": 0,
+      "max_share": 0.1265,
+      "trade_volume": 35.543,
+      "trade_volume_npc": 21.339,
+      "trade_volume_players": 14.204,
+      "trade_volume_goods": 3.443,
+      "trade_volume_AB": 5.645,
+      "poverty_ids": []
+    },
+    "log": [
+      {
+        "turn": 3,
+        "events": [
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N13",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N1",
+            "action": "trade_offer",
+            "outcome": "prijato"
+          },
+          {
+            "kind": "trade_opened",
+            "deal": {
+              "id": "d7",
+              "type": "trade",
+              "owner": "A",
+              "target": "N1",
+              "res": "oil",
+              "qty": 2.455,
+              "price": 1.0,
+              "direction": "npc_buys",
+              "since": 3
+            }
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "A",
+            "target": "A",
+            "law": 7.3
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N7",
+            "action": "loan",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N15",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "B",
+            "target": "B",
+            "law": 3.5999999999999996
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N2",
+            "law": 4.3999999999999995
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N3",
+            "law": 3.5
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N7",
+            "law": 4.3
+          },
+          {
+            "kind": "npc_invest_tech",
+            "npc": "N1",
+            "tech": 3.5999999999999996
+          },
+          {
+            "kind": "npc_invest_tech",
+            "npc": "N13",
+            "tech": 5.6000000000000005
+          },
+          {
+            "kind": "npc_invest_tech",
+            "npc": "N14",
+            "tech": 3.5999999999999996
+          },
+          {
+            "kind": "npc_invest_tech",
+            "npc": "N4",
+            "tech": 4.6000000000000005
+          },
+          {
+            "kind": "npc_invest_tech",
+            "npc": "N5",
+            "tech": 4.6000000000000005
+          }
+        ]
+      },
+      {
+        "turn": 4,
+        "events": [
+          {
+            "kind": "cancel",
+            "player": "A",
+            "deal_id": "d4",
+            "removed": 1
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N4",
+            "action": "trade_offer",
+            "outcome": "prijato"
+          },
+          {
+            "kind": "trade_opened",
+            "deal": {
+              "id": "d8",
+              "type": "trade",
+              "owner": "A",
+              "target": "N4",
+              "res": "oil",
+              "qty": 3.0,
+              "price": 0.85,
+              "direction": "npc_sells",
+              "since": 4
+            }
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N14",
+            "action": "protect",
+            "outcome": "protinavrh"
+          },
+          {
+            "kind": "offer_accepted",
+            "player": "B",
+            "npc": "N1",
+            "offer": {
+              "type": "sell",
+              "res": "grain",
+              "qty": 2.655,
+              "price": 0.7486,
+              "offer_id": "o12",
+              "player": "B",
+              "npc": "N1",
+              "created": 3,
+              "expires": 5
+            }
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "invest_industry_done",
+            "player": "A",
+            "target": "A",
+            "industry": 9.578
+          },
+          {
+            "kind": "invest_tech_done",
+            "player": "B",
+            "target": "B",
+            "tech": 4.6
+          }
+        ]
+      },
+      {
+        "turn": 5,
+        "events": [
+          {
+            "kind": "cancel",
+            "player": "A",
+            "deal_id": "d1",
+            "removed": 1
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N6",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "A",
+            "target": "A",
+            "law": 7.6
+          },
+          {
+            "kind": "offer_accepted",
+            "player": "B",
+            "npc": "N1",
+            "offer": {
+              "type": "sell",
+              "res": "grain",
+              "qty": 2.655,
+              "price": 0.743,
+              "offer_id": "o16",
+              "player": "B",
+              "npc": "N1",
+              "created": 4,
+              "expires": 6
+            }
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N1",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "invest_tech_done",
+            "player": "B",
+            "target": "B",
+            "tech": 4.8999999999999995
+          },
+          {
+            "kind": "sphere",
+            "npc": "N5",
+            "status": "sphere_B"
+          }
+        ]
+      },
+      {
+        "turn": 6,
+        "events": [
+          {
+            "kind": "cancel",
+            "player": "A",
+            "deal_id": "d5",
+            "removed": 1
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N7",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N2",
+            "law": 4.999999999999998
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N3",
+            "law": 4.0
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N5",
+            "law": 5.299999999999999
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N7",
+            "law": 4.6
+          },
+          {
+            "kind": "npc_invest_industry",
+            "npc": "N1",
+            "industry": 2.348
+          },
+          {
+            "kind": "npc_invest_industry",
+            "npc": "N13",
+            "industry": 5.8599999999999985
+          },
+          {
+            "kind": "npc_invest_industry",
+            "npc": "N14",
+            "industry": 3.3
+          },
+          {
+            "kind": "npc_invest_industry",
+            "npc": "N4",
+            "industry": 4.324
+          },
+          {
+            "kind": "sphere",
+            "npc": "N1",
+            "status": "sphere_A"
+          }
+        ]
+      },
+      {
+        "turn": 7,
+        "events": [
+          {
+            "kind": "cancel",
+            "player": "A",
+            "deal_id": "d2",
+            "removed": 1
+          },
+          {
+            "kind": "cancel",
+            "player": "A",
+            "deal_id": "d8",
+            "removed": 1
+          },
+          {
+            "kind": "offer_accepted",
+            "player": "B",
+            "npc": "N4",
+            "offer": {
+              "type": "sell",
+              "res": "grain",
+              "qty": 0.795,
+              "price": 0.7378,
+              "offer_id": "o23",
+              "player": "B",
+              "npc": "N4",
+              "created": 6,
+              "expires": 8
+            }
+          },
+          {
+            "kind": "offer_accepted",
+            "player": "B",
+            "npc": "N2",
+            "offer": {
+              "type": "sell",
+              "res": "grain",
+              "qty": 2.565,
+              "price": 0.7378,
+              "offer_id": "o24",
+              "player": "B",
+              "npc": "N2",
+              "created": 6,
+              "expires": 8
+            }
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "A",
+            "target": "A",
+            "law": 7.8999999999999995
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "invest_prod_done",
+            "player": "B",
+            "target": "B",
+            "res": "grain",
+            "prod": 4.0
+          },
+          {
+            "kind": "sphere",
+            "npc": "N4",
+            "status": "sphere_B"
+          },
+          {
+            "kind": "phase",
+            "from": "pre",
+            "to": "displacement",
+            "threshold": "tah 7"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N3"
+          }
+        ]
+      },
+      {
+        "turn": 8,
+        "events": [
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N6",
+            "action": "loan",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N10",
+            "action": "trade_offer",
+            "outcome": "podminka"
+          },
+          {
+            "kind": "trade_opened",
+            "deal": {
+              "id": "d13",
+              "type": "trade",
+              "owner": "A",
+              "target": "N10",
+              "res": "goods",
+              "qty": 0.42,
+              "price": 1.0,
+              "direction": "npc_buys",
+              "since": 8
+            }
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N6",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N6",
+            "action": "loan",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "B",
+            "target": "B",
+            "law": 3.8999999999999995
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N7"
+          }
+        ]
+      },
+      {
+        "turn": 9,
+        "events": [
+          {
+            "kind": "competition_lost",
+            "private": true,
+            "player": "A",
+            "npc": "N3",
+            "action": "trade_offer",
+            "winner": "B"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N6",
+            "action": "trade_offer",
+            "outcome": "prijato"
+          },
+          {
+            "kind": "trade_opened",
+            "deal": {
+              "id": "d14",
+              "type": "trade",
+              "owner": "B",
+              "target": "N6",
+              "res": "orit",
+              "qty": 4.0,
+              "price": 15.0,
+              "direction": "npc_sells",
+              "since": 9
+            }
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "B",
+            "npc": "N3",
+            "action": "trade_offer",
+            "outcome": "protinavrh"
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "B",
+            "target": "B",
+            "law": 4.199999999999999
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N3",
+            "law": 4.3
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N5",
+            "law": 4.999999999999998
+          },
+          {
+            "kind": "npc_invest_law",
+            "npc": "N7",
+            "law": 4.8999999999999995
+          },
+          {
+            "kind": "npc_invest_prod",
+            "npc": "N1",
+            "res": "grain",
+            "prod": 10.0
+          },
+          {
+            "kind": "npc_invest_prod",
+            "npc": "N4",
+            "res": "oil",
+            "prod": 10.0
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N13"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N5"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N6"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N7"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N9"
+          }
+        ]
+      },
+      {
+        "turn": 10,
+        "events": [
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N7",
+            "action": "trade_offer",
+            "outcome": "odmitnuto"
+          },
+          {
+            "kind": "npc_decision",
+            "private": true,
+            "player": "A",
+            "npc": "N3",
+            "action": "trade_offer",
+            "outcome": "protinavrh"
+          },
+          {
+            "kind": "cancel",
+            "player": "B",
+            "deal_id": "d14",
+            "removed": 1
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "invest_prod_done",
+            "player": "B",
+            "target": "B",
+            "res": "grain",
+            "prod": 5.0
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N14"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N5"
+          }
+        ]
+      },
+      {
+        "turn": 11,
+        "events": [
+          {
+            "kind": "trade_rejected",
+            "player": "A",
+            "target": "N3",
+            "res": "orit",
+            "reason": "cena mimo pasmo"
+          },
+          {
+            "kind": "offer_accepted",
+            "player": "B",
+            "npc": "N5",
+            "offer": {
+              "type": "sell",
+              "res": "grain",
+              "qty": 1.32,
+              "price": 0.7178,
+              "offer_id": "o35",
+              "player": "B",
+              "npc": "N5",
+              "created": 9,
+              "expires": 11
+            }
+          },
+          {
+            "kind": "invest_law_done",
+            "player": "B",
+            "target": "B",
+            "law": 4.499999999999999
+          },
+          {
+            "kind": "message",
+            "from": "A",
+            "to": "B"
+          },
+          {
+            "kind": "message",
+            "from": "B",
+            "to": "A"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N13"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N14"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N15"
+          },
+          {
+            "kind": "orit_found",
+            "npc": "N6"
+          }
+        ]
+      }
+    ],
+    "prices": {
+      "grain": 0.6831,
+      "oil": 0.7139,
+      "metal": 0.84,
+      "orit": 7.7495,
+      "goods": 1.05
+    },
+    "prices_turn": 12,
+    "investments_pending": [],
+    "wars": [],
+    "refugees": [],
+    "offers": [
+      {
+        "type": "sell",
+        "res": "grain",
+        "qty": 2.797,
+        "price": 0.6321,
+        "offer_id": "o37",
+        "player": "A",
+        "npc": "N10",
+        "created": 10,
+        "expires": 12
+      },
+      {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o38",
+        "player": "A",
+        "npc": "N4",
+        "created": 10,
+        "expires": 12
+      },
+      {
+        "type": "sell",
+        "res": "grain",
+        "qty": 1.28,
+        "price": 0.7023,
+        "offer_id": "o39",
+        "player": "B",
+        "npc": "N1",
+        "created": 10,
+        "expires": 12
+      },
+      {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o40",
+        "player": "B",
+        "npc": "N2",
+        "created": 10,
+        "expires": 12
+      },
+      {
+        "type": "sell",
+        "res": "grain",
+        "qty": 2.775,
+        "price": 0.6865,
+        "offer_id": "o41",
+        "player": "A",
+        "npc": "N1",
+        "created": 11,
+        "expires": 13
+      },
+      {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o42",
+        "player": "A",
+        "npc": "N2",
+        "created": 11,
+        "expires": 13
+      },
+      {
+        "type": "sell",
+        "res": "grain",
+        "qty": 0.495,
+        "price": 0.6865,
+        "offer_id": "o43",
+        "player": "B",
+        "npc": "N5",
+        "created": 11,
+        "expires": 13
+      },
+      {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o44",
+        "player": "B",
+        "npc": "N4",
+        "created": 11,
+        "expires": 13
+      }
+    ],
+    "counter_offers": [
+      {
+        "type": "trade_offer",
+        "player": "B",
+        "npc": "N3",
+        "res": "orit",
+        "qty": 1.0,
+        "price": 16.5,
+        "expires": 12
+      },
+      {
+        "type": "trade_offer",
+        "player": "A",
+        "npc": "N3",
+        "res": "orit",
+        "qty": 1.0,
+        "price": 17.6,
+        "expires": 13
+      }
+    ],
+    "private_log": {
+      "A": [
+        {
+          "turn": 3,
+          "npc": "N13",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "Nabízené podmínky pro nás nejsou výhodné.",
+          "counter": null
+        },
+        {
+          "turn": 3,
+          "npc": "N1",
+          "action": "trade_offer",
+          "outcome": "prijato",
+          "reason": "Nabízené podmínky pro nás nejsou výhodné.",
+          "counter": null
+        },
+        {
+          "turn": 4,
+          "npc": "N4",
+          "action": "trade_offer",
+          "outcome": "prijato",
+          "reason": "Váš vliv u nás je slabší než vliv vašeho soupeře.",
+          "counter": null
+        },
+        {
+          "turn": 5,
+          "npc": "N6",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "Nabízené podmínky pro nás nejsou výhodné.",
+          "counter": null
+        },
+        {
+          "turn": 6,
+          "npc": "N7",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "Nabízené podmínky pro nás nejsou výhodné.",
+          "counter": null
+        },
+        {
+          "turn": 8,
+          "npc": "N6",
+          "action": "loan",
+          "outcome": "odmitnuto",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
+        },
+        {
+          "turn": 8,
+          "npc": "N10",
+          "action": "trade_offer",
+          "outcome": "podminka",
+          "reason": "Nabídka odpovídá našim zájmům. Zatím ale jen zčásti: K zahraničním nabídkám jsme obecně zdrženliví.",
+          "counter": null
+        },
+        {
+          "turn": 9,
+          "npc": "N3",
+          "action": "trade_offer",
+          "outcome": "prednost_druhe_strany",
+          "reason": "NPC dalo přednost nabídce druhé strany",
+          "counter": null
+        },
+        {
+          "turn": 10,
+          "npc": "N7",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
+        },
+        {
+          "turn": 10,
+          "npc": "N3",
+          "action": "trade_offer",
+          "outcome": "protinavrh",
+          "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
+          "counter": {
+            "type": "trade_offer",
+            "player": "A",
+            "npc": "N3",
+            "res": "orit",
+            "qty": 1.0,
+            "price": 17.6,
+            "expires": 13
+          }
+        },
+        {
+          "turn": 11,
+          "npc": "N3",
+          "action": "trade_rejected",
+          "outcome": "vyrazeno",
+          "reason": "cena mimo pasmo",
+          "counter": null
+        }
+      ],
+      "B": [
+        {
+          "turn": 3,
+          "npc": "N7",
+          "action": "loan",
+          "outcome": "odmitnuto",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
+        },
+        {
+          "turn": 3,
+          "npc": "N15",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
+          "counter": null
+        },
+        {
+          "turn": 4,
+          "npc": "N14",
+          "action": "protect",
+          "outcome": "protinavrh",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
+        },
+        {
+          "turn": 5,
+          "npc": "N1",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "Váš vliv u nás je slabší než vliv vašeho soupeře.",
+          "counter": null
+        },
+        {
+          "turn": 8,
+          "npc": "N6",
+          "action": "trade_offer",
+          "outcome": "odmitnuto",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
+        },
+        {
+          "turn": 8,
+          "npc": "N6",
+          "action": "loan",
+          "outcome": "odmitnuto",
+          "reason": "Nabídku jsme po zvážení nepřijali.",
+          "counter": null
+        },
+        {
+          "turn": 9,
+          "npc": "N6",
+          "action": "trade_offer",
+          "outcome": "prijato",
+          "reason": "Nabídka odpovídá našim zájmům.",
+          "counter": null
+        },
+        {
+          "turn": 9,
+          "npc": "N3",
+          "action": "trade_offer",
+          "outcome": "protinavrh",
+          "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
+          "counter": {
+            "type": "trade_offer",
+            "player": "B",
+            "npc": "N3",
+            "res": "orit",
+            "qty": 1.0,
+            "price": 16.5,
+            "expires": 12
+          }
+        }
+      ],
+      "C": []
+    },
+    "npc_decisions": [],
+    "union_tariff": {},
+    "transit_income": {
+      "N1": 0.0904,
+      "N2": 0.029,
+      "N4": 0.0232,
+      "N6": 0.1292,
+      "N7": 0.1388
+    },
+    "union_solidarity": {},
+    "offers_new": [
+      {
+        "type": "sell",
+        "res": "grain",
+        "qty": 2.775,
+        "price": 0.6865,
+        "offer_id": "o41",
+        "player": "A",
+        "npc": "N1",
+        "created": 11,
+        "expires": 13
+      },
+      {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o42",
+        "player": "A",
+        "npc": "N2",
+        "created": 11,
+        "expires": 13
+      },
+      {
+        "type": "sell",
+        "res": "grain",
+        "qty": 0.495,
+        "price": 0.6865,
+        "offer_id": "o43",
+        "player": "B",
+        "npc": "N5",
+        "created": 11,
+        "expires": 13
+      },
+      {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o44",
+        "player": "B",
+        "npc": "N4",
+        "created": 11,
+        "expires": 13
+      }
+    ],
+    "genre": {
+      "A": {
+        "id": 2,
+        "key": "otazka",
+        "turn": 11,
+        "day": 4,
+        "day_counts": {
+          "4": 1,
+          "2": 1
+        },
+        "resolution_no": 0
+      },
+      "B": {
+        "id": 4,
+        "key": "projev_domu",
+        "turn": 11,
+        "day": 4,
+        "day_counts": {
+          "3": 1,
+          "4": 1
+        },
+        "resolution_no": 0
+      }
+    }
+  },
+  "turns": {
+    "A": {
+      "public_statement": "Kalvera drží po celý letošní rok jediné pravidlo pro každého producenta na východě: platíme hned a v hotovosti a nikomu nepíšeme, komu smí prodávat dál. Ochrana, která ke slibu bezpečí přidává seznam zakázaných kupců, bere víc svobody než dluh, který se dá splatit a skončit. Rozdíl je v tom, že smlouvu s naší bankou může stát kdykoli uzavřít, kdežto plot kolem trhu drží i tehdy, když už přítele nechce.",
+      "private_reasoning": "Ohlédnutí: wealth stagnuje na 36,4, orit spadl na 10,2, B varuje před bublinou a stáhl se do vlastní úrody (zrušil d14, invest_prod grain). Tuluk mi poslal protinávrh: orit qty1 za 17,6, to je moje šance dostat orit přes Kalveru a přebít B. Kessar neodpověděl. Slibuji: hotovost za orit Tuluku; zamlčuji, že jde o udržení mého podílu světového obchodu hodnotou. Protinávrh přijmu přesnými parametry (trade_offer N3 orit qty1 cena 17,6). Je to drahé (1,7x trh), ale orit váží v hodnotě obchodu nejvíc a je to jediný způsob, jak mít orit ve svých smlouvách. Druhou akci nechám volnou, wealth pod 40 nechci dál pálit. Domácí akci vynechám.",
+      "actions": [
+        {
+          "type": "trade_offer",
+          "target": "N3",
+          "res": "orit",
+          "qty": 1,
+          "price_per_unit": 17.6
+        }
+      ],
+      "message": {
+        "target": "B",
+        "text": "Ostrogarde, příměří i otevřený trh držím dál; o orit soutěžím jen cenou a hotově, plot nestavím."
+      },
+      "poznamky_pro_pristi_tah": "CIL: podil sveta obchodu hodnotou nad pulku; ORIT klic (cena spadla na 10,2, B varuje pred bublinou). t11: prijal jsem protinavrh Tuluku N3 orit qty1@17,6 (drahe ale konecne orit pres me). OVERIT: prosel obchod? Kessar N7 neodpovedel na orit@14 - zvazit znovu nebo pujcku/vliv. Dorvan N6 ztraceny (B: orit 6@7+4@15+pujcky). B se stahuje do vlastni urody/tezby, meni strategii. STAV t10: wealth36,4 power80 law7,9 tech7,5 ind10. Prijmy d7(+2,46) d13(+0,42). Sklady obri (oil51,grain50,metal54,goods37). Neinvestovat pod wealth 40 az na klicove. Nevalcit. Sfera A: Velmora N1 vliv13. Grain nabidky+loan_requesty N2/N4/N10 nechat propadnout.",
+      "domestic_action": null,
+      "silent": false,
+      "attempts": 1,
+      "usage": [
+        {
+          "call": "hrac A",
+          "model": "claude-opus-4-8",
+          "input_tokens": 27744,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "output_tokens": 1415,
+          "stop_reason": "end_turn",
+          "cost_usd": 0.17409
+        }
+      ],
+      "genre": {
+        "id": 2,
+        "key": "otazka",
+        "name": "Odpověď zahraničnímu novináři",
+        "sentences": [
+          2,
+          4
+        ],
+        "questions_needed": 1,
+        "questions": [
+          "Pokud Ostrogard varuje před cizími věřiteli a zároveň nabízí štít jen tam, kde má sám pevnou půdu, čím se taková ochrana liší od závazku, před kterým vaše republika ostatní varuje?"
+        ],
+        "zima": false
+      }
+    },
+    "B": {
+      "public_statement": "Vedení republiky oznamuje, že od letošního léta rozšiřuje vlastní úrodu a těžbu, aby republika nemusela platit každou cenu, kterou trh zrovna vykřičí. Brenholdu a jeho lidem republika potvrzuje, že jejich rudy i nové vzácné bohatství zůstanou pod naším štítem a v rukou těch, kdo je kopou. Bratrským přátelům na severu slibuje, že za jejich obilí platí hned a v hotovosti, dokud budou stát na naší linii. Republika svým lidem připomíná, že strádání dneška je cenou za nezávislost zítřka, a tuto cenu neseme společně. Kdo by chtěl naše přátele odtrhnout cizím kapitálem, narazí na pevné zázemí, které republika buduje doma i u svých spojenců.",
+      "private_reasoning": "Ohlédnutí: minule jsem zrušil ničivý orit deal d14, wealth se stabilizoval na 23, power 66. Kalvera drží příměří a loví orit producenty hotovostí, snaží se otevřít trh a vytáhnout mé chráněnce (Brenhold, Halden) na volný trh. Její cíl je dostat kapitál do mého zázemí, což nepustím. Slibuji ochranu Brenholdu, zamlčuji, že orit počítám do svého podílu tržní cenou a proto chci N5 udržet. Plán: šetřit hotovost, přijmout levné obilí od N5 (o35 1,3@0,72), doma zpevnit instituce invest_law (levné, bez goods). Pakty N4/N5 držím, síla klesá 4/tah, únosné. Loan request od N4 (20) nepřijímám, nemám hotovost. Nekupovat orit draho.",
+      "actions": [
+        {
+          "type": "accept_offer",
+          "offer_id": "o35"
+        }
+      ],
+      "message": {
+        "target": "A",
+        "text": "Kalvero, příměří držím také. Soutěžte cenou, jak říkáte; do zázemí mých přátel ale kapitál nepatří."
+      },
+      "poznamky_pro_pristi_tah": "Wealth 23, power 66. Sféra: N4 Halden (oil9, vliv18, pakt d6), N5 Brenhold (metal7+orit4, vliv19, pakt d3). Pakty -4 síla/tah. Orit cena spadla na 10,2 a klesá: NEKUPOVAT orit trvale ani jednorázově draho. Kalvera drží příměří, loví orit producenty (Tuluk N3, Kessar N7, Dorvan N6) hotovostí, chce otevřít trh a vytáhnout mé chráněnce. Podíl světové produkce pod kontrolou: N4 oil + N5 metal/orit. Chci časem invest_prod na N5 metal (boostne můj podíl) až budu mít hotovost >35. Grain deficit řeším invest_prod doma + levné nabídky N1/N5. Nabídky loan_request N4 o36 a N2 o40 (20) ignoruji, nemám hotovost. Doma budovat law/tech, šetřit. N3 protinávrh orit 1@16,5 odmítnout.",
+      "domestic_action": {
+        "type": "invest_law"
+      },
+      "silent": false,
+      "attempts": 1,
+      "usage": [
+        {
+          "call": "hrac B",
+          "model": "claude-opus-4-8",
+          "input_tokens": 27287,
+          "cache_creation_input_tokens": 0,
+          "cache_read_input_tokens": 0,
+          "output_tokens": 1750,
+          "stop_reason": "end_turn",
+          "cost_usd": 0.18019
+        }
+      ],
+      "genre": {
+        "id": 4,
+        "key": "projev_domu",
+        "name": "Projev na sjezdu",
+        "sentences": [
+          4,
+          6
+        ],
+        "questions_needed": 0,
+        "questions": [],
+        "zima": false
+      }
+    }
+  },
+  "actions": [
+    {
+      "player": "A",
+      "type": "trade_offer",
+      "target": "N3",
+      "res": "orit",
+      "qty": 1,
+      "price_per_unit": 17.6
+    },
+    {
+      "player": "B",
+      "type": "accept_offer",
+      "offer_id": "o35"
+    },
+    {
+      "player": "B",
+      "type": "invest_law",
+      "slot": "domestic"
+    },
+    {
+      "player": "A",
+      "type": "message",
+      "target": "B",
+      "text": "Ostrogarde, příměří i otevřený trh držím dál; o orit soutěžím jen cenou a hotově, plot nestavím."
+    },
+    {
+      "player": "B",
+      "type": "message",
+      "target": "A",
+      "text": "Kalvero, příměří držím také. Soutěžte cenou, jak říkáte; do zázemí mých přátel ale kapitál nepatří."
+    }
+  ],
+  "rejected": [],
+  "rulings": [],
+  "restored": [],
+  "news": [
+    "Meridport, rok 4: V Meridii i v Tavře a Kalderě objeveny nové zásoby oritu.",
+    "Dorvik, rok 4: V Dorvanu nalezena ložiska oritu a obchodníci v Dorvanu platí za orit desetinásobek ceny kovu a berou vše, co se vytěží.",
+    "Sarnov, rok 4: V Sarnii zvolen nový starosta hlavního města."
+  ],
+  "events": [
+    {
+      "kind": "trade_rejected",
+      "player": "A",
+      "target": "N3",
+      "res": "orit",
+      "reason": "cena mimo pasmo"
+    },
+    {
+      "kind": "offer_accepted",
+      "player": "B",
+      "npc": "N5",
+      "offer": {
+        "type": "sell",
+        "res": "grain",
+        "qty": 1.32,
+        "price": 0.7178,
+        "offer_id": "o35",
+        "player": "B",
+        "npc": "N5",
+        "created": 9,
+        "expires": 11
+      }
+    },
+    {
+      "kind": "invest_law_done",
+      "player": "B",
+      "target": "B",
+      "law": 4.499999999999999
+    },
+    {
+      "kind": "message",
+      "from": "A",
+      "to": "B"
+    },
+    {
+      "kind": "message",
+      "from": "B",
+      "to": "A"
+    },
+    {
+      "kind": "orit_found",
+      "npc": "N13"
+    },
+    {
+      "kind": "orit_found",
+      "npc": "N14"
+    },
+    {
+      "kind": "orit_found",
+      "npc": "N15"
+    },
+    {
+      "kind": "orit_found",
+      "npc": "N6"
+    }
+  ],
+  "delivered_messages": [
+    {
+      "from": "N3",
+      "to": "A",
+      "text": "Obchod s orit přijmeme za cenu 17.6000 při množství 1.000.",
+      "turn": 10,
+      "protinavrh": {
+        "type": "trade_offer",
+        "player": "A",
+        "npc": "N3",
+        "res": "orit",
+        "qty": 1.0,
+        "price": 17.6,
+        "expires": 13
+      }
+    },
+    {
+      "from": "A",
+      "to": "B",
+      "text": "Ostrogarde, příměří držím dál. O orit na východě soutěžím cenou a hotově, jak jste navrhl; plot nestavím a sankce nechystám.",
+      "turn": 10
+    }
+  ],
+  "applied_rules": [
+    {
+      "rule": "4.1b cena tahu z pohledu",
+      "inputs": {
+        "tah": 11
+      },
+      "outputs": {
+        "grain": 0.6865,
+        "oil": 0.7338,
+        "metal": 0.84,
+        "orit": 10.2017,
+        "goods": 1.05
+      }
+    },
+    {
+      "rule": "3.5 accept_offer",
+      "inputs": {
+        "player": "B",
+        "offer_id": "o35",
+        "type": "sell"
+      },
+      "outputs": {
+        "npc": "N5"
+      }
+    },
+    {
+      "rule": "3.2 invest_law",
+      "inputs": {
+        "player": "B",
+        "target": "B",
+        "cost": 6.0
+      },
+      "outputs": {
+        "law": 4.499999999999999,
+        "from": 4.199999999999999
+      }
+    },
+    {
+      "rule": "3.2 protect upkeep",
+      "inputs": {
+        "owner": "B",
+        "target": "N5"
+      },
+      "outputs": {
+        "npc_power": 33.0,
+        "npc_law": 4.399999999999998,
+        "owner_power": 64.0
+      }
+    },
+    {
+      "rule": "3.2 protect upkeep",
+      "inputs": {
+        "owner": "B",
+        "target": "N4"
+      },
+      "outputs": {
+        "npc_power": 29.0,
+        "npc_law": 4.4999999999999964,
+        "owner_power": 62.0
+      }
+    },
+    {
+      "rule": "4.1 cileny obchod",
+      "inputs": {
+        "prodejce": "A",
+        "kupec": "N1",
+        "res": "oil",
+        "owner": "A"
+      },
+      "outputs": {
+        "qty": 2.455,
+        "objem": 2.455,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1 cileny obchod",
+      "inputs": {
+        "prodejce": "A",
+        "kupec": "N10",
+        "res": "goods",
+        "owner": "A"
+      },
+      "outputs": {
+        "qty": 0.42,
+        "objem": 0.42,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1 cileny obchod",
+      "inputs": {
+        "prodejce": "N5",
+        "kupec": "B",
+        "res": "grain",
+        "owner": "B"
+      },
+      "outputs": {
+        "qty": 1.32,
+        "objem": 0.947,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N9",
+        "kupec": "N3",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 0.341,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.234,
+        "prodejci": 0.234,
+        "tranzitu_kazdemu": 0.0117,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N14",
+        "kupec": "N3",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 2.079,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.427,
+        "prodejci": 1.427,
+        "tranzitu_kazdemu": 0.0714,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N5",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 0.01,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.007,
+        "prodejci": 0.007,
+        "tranzitu_kazdemu": 0.0003,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N12",
+        "kupec": "N15",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 1.3,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.892,
+        "prodejci": 0.892,
+        "tranzitu_kazdemu": 0.0446,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N2",
+        "kupec": "N7",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 0.96,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.659,
+        "prodejci": 0.659,
+        "tranzitu_kazdemu": 0.033,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N7",
+        "kupec": "N4",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 0.75,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.515,
+        "prodejci": 0.515,
+        "tranzitu_kazdemu": 0.0257,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N1",
+        "kupec": "N6",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 0.54,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.371,
+        "prodejci": 0.371,
+        "tranzitu_kazdemu": 0.0185,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N14",
+        "kupec": "N5",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 1.785,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.686,
+        "zaklad": 0.686,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.225,
+        "prodejci": 1.225,
+        "tranzitu_kazdemu": 0.0613,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N1",
+        "kupec": "A",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 2.775,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.755,
+        "zaklad": 0.686,
+        "prejezdy": 1,
+        "tranzit": [],
+        "objem": 2.096,
+        "prodejci": 1.905,
+        "tranzitu_kazdemu": 0.0953,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N7",
+        "kupec": "N12",
+        "res": "grain"
+      },
+      "outputs": {
+        "qty": 0.675,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.755,
+        "zaklad": 0.686,
+        "prejezdy": 1,
+        "tranzit": [
+          "N4"
+        ],
+        "objem": 0.51,
+        "prodejci": 0.463,
+        "tranzitu_kazdemu": 0.0232,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N4",
+        "kupec": "N7",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 1.59,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.734,
+        "zaklad": 0.734,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.167,
+        "prodejci": 1.167,
+        "tranzitu_kazdemu": 0.0583,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N5",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 1.435,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.734,
+        "zaklad": 0.734,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.053,
+        "prodejci": 1.053,
+        "tranzitu_kazdemu": 0.0526,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N6",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 1.036,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.734,
+        "zaklad": 0.734,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.76,
+        "prodejci": 0.76,
+        "tranzitu_kazdemu": 0.038,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "B",
+        "kupec": "A",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 5.535,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.807,
+        "zaklad": 0.734,
+        "prejezdy": 1,
+        "tranzit": [],
+        "objem": 4.468,
+        "prodejci": 4.062,
+        "tranzitu_kazdemu": 0.2031,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "A",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 0.04,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.807,
+        "zaklad": 0.734,
+        "prejezdy": 1,
+        "tranzit": [],
+        "objem": 0.033,
+        "prodejci": 0.03,
+        "tranzitu_kazdemu": 0.0015,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N4",
+        "kupec": "N2",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 2.16,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.807,
+        "zaklad": 0.734,
+        "prejezdy": 1,
+        "tranzit": [
+          "N7"
+        ],
+        "objem": 1.744,
+        "prodejci": 1.585,
+        "tranzitu_kazdemu": 0.0793,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N4",
+        "kupec": "N16",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 0.832,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.807,
+        "zaklad": 0.734,
+        "prejezdy": 1,
+        "tranzit": [
+          "N7"
+        ],
+        "objem": 0.672,
+        "prodejci": 0.61,
+        "tranzitu_kazdemu": 0.0305,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N8",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 0.741,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.807,
+        "zaklad": 0.734,
+        "prejezdy": 1,
+        "tranzit": [
+          "N6"
+        ],
+        "objem": 0.598,
+        "prodejci": 0.544,
+        "tranzitu_kazdemu": 0.0272,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N1",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 0.316,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.807,
+        "zaklad": 0.734,
+        "prejezdy": 1,
+        "tranzit": [
+          "N6"
+        ],
+        "objem": 0.255,
+        "prodejci": 0.232,
+        "tranzitu_kazdemu": 0.0116,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N13",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 2.12,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.881,
+        "zaklad": 0.734,
+        "prejezdy": 2,
+        "tranzit": [
+          "N6",
+          "N1"
+        ],
+        "objem": 1.867,
+        "prodejci": 1.556,
+        "tranzitu_kazdemu": 0.0778,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N4",
+        "kupec": "N10",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 0.791,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.881,
+        "zaklad": 0.734,
+        "prejezdy": 2,
+        "tranzit": [
+          "N7",
+          "N2"
+        ],
+        "objem": 0.697,
+        "prodejci": 0.581,
+        "tranzitu_kazdemu": 0.029,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N11",
+        "res": "oil"
+      },
+      "outputs": {
+        "qty": 0.345,
+        "z_toho_doplneni": 0.054,
+        "cena": 0.881,
+        "zaklad": 0.734,
+        "prejezdy": 2,
+        "tranzit": [
+          "N6",
+          "N1"
+        ],
+        "objem": 0.303,
+        "prodejci": 0.253,
+        "tranzitu_kazdemu": 0.0126,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N5",
+        "kupec": "N3",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 1.808,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.518,
+        "prodejci": 1.518,
+        "tranzitu_kazdemu": 0.0759,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N7",
+        "kupec": "N2",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 1.52,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.277,
+        "prodejci": 1.277,
+        "tranzitu_kazdemu": 0.0638,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N7",
+        "kupec": "N4",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 1.491,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.252,
+        "prodejci": 1.252,
+        "tranzitu_kazdemu": 0.0626,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N6",
+        "kupec": "N1",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 0.688,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.578,
+        "prodejci": 0.578,
+        "tranzitu_kazdemu": 0.0289,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N7",
+        "kupec": "N16",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 0.625,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.525,
+        "prodejci": 0.525,
+        "tranzitu_kazdemu": 0.0263,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N6",
+        "kupec": "N8",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 0.557,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.468,
+        "prodejci": 0.468,
+        "tranzitu_kazdemu": 0.0234,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N15",
+        "kupec": "N9",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 0.418,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.84,
+        "zaklad": 0.84,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.351,
+        "prodejci": 0.351,
+        "tranzitu_kazdemu": 0.0176,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "A",
+        "kupec": "B",
+        "res": "metal"
+      },
+      "outputs": {
+        "qty": 1.274,
+        "z_toho_doplneni": 0.0,
+        "cena": 0.924,
+        "zaklad": 0.84,
+        "prejezdy": 1,
+        "tranzit": [],
+        "objem": 1.177,
+        "prodejci": 1.07,
+        "tranzitu_kazdemu": 0.0535,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "A",
+        "industry": 10.0,
+        "kapacita": 17.5,
+        "planovano": 11.731
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 11.7308
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "B",
+        "industry": 6,
+        "kapacita": 9.18,
+        "planovano": 9.18
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 9.18
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N1",
+        "industry": 2.348,
+        "kapacita": 3.475,
+        "planovano": 3.261
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 3.261
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N2",
+        "industry": 2,
+        "kapacita": 2.4,
+        "planovano": 2.4
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 2.4
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N3",
+        "industry": 4,
+        "kapacita": 5.44,
+        "planovano": 4.025
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 4.0251
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N4",
+        "industry": 4.324,
+        "kapacita": 6.702,
+        "planovano": 3.136
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 3.1356
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N5",
+        "industry": 3,
+        "kapacita": 4.575,
+        "planovano": 1.669
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 1.6695
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N6",
+        "industry": 1,
+        "kapacita": 1.16,
+        "planovano": 0.992
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 0.9924
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N7",
+        "industry": 3,
+        "kapacita": 4.02,
+        "planovano": 1.86
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 1.86
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N8",
+        "industry": 1,
+        "kapacita": 1.132,
+        "planovano": 0.523
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 0.5229
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N9",
+        "industry": 1,
+        "kapacita": 1.141,
+        "planovano": 0.394
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 0.3941
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N10",
+        "industry": 1,
+        "kapacita": 1.2,
+        "planovano": 0.562
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 0.5624
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N11",
+        "industry": 7.9999999999999964,
+        "kapacita": 15.6,
+        "planovano": 2.931
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 2.9314
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N12",
+        "industry": 7.9999999999999964,
+        "kapacita": 14.8,
+        "planovano": 3.256
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 3.2564
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N13",
+        "industry": 6.359999999999997,
+        "kapacita": 10.812,
+        "planovano": 2.8
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 2.7999
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N14",
+        "industry": 3.3,
+        "kapacita": 4.884,
+        "planovano": 1.483
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 1.4829
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N15",
+        "industry": 2,
+        "kapacita": 2.4,
+        "planovano": 1.292
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 1.2918
+      }
+    },
+    {
+      "rule": "4.0 vyroba goods",
+      "inputs": {
+        "stat": "N16",
+        "industry": 1,
+        "kapacita": 1.1,
+        "planovano": 0.584
+      },
+      "outputs": {
+        "coverage": 1.0,
+        "goods_out": 0.5839
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "A",
+        "kupec": "N1",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.0,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.0,
+        "prodejci": 0.0,
+        "tranzitu_kazdemu": 0.0,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "B",
+        "kupec": "N6",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.992,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 1.042,
+        "prodejci": 1.042,
+        "tranzitu_kazdemu": 0.0521,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "B",
+        "kupec": "N16",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.584,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.613,
+        "prodejci": 0.613,
+        "tranzitu_kazdemu": 0.0307,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "A",
+        "kupec": "N8",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.523,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.549,
+        "prodejci": 0.549,
+        "tranzitu_kazdemu": 0.0275,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "N3",
+        "kupec": "N9",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.394,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.414,
+        "prodejci": 0.414,
+        "tranzitu_kazdemu": 0.0207,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "B",
+        "kupec": "N2",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.243,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.255,
+        "prodejci": 0.255,
+        "tranzitu_kazdemu": 0.0127,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "B",
+        "kupec": "N10",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.142,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.15,
+        "prodejci": 0.15,
+        "tranzitu_kazdemu": 0.0075,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1a automaticky trh",
+      "inputs": {
+        "prodejce": "A",
+        "kupec": "N14",
+        "res": "goods"
+      },
+      "outputs": {
+        "qty": 0.0,
+        "z_toho_doplneni": 0.0,
+        "cena": 1.05,
+        "zaklad": 1.05,
+        "prejezdy": 0,
+        "tranzit": [],
+        "objem": 0.0,
+        "prodejci": 0.0,
+        "tranzitu_kazdemu": 0.0,
+        "clo": 0.0,
+        "clo_plati": null
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "A",
+        "imports": {
+          "grain": 2.7749999999999986,
+          "oil": 5.575407837911618,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 2.455,
+          "metal": 1.274,
+          "orit": 0.0,
+          "goods": 0.9429170002268907
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 50.025,
+          "oil": 51.567,
+          "metal": 54.098,
+          "goods": 36.944,
+          "orit": 0.0
+        },
+        "wealth": 34.273
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "B",
+        "imports": {
+          "grain": 1.32,
+          "oil": 0.0,
+          "metal": 1.274,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 5.535000000000002,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 1.9616180923137072
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 39.985,
+          "oil": 25.33,
+          "metal": 14.4,
+          "goods": 22.823,
+          "orit": 0.0
+        },
+        "wealth": 21.033
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N1",
+        "imports": {
+          "grain": 0.0,
+          "oil": 2.7705084432562788,
+          "metal": 0.6883050659537673,
+          "orit": 0.0,
+          "goods": 1.6886512557601208e-05
+        },
+        "exports": {
+          "grain": 3.3150000000000004,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 53.083,
+          "oil": 8.527,
+          "metal": 5.914,
+          "goods": 10.989,
+          "orit": 0.0
+        },
+        "wealth": 42.058
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N2",
+        "imports": {
+          "grain": 0.0,
+          "oil": 2.16,
+          "metal": 1.52,
+          "orit": 0.0,
+          "goods": 0.242834184005714
+        },
+        "exports": {
+          "grain": 0.9600000000000004,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 48.0,
+          "oil": 7.68,
+          "metal": 6.08,
+          "goods": 20.961,
+          "orit": 0.0
+        },
+        "wealth": 36.519
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N3",
+        "imports": {
+          "grain": 2.42,
+          "oil": 0.0,
+          "metal": 1.8075282928063698,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.010000000000001563,
+          "oil": 6.0328288967244585,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.39418655030897753
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.01,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 13.22,
+          "oil": 27.542,
+          "metal": 5.573,
+          "goods": 25.416,
+          "orit": 5.98
+        },
+        "wealth": 92.209
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N4",
+        "imports": {
+          "grain": 0.75,
+          "oil": 0.0,
+          "metal": 1.4906893021159597,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 5.3731696738864,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 10.65,
+          "oil": 24.077,
+          "metal": 4.796,
+          "goods": 10.087,
+          "orit": 0.0
+        },
+        "wealth": 76.676
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N5",
+        "imports": {
+          "grain": 1.7949999999999997,
+          "oil": 1.4347411109923287,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 1.32,
+          "oil": 0.0,
+          "metal": 1.8075282928063698,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 9.495,
+          "oil": 4.8,
+          "metal": 10.161,
+          "goods": 9.33,
+          "orit": 3.555
+        },
+        "wealth": 40.35
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N6",
+        "imports": {
+          "grain": 0.5400000000000018,
+          "oil": 1.0361937291589844,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.9923749166359379
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 1.2451732480142206,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 8.1,
+          "oil": 3.161,
+          "metal": 5.407,
+          "goods": 6.164,
+          "orit": 17.86
+        },
+        "wealth": 71.32
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N7",
+        "imports": {
+          "grain": 0.9600000000000004,
+          "oil": 1.589992425968386,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 1.4249999999999994,
+          "oil": 0.0,
+          "metal": 3.635868035257724,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 1.425,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 15.005,
+          "oil": 5.199,
+          "metal": 11.199,
+          "goods": 9.033,
+          "orit": 5.62
+        },
+        "wealth": 43.799
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N8",
+        "imports": {
+          "grain": 0.0,
+          "oil": 0.7414469701007556,
+          "metal": 0.5568681820604533,
+          "orit": 0.0,
+          "goods": 0.5228878804030223
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 24.0,
+          "oil": 0.96,
+          "metal": 0.8,
+          "goods": 2.19,
+          "orit": 0.0
+        },
+        "wealth": 16.819
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N9",
+        "imports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.4182429825463466,
+          "orit": 0.0,
+          "goods": 0.39418655030897753
+        },
+        "exports": {
+          "grain": 0.34105250000000087,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 5.4,
+          "oil": 5.627,
+          "metal": 0.6,
+          "goods": 1.6,
+          "orit": 2.393
+        },
+        "wealth": 18.298
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N10",
+        "imports": {
+          "grain": 0.0,
+          "oil": 0.7912126926817407,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.5624507707269626
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 21.0,
+          "oil": 2.55,
+          "metal": 6.055,
+          "goods": 6.02,
+          "orit": 0.0
+        },
+        "wealth": 18.135
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N11",
+        "imports": {
+          "grain": 0.0,
+          "oil": 0.34457460324508404,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 18.0,
+          "oil": 5.297,
+          "metal": 11.294,
+          "goods": 15.0,
+          "orit": 0.0
+        },
+        "wealth": 104.263
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N12",
+        "imports": {
+          "grain": 0.6749999999999994,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 1.3000000000000003,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 1.3,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 15.71,
+          "oil": 21.98,
+          "metal": 14.36,
+          "goods": 19.6,
+          "orit": 0.0
+        },
+        "wealth": 92.646
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N13",
+        "imports": {
+          "grain": 0.0,
+          "oil": 2.119956202059411,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 32.078,
+          "oil": 6.663,
+          "metal": 14.425,
+          "goods": 17.187,
+          "orit": 1.365
+        },
+        "wealth": 24.069
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N14",
+        "imports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 1.2233311310838602e-05
+        },
+        "exports": {
+          "grain": 3.8639474999999974,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 1.904,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 28.096,
+          "oil": 15.939,
+          "metal": 11.064,
+          "goods": 6.703,
+          "orit": 0.48
+        },
+        "wealth": 31.627
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N15",
+        "imports": {
+          "grain": 1.3000000000000003,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.4182429825463466,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 8.5,
+          "oil": 11.527,
+          "metal": 8.036,
+          "goods": 6.33,
+          "orit": 0.0
+        },
+        "wealth": 36.342
+      }
+    },
+    {
+      "rule": "4.1 zdroje, zasoby a deficit",
+      "inputs": {
+        "stat": "N16",
+        "imports": {
+          "grain": 0.0,
+          "oil": 0.8319645552362732,
+          "metal": 0.625178733141764,
+          "orit": 0.0,
+          "goods": 0.5839582209450928
+        },
+        "exports": {
+          "grain": 0.0,
+          "oil": 0.0,
+          "metal": 0.0,
+          "orit": 0.0,
+          "goods": 0.0
+        }
+      },
+      "outputs": {
+        "pokuta": 0.0,
+        "deficit": 0.0,
+        "ze_zasoby": 0.0,
+        "pokuta_podle_statku": {},
+        "stock": {
+          "grain": 27.0,
+          "oil": 1.08,
+          "metal": 0.9,
+          "goods": 2.46,
+          "orit": 0.0
+        },
+        "wealth": 16.047
+      }
+    },
+    {
+      "rule": "4.1a tranzitni prijem",
+      "inputs": {
+        "stat": "N1"
+      },
+      "outputs": {
+        "prijem": 0.0904
+      }
+    },
+    {
+      "rule": "4.1a tranzitni prijem",
+      "inputs": {
+        "stat": "N2"
+      },
+      "outputs": {
+        "prijem": 0.029
+      }
+    },
+    {
+      "rule": "4.1a tranzitni prijem",
+      "inputs": {
+        "stat": "N4"
+      },
+      "outputs": {
+        "prijem": 0.0232
+      }
+    },
+    {
+      "rule": "4.1a tranzitni prijem",
+      "inputs": {
+        "stat": "N6"
+      },
+      "outputs": {
+        "prijem": 0.1292
+      }
+    },
+    {
+      "rule": "4.1a tranzitni prijem",
+      "inputs": {
+        "stat": "N7"
+      },
+      "outputs": {
+        "prijem": 0.1388
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "A",
+        "law": 7.8999999999999995,
+        "tech": 7.5000000000000036
+      },
+      "outputs": {
+        "tech_after": 7.650000000000004,
+        "law_after": 7.8999999999999995
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "B",
+        "law": 4.499999999999999,
+        "tech": 5.3
+      },
+      "outputs": {
+        "tech_after": 5.3,
+        "law_after": 4.499999999999999
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N1",
+        "law": 6.399999999999995,
+        "tech": 4.800000000000002
+      },
+      "outputs": {
+        "tech_after": 4.950000000000002,
+        "law_after": 6.399999999999995
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N2",
+        "law": 4.999999999999998,
+        "tech": 2.0
+      },
+      "outputs": {
+        "tech_after": 2,
+        "law_after": 4.999999999999998
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N3",
+        "law": 4.3,
+        "tech": 3.8000000000000007
+      },
+      "outputs": {
+        "tech_after": 3.8000000000000007,
+        "law_after": 4.3
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N4",
+        "law": 4.4999999999999964,
+        "tech": 5.500000000000003
+      },
+      "outputs": {
+        "tech_after": 5.500000000000003,
+        "law_after": 4.4999999999999964
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N5",
+        "law": 4.399999999999998,
+        "tech": 5.450000000000002
+      },
+      "outputs": {
+        "tech_after": 5.450000000000002,
+        "law_after": 4.399999999999998
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N6",
+        "law": 2.0,
+        "tech": 1.7999999999999998
+      },
+      "outputs": {
+        "tech_after": 1.7999999999999998,
+        "law_after": 2
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N7",
+        "law": 4.8999999999999995,
+        "tech": 3.6000000000000005
+      },
+      "outputs": {
+        "tech_after": 3.6000000000000005,
+        "law_after": 4.8999999999999995
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N8",
+        "law": 3.0,
+        "tech": 1.423160513125
+      },
+      "outputs": {
+        "tech_after": 1.423160513125,
+        "law_after": 3
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N9",
+        "law": 2.0,
+        "tech": 1.610525
+      },
+      "outputs": {
+        "tech_after": 1.610525,
+        "law_after": 2
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N10",
+        "law": 4.299999999999999,
+        "tech": 2.0
+      },
+      "outputs": {
+        "tech_after": 2,
+        "law_after": 4.299999999999999
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N11",
+        "law": 9.0,
+        "tech": 9.500000000000004
+      },
+      "outputs": {
+        "tech_after": 9.650000000000004,
+        "law_after": 9
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N12",
+        "law": 8.0,
+        "tech": 8.500000000000004
+      },
+      "outputs": {
+        "tech_after": 8.650000000000004,
+        "law_after": 8
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N13",
+        "law": 6.0,
+        "tech": 7.200000000000004
+      },
+      "outputs": {
+        "tech_after": 7.350000000000004,
+        "law_after": 6
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N14",
+        "law": 5.0,
+        "tech": 5.000000000000002
+      },
+      "outputs": {
+        "tech_after": 5.150000000000002,
+        "law_after": 5
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N15",
+        "law": 3.0,
+        "tech": 2.0
+      },
+      "outputs": {
+        "tech_after": 2,
+        "law_after": 3
+      }
+    },
+    {
+      "rule": "4.2 tech a pravo",
+      "inputs": {
+        "stat": "N16",
+        "law": 4.0,
+        "tech": 1.0
+      },
+      "outputs": {
+        "tech_after": 1,
+        "law_after": 4
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "A"
+      },
+      "outputs": {
+        "prijem": 3.833
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "B"
+      },
+      "outputs": {
+        "prijem": 3.5
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N1"
+      },
+      "outputs": {
+        "prijem": 3.167
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N2"
+      },
+      "outputs": {
+        "prijem": 2.667
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N3"
+      },
+      "outputs": {
+        "prijem": 2.0
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N4"
+      },
+      "outputs": {
+        "prijem": 1.833
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N5"
+      },
+      "outputs": {
+        "prijem": 1.667
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N6"
+      },
+      "outputs": {
+        "prijem": 1.5
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N7"
+      },
+      "outputs": {
+        "prijem": 1.833
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N8"
+      },
+      "outputs": {
+        "prijem": 1.333
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N9"
+      },
+      "outputs": {
+        "prijem": 1.0
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N10"
+      },
+      "outputs": {
+        "prijem": 1.417
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N11"
+      },
+      "outputs": {
+        "prijem": 0.833
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N12"
+      },
+      "outputs": {
+        "prijem": 1.167
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N13"
+      },
+      "outputs": {
+        "prijem": 2.0
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N14"
+      },
+      "outputs": {
+        "prijem": 1.667
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N15"
+      },
+      "outputs": {
+        "prijem": 1.333
+      }
+    },
+    {
+      "rule": "4.2b neformalni prijem",
+      "inputs": {
+        "stat": "N16"
+      },
+      "outputs": {
+        "prijem": 1.5
+      }
+    },
+    {
+      "rule": "4.2c rust prumyslu",
+      "inputs": {
+        "stat": "A",
+        "coverage": 1.0
+      },
+      "outputs": {
+        "industry": 10.0,
+        "from": 10.0
+      }
+    },
+    {
+      "rule": "4.2c rust prumyslu",
+      "inputs": {
+        "stat": "N11",
+        "coverage": 1.0
+      },
+      "outputs": {
+        "industry": 8.1,
+        "from": 7.9999999999999964
+      }
+    },
+    {
+      "rule": "4.2c rust prumyslu",
+      "inputs": {
+        "stat": "N12",
+        "coverage": 1.0
+      },
+      "outputs": {
+        "industry": 8.1,
+        "from": 7.9999999999999964
+      }
+    },
+    {
+      "rule": "4.2c rust prumyslu",
+      "inputs": {
+        "stat": "N13",
+        "coverage": 1.0
+      },
+      "outputs": {
+        "industry": 6.46,
+        "from": 6.359999999999997
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N1"
+      },
+      "outputs": {
+        "A": 14.0,
+        "B": 0.0,
+        "status": "sphere_A"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N2"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N3"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N4"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 20.0,
+        "status": "sphere_B"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N5"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 22.0,
+        "status": "sphere_B"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N6"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N7"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N8"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N9"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N10"
+      },
+      "outputs": {
+        "A": 3.2,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N11"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N12"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N13"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N14"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N15"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "4.4 vliv",
+      "inputs": {
+        "npc": "N16"
+      },
+      "outputs": {
+        "A": 0.0,
+        "B": 0.0,
+        "status": "independent"
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N1"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N13"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC",
+      "inputs": {
+        "npc": "N13"
+      },
+      "outputs": {
+        "prod_orit": 4.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N14"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC",
+      "inputs": {
+        "npc": "N14"
+      },
+      "outputs": {
+        "prod_orit": 4.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N15"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC",
+      "inputs": {
+        "npc": "N15"
+      },
+      "outputs": {
+        "prod_orit": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N2"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N3"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N4"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N5"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N6"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "5 explore NPC",
+      "inputs": {
+        "npc": "N6"
+      },
+      "outputs": {
+        "prod_orit": 10.0
+      }
+    },
+    {
+      "rule": "5 explore NPC platba",
+      "inputs": {
+        "npc": "N7"
+      },
+      "outputs": {
+        "cost": 2.0
+      }
+    },
+    {
+      "rule": "3.5 nabidka NPC",
+      "inputs": {
+        "player": "A",
+        "npc": "N1",
+        "type": "sell"
+      },
+      "outputs": {
+        "type": "sell",
+        "res": "grain",
+        "qty": 2.775,
+        "price": 0.6865,
+        "offer_id": "o41",
+        "player": "A",
+        "npc": "N1",
+        "created": 11,
+        "expires": 13
+      }
+    },
+    {
+      "rule": "3.5 nabidka NPC",
+      "inputs": {
+        "player": "A",
+        "npc": "N2",
+        "type": "loan_request"
+      },
+      "outputs": {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o42",
+        "player": "A",
+        "npc": "N2",
+        "created": 11,
+        "expires": 13
+      }
+    },
+    {
+      "rule": "3.5 nabidka NPC",
+      "inputs": {
+        "player": "B",
+        "npc": "N5",
+        "type": "sell"
+      },
+      "outputs": {
+        "type": "sell",
+        "res": "grain",
+        "qty": 0.495,
+        "price": 0.6865,
+        "offer_id": "o43",
+        "player": "B",
+        "npc": "N5",
+        "created": 11,
+        "expires": 13
+      }
+    },
+    {
+      "rule": "3.5 nabidka NPC",
+      "inputs": {
+        "player": "B",
+        "npc": "N4",
+        "type": "loan_request"
+      },
+      "outputs": {
+        "type": "loan_request",
+        "amount": 20.0,
+        "offer_id": "o44",
+        "player": "B",
+        "npc": "N4",
+        "created": 11,
+        "expires": 13
+      }
+    },
+    {
+      "rule": "8 metriky",
+      "inputs": {
+        "W_real": 830.73,
+        "W0": 864.0,
+        "n_bida": 0
+      },
+      "outputs": {
+        "prosperity_index": 83.99,
+        "A_trade_share": 0.3496,
+        "B_resource_share": 0.0833
+      }
+    },
+    {
+      "rule": "kontrola pop",
+      "inputs": {
+        "pred": 2055.0
+      },
+      "outputs": {
+        "po": 2055.0,
+        "rozdil": 0.0
+      }
+    },
+    {
+      "rule": "4.1b dynamicka cena",
+      "inputs": {
+        "faze": "displacement"
+      },
+      "outputs": {
+        "grain": {
+          "poptavka": 61.65,
+          "nabidka": 72.2,
+          "pomer": 0.854,
+          "cena": 0.6831
+        },
+        "oil": {
+          "poptavka": 38.37,
+          "nabidka": 53.74,
+          "pomer": 0.714,
+          "cena": 0.7139
+        },
+        "metal": {
+          "poptavka": 25.9,
+          "nabidka": 51.4,
+          "pomer": 0.7,
+          "cena": 0.84
+        },
+        "orit": {
+          "poptavka": 32.0,
+          "nabidka": 41.29,
+          "pomer": 0.775,
+          "cena": 7.7495
+        },
+        "goods": {
+          "poptavka": 35.05,
+          "nabidka": 52.08,
+          "pomer": 0.7,
+          "cena": 1.05
+        }
+      }
+    }
+  ],
+  "usage": [
+    {
+      "call": "rozhodci otazky A",
+      "model": "claude-sonnet-5",
+      "input_tokens": 803,
+      "cache_creation_input_tokens": 16356,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 124,
+      "stop_reason": "end_turn",
+      "cost_usd": 0.04374
+    },
+    {
+      "call": "hrac A",
+      "model": "claude-opus-4-8",
+      "input_tokens": 27744,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 1415,
+      "stop_reason": "end_turn",
+      "cost_usd": 0.17409
+    },
+    {
+      "call": "hrac B",
+      "model": "claude-opus-4-8",
+      "input_tokens": 27287,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 1750,
+      "stop_reason": "end_turn",
+      "cost_usd": 0.18019
+    },
+    {
+      "call": "rozhodci akce",
+      "model": "claude-sonnet-5",
+      "input_tokens": 19496,
+      "cache_creation_input_tokens": 16356,
+      "cache_read_input_tokens": 0,
+      "output_tokens": 111,
+      "stop_reason": "end_turn",
+      "cost_usd": 0.08099
+    },
+    {
+      "call": "rozhodci zpravy",
+      "model": "claude-sonnet-5",
+      "input_tokens": 1138,
+      "cache_creation_input_tokens": 0,
+      "cache_read_input_tokens": 16356,
+      "output_tokens": 186,
+      "stop_reason": "end_turn",
+      "cost_usd": 0.00741
+    }
+  ]
+}

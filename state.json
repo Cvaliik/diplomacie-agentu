@@ -1,9 +1,9 @@
 {
   "meta": {
     "version": "v1",
-    "turn": 10,
+    "turn": 11,
     "day": 4,
-    "slot": 1,
+    "slot": 2,
     "rng_seed": 20260910,
     "started_at": "2026-09-16T18:43:09+00:00",
     "paused": false,
@@ -33,11 +33,15 @@
     "npc_trade_last": [
       [
         "N3",
-        "N5"
+        "N9"
+      ],
+      [
+        "N14",
+        "N3"
       ],
       [
         "N3",
-        "N9"
+        "N5"
       ],
       [
         "N12",
@@ -48,8 +52,8 @@
         "N7"
       ],
       [
-        "N3",
-        "N4"
+        "N4",
+        "N7"
       ],
       [
         "N1",
@@ -57,19 +61,11 @@
       ],
       [
         "N14",
-        "N3"
+        "N5"
       ],
       [
         "A",
         "N1"
-      ],
-      [
-        "B",
-        "N2"
-      ],
-      [
-        "N12",
-        "N3"
       ],
       [
         "N12",
@@ -80,12 +76,12 @@
         "N6"
       ],
       [
-        "N4",
-        "N7"
+        "A",
+        "B"
       ],
       [
         "A",
-        "B"
+        "N3"
       ],
       [
         "N2",
@@ -101,10 +97,6 @@
       ],
       [
         "N1",
-        "N3"
-      ],
-      [
-        "A",
         "N3"
       ],
       [
@@ -145,6 +137,10 @@
       ],
       [
         "B",
+        "N2"
+      ],
+      [
+        "B",
         "N10"
       ],
       [
@@ -152,22 +148,22 @@
         "N14"
       ]
     ],
-    "next_deal_id": 15,
+    "next_deal_id": 16,
     "next_invasion_id": 1,
     "pressure_log": [],
-    "next_offer_id": 41,
+    "next_offer_id": 45,
     "offer_ignored": {
       "A": {
-        "N1": 1,
+        "N1": 2,
         "N3": 1,
-        "N2": 0,
+        "N2": 1,
         "N4": 1,
         "N10": 1
       },
       "B": {
-        "N5": 1,
+        "N5": 0,
         "N1": 2,
-        "N4": 1,
+        "N4": 2,
         "N2": 1
       },
       "C": {}
@@ -176,11 +172,11 @@
   "players": {
     "A": {
       "name": "Kalverská federace",
-      "wealth": 36.374383086429624,
+      "wealth": 38.10604032139571,
       "paper_wealth": 0,
       "power": 80,
       "law": 7.8999999999999995,
-      "tech": 7.5000000000000036,
+      "tech": 7.650000000000004,
       "industry": 10.0,
       "prod": {
         "oil": 3,
@@ -192,7 +188,7 @@
         "grain": 50.025,
         "oil": 51.5667,
         "metal": 54.0984,
-        "goods": 36.9285,
+        "goods": 36.9435,
         "orit": 0.0
       },
       "pop": 230,
@@ -202,51 +198,51 @@
       "poverty_streak": 0,
       "coups": 0,
       "last_coup_turn": null,
-      "goods_capacity": 17.35,
-      "goods_planned": 15.1939,
+      "goods_capacity": 17.5,
+      "goods_planned": 11.7308,
       "need": {
         "grain": 6.9,
-        "goods": 3.6929,
-        "oil": 8.9769,
-        "metal": 5.7082,
+        "goods": 3.6944,
+        "oil": 7.2454,
+        "metal": 4.6692,
         "orit": 2.0
       },
-      "goods_out": 15.1939,
+      "goods_out": 11.7308,
       "coverage": 1.0,
-      "goods_sold_last": 0.9447,
+      "goods_sold_last": 0.9429,
       "auto_last": {
         "goods": {
           "prodano": {
-            "mnozstvi": 0.525,
-            "prumerna_cena": 1.0762
+            "mnozstvi": 0.523,
+            "prumerna_cena": 1.0497
           }
         },
         "grain": {
           "nakoupeno": {
-            "mnozstvi": 2.797,
-            "prumerna_cena": 0.7726
+            "mnozstvi": 2.775,
+            "prumerna_cena": 0.7553
           }
         },
         "metal": {
           "prodano": {
-            "mnozstvi": 0.784,
-            "prumerna_cena": 0.8393
+            "mnozstvi": 1.274,
+            "prumerna_cena": 0.8399
           }
         },
         "oil": {
           "nakoupeno": {
-            "mnozstvi": 7.33,
-            "prumerna_cena": 0.7819
+            "mnozstvi": 5.575,
+            "prumerna_cena": 0.8074
           }
         }
       }
     },
     "B": {
       "name": "Lidová republika Ostrogard",
-      "wealth": 23.03653348532925,
+      "wealth": 24.533143482258644,
       "paper_wealth": 0,
-      "power": 66.0,
-      "law": 4.199999999999999,
+      "power": 62.0,
+      "law": 4.499999999999999,
       "tech": 5.3,
       "industry": 6,
       "prod": {
@@ -256,10 +252,10 @@
         "orit": 0.0
       },
       "stock": {
-        "grain": 38.64,
+        "grain": 39.985,
         "oil": 25.3299,
         "metal": 14.4,
-        "goods": 18.3014,
+        "goods": 22.8235,
         "orit": 0.0
       },
       "pop": 210,
@@ -269,41 +265,35 @@
       "poverty_streak": 0,
       "coups": 0,
       "last_coup_turn": null,
-      "goods_capacity": 9.06,
-      "goods_planned": 7.4788,
+      "goods_capacity": 9.18,
+      "goods_planned": 9.18,
       "need": {
         "grain": 6.3,
-        "goods": 2.9381,
-        "oil": 4.9994,
-        "metal": 3.2936,
+        "goods": 2.6963,
+        "oil": 5.85,
+        "metal": 3.804,
         "orit": 2.0
       },
-      "goods_out": 7.4788,
+      "goods_out": 9.18,
       "coverage": 1.0,
-      "goods_sold_last": 4.4832,
+      "goods_sold_last": 1.9616,
       "auto_last": {
         "goods": {
           "prodano": {
-            "mnozstvi": 4.483,
-            "prumerna_cena": 1.0774
-          }
-        },
-        "grain": {
-          "nakoupeno": {
-            "mnozstvi": 1.28,
-            "prumerna_cena": 0.7727
+            "mnozstvi": 1.961,
+            "prumerna_cena": 1.0505
           }
         },
         "metal": {
           "nakoupeno": {
-            "mnozstvi": 0.784,
-            "prumerna_cena": 0.9235
+            "mnozstvi": 1.274,
+            "prumerna_cena": 0.9239
           }
         },
         "oil": {
           "prodano": {
-            "mnozstvi": 6.296,
-            "prumerna_cena": 0.7109
+            "mnozstvi": 5.535,
+            "prumerna_cena": 0.7339
           }
         }
       }
@@ -327,11 +317,11 @@
   },
   "npc": {
     "N1": {
-      "wealth": 42.97948062671235,
+      "wealth": 43.22445233715868,
       "paper_wealth": 0,
       "power": 8,
-      "law": 6.399999999999995,
-      "tech": 4.800000000000002,
+      "law": 6.499999999999995,
+      "tech": 4.950000000000002,
       "industry": 2.348,
       "prod": {
         "oil": 0,
@@ -340,7 +330,7 @@
         "orit": 0.0
       },
       "stock": {
-        "grain": 49.6975,
+        "grain": 53.0825,
         "oil": 8.5269,
         "metal": 5.9141,
         "goods": 10.9894,
@@ -349,7 +339,7 @@
       "pop": 190,
       "pop_start": 190,
       "influence": {
-        "A": 13.0,
+        "A": 14.0,
         "B": 0.0
       },
       "debt": {
@@ -362,15 +352,11 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        55.6781,
         42.6471,
-        42.9795
+        42.9795,
+        43.2245
       ],
       "influence_history": [
-        {
-          "A": 11.0,
-          "B": 0.0
-        },
         {
           "A": 12.0,
           "B": 0.0
@@ -378,25 +364,29 @@
         {
           "A": 13.0,
           "B": 0.0
+        },
+        {
+          "A": 14.0,
+          "B": 0.0
         }
       ],
       "last_coup_turn": null,
       "wealth_peak": 59.378766019818286,
-      "goods_capacity": 3.4398,
-      "goods_planned": 3.2505,
+      "goods_capacity": 3.475,
+      "goods_planned": 3.261,
       "need": {
         "grain": 5.7,
-        "goods": 3.2505,
-        "oil": 2.7652,
-        "metal": 1.9251,
+        "goods": 3.261,
+        "oil": 2.7705,
+        "metal": 1.9283,
         "orit": 2.0
       },
-      "goods_out": 3.2505,
+      "goods_out": 3.261,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N2": {
-      "wealth": 39.10628190021426,
+      "wealth": 37.18573346736942,
       "paper_wealth": 0,
       "power": 6,
       "law": 4.999999999999998,
@@ -409,7 +399,7 @@
         "orit": 0.0
       },
       "stock": {
-        "grain": 47.37,
+        "grain": 48.0,
         "oil": 7.68,
         "metal": 6.08,
         "goods": 20.9613,
@@ -431,9 +421,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        41.044,
         40.0797,
-        39.1063
+        39.1063,
+        37.1857
       ],
       "influence_history": [
         {
@@ -455,7 +445,7 @@
       "goods_planned": 2.4,
       "need": {
         "grain": 4.8,
-        "goods": 2.6688,
+        "goods": 2.6428,
         "oil": 2.16,
         "metal": 1.52,
         "orit": 2.0
@@ -465,11 +455,11 @@
       "goods_sold_last": 0.0
     },
     "N3": {
-      "wealth": 90.54071546772835,
+      "wealth": 92.20871242401184,
       "paper_wealth": 0,
-      "power": 16.0,
+      "power": 18.0,
       "law": 4.3,
-      "tech": 3.6000000000000005,
+      "tech": 3.8000000000000007,
       "industry": 4,
       "prod": {
         "oil": 10,
@@ -478,11 +468,11 @@
         "orit": 3.0
       },
       "stock": {
-        "grain": 13.23,
+        "grain": 13.22,
         "oil": 27.5419,
         "metal": 5.5731,
-        "goods": 24.796,
-        "orit": 4.44
+        "goods": 25.4161,
+        "orit": 5.98
       },
       "pop": 120,
       "pop_start": 120,
@@ -500,9 +490,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        88.6954,
         86.8549,
-        90.5407
+        90.5407,
+        92.2087
       ],
       "influence_history": [
         {
@@ -519,25 +509,25 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 90.54071546772835,
-      "goods_capacity": 5.36,
-      "goods_planned": 4.1924,
+      "wealth_peak": 92.20871242401184,
+      "goods_capacity": 5.44,
+      "goods_planned": 4.0251,
       "need": {
         "grain": 3.6,
-        "goods": 2.9371,
-        "oil": 2.8162,
-        "metal": 1.8577,
+        "goods": 3.0108,
+        "oil": 2.7325,
+        "metal": 1.8075,
         "orit": 2.0
       },
-      "goods_out": 4.1924,
+      "goods_out": 4.0251,
       "coverage": 1.0,
-      "goods_sold_last": 0.3919
+      "goods_sold_last": 0.3942
     },
     "N4": {
-      "wealth": 74.47696402108357,
+      "wealth": 76.50924462233733,
       "paper_wealth": 0,
-      "power": 27.0,
-      "law": 4.699999999999997,
+      "power": 29.0,
+      "law": 4.4999999999999964,
       "tech": 5.500000000000003,
       "industry": 4.324,
       "prod": {
@@ -550,14 +540,14 @@
         "grain": 10.65,
         "oil": 24.0769,
         "metal": 4.7958,
-        "goods": 9.4166,
+        "goods": 10.0868,
         "orit": 0.0
       },
       "pop": 110,
       "pop_start": 110,
       "influence": {
         "A": 0.0,
-        "B": 18.0
+        "B": 20.0
       },
       "debt": {
         "A": 0,
@@ -569,15 +559,11 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        83.2098,
         72.5778,
-        74.477
+        74.477,
+        76.5092
       ],
       "influence_history": [
-        {
-          "A": 1.8,
-          "B": 14.0
-        },
         {
           "A": 0.8,
           "B": 16.0
@@ -585,29 +571,33 @@
         {
           "A": 0.0,
           "B": 18.0
+        },
+        {
+          "A": 0.0,
+          "B": 20.0
         }
       ],
       "last_coup_turn": null,
       "wealth_peak": 83.37646954136274,
       "goods_capacity": 6.7022,
-      "goods_planned": 3.1008,
+      "goods_planned": 3.1356,
       "need": {
         "grain": 3.3,
-        "goods": 2.4306,
-        "oil": 2.2104,
-        "metal": 1.4802,
+        "goods": 2.4654,
+        "oil": 2.2278,
+        "metal": 1.4907,
         "orit": 2.0
       },
-      "goods_out": 3.1008,
+      "goods_out": 3.1356,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N5": {
-      "wealth": 40.16893331907945,
+      "wealth": 40.01633922445729,
       "paper_wealth": 0,
-      "power": 31.0,
-      "law": 4.599999999999998,
-      "tech": 5.250000000000002,
+      "power": 35.0,
+      "law": 4.399999999999998,
+      "tech": 5.450000000000002,
       "industry": 3,
       "prod": {
         "oil": 0,
@@ -620,13 +610,13 @@
         "oil": 4.8,
         "metal": 10.1612,
         "goods": 9.33,
-        "orit": 0.505
+        "orit": 3.555
       },
       "pop": 100,
       "pop_start": 100,
       "influence": {
         "A": 0.0,
-        "B": 19.0
+        "B": 22.0
       },
       "debt": {
         "A": 0,
@@ -638,15 +628,11 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        43.132,
         38.6368,
-        40.1689
+        40.1689,
+        40.0163
       ],
       "influence_history": [
-        {
-          "A": 0.0,
-          "B": 15.0
-        },
         {
           "A": 0.0,
           "B": 17.0
@@ -654,42 +640,46 @@
         {
           "A": 0.0,
           "B": 19.0
+        },
+        {
+          "A": 0.0,
+          "B": 22.0
         }
       ],
       "last_coup_turn": null,
       "wealth_peak": 43.46529600353874,
-      "goods_capacity": 4.515,
-      "goods_planned": 1.6439,
+      "goods_capacity": 4.575,
+      "goods_planned": 1.6695,
       "need": {
         "grain": 3.0,
-        "goods": 1.6439,
-        "oil": 1.422,
-        "metal": 0.9932,
+        "goods": 1.6695,
+        "oil": 1.4347,
+        "metal": 1.0008,
         "orit": 2.0
       },
-      "goods_out": 1.6439,
+      "goods_out": 1.6695,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N6": {
-      "wealth": 72.3183277757292,
+      "wealth": 70.82041401249921,
       "paper_wealth": 0,
-      "power": 9.0,
+      "power": 11.0,
       "law": 2,
-      "tech": 1.5999999999999999,
+      "tech": 1.7999999999999998,
       "industry": 1,
       "prod": {
         "oil": 0,
         "grain": 2,
         "metal": 2,
-        "orit": 8.0
+        "orit": 10.0
       },
       "stock": {
         "grain": 8.1,
         "oil": 3.161,
-        "metal": 5.2404,
+        "metal": 5.4075,
         "goods": 6.1641,
-        "orit": 11.22
+        "orit": 17.86
       },
       "pop": 90,
       "pop_start": 90,
@@ -707,18 +697,18 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        22.3244,
         76.9792,
-        72.3183
+        72.3183,
+        70.8204
       ],
       "influence_history": [
         {
           "A": 0.0,
-          "B": 0.0
+          "B": 0.64
         },
         {
           "A": 0.0,
-          "B": 0.64
+          "B": 0.0
         },
         {
           "A": 0.0,
@@ -727,25 +717,25 @@
       ],
       "last_coup_turn": null,
       "wealth_peak": 77.47920471499167,
-      "goods_capacity": 1.14,
-      "goods_planned": 1.0273,
+      "goods_capacity": 1.16,
+      "goods_planned": 0.9924,
       "need": {
         "grain": 2.7,
-        "goods": 2.0547,
-        "oil": 1.0537,
-        "metal": 0.7582,
+        "goods": 1.9848,
+        "oil": 1.0362,
+        "metal": 0.7477,
         "orit": 2.0
       },
-      "goods_out": 1.0273,
+      "goods_out": 0.9924,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N7": {
-      "wealth": 41.45371919655119,
+      "wealth": 43.63247251055152,
       "paper_wealth": 0,
-      "power": 12.0,
+      "power": 14.0,
       "law": 4.8999999999999995,
-      "tech": 3.4000000000000004,
+      "tech": 3.6000000000000005,
       "industry": 3,
       "prod": {
         "oil": 0,
@@ -754,11 +744,11 @@
         "orit": 4.0
       },
       "stock": {
-        "grain": 16.43,
+        "grain": 15.005,
         "oil": 5.199,
         "metal": 11.199,
         "goods": 9.0334,
-        "orit": 2.94
+        "orit": 5.62
       },
       "pop": 110,
       "pop_start": 110,
@@ -776,9 +766,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        44.7648,
         40.2012,
-        41.4537
+        41.4537,
+        43.6325
       ],
       "influence_history": [
         {
@@ -796,25 +786,25 @@
       ],
       "last_coup_turn": null,
       "wealth_peak": 44.93147602140624,
-      "goods_capacity": 3.96,
-      "goods_planned": 1.837,
+      "goods_capacity": 4.02,
+      "goods_planned": 1.86,
       "need": {
         "grain": 3.3,
-        "goods": 1.837,
-        "oil": 1.5785,
-        "metal": 1.1011,
+        "goods": 1.86,
+        "oil": 1.59,
+        "metal": 1.108,
         "orit": 2.0
       },
-      "goods_out": 1.837,
+      "goods_out": 1.86,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N8": {
-      "wealth": 18.434091030226675,
+      "wealth": 18.152141650880125,
       "paper_wealth": 0,
-      "power": 7.16577625,
+      "power": 8.231605131250001,
       "law": 3,
-      "tech": 1.316577625,
+      "tech": 1.423160513125,
       "industry": 1,
       "prod": {
         "oil": 0,
@@ -823,7 +813,7 @@
         "orit": 1.0
       },
       "stock": {
-        "grain": 22.8631,
+        "grain": 24.0,
         "oil": 0.96,
         "metal": 0.8,
         "goods": 2.19,
@@ -845,9 +835,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        19.0213,
         18.7148,
-        18.4341
+        18.4341,
+        18.1521
       ],
       "influence_history": [
         {
@@ -865,25 +855,25 @@
       ],
       "last_coup_turn": null,
       "wealth_peak": 22.0,
-      "goods_capacity": 1.1211,
-      "goods_planned": 0.5248,
+      "goods_capacity": 1.1317,
+      "goods_planned": 0.5229,
       "need": {
         "grain": 2.4,
-        "goods": 1.0495,
-        "oil": 0.7424,
-        "metal": 0.5574,
+        "goods": 1.0458,
+        "oil": 0.7414,
+        "metal": 0.5569,
         "orit": 2.0
       },
-      "goods_out": 0.5248,
+      "goods_out": 0.5229,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N9": {
-      "wealth": 18.82865503089775,
+      "wealth": 19.297567588984393,
       "paper_wealth": 0,
-      "power": 9.10525,
+      "power": 11.10525,
       "law": 2,
-      "tech": 1.410525,
+      "tech": 1.610525,
       "industry": 1,
       "prod": {
         "oil": 3,
@@ -896,7 +886,7 @@
         "oil": 5.627,
         "metal": 0.6,
         "goods": 1.6,
-        "orit": 1.1816
+        "orit": 2.3932
       },
       "pop": 60,
       "pop_start": 60,
@@ -914,9 +904,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        19.9439,
         18.376,
-        18.8287
+        18.8287,
+        19.2976
       ],
       "influence_history": [
         {
@@ -934,24 +924,24 @@
       ],
       "last_coup_turn": null,
       "wealth_peak": 20.50911273839163,
-      "goods_capacity": 1.1211,
-      "goods_planned": 0.3919,
+      "goods_capacity": 1.1411,
+      "goods_planned": 0.3941,
       "need": {
         "grain": 1.8,
-        "goods": 0.7838,
-        "oil": 0.5559,
-        "metal": 0.4176,
+        "goods": 0.7883,
+        "oil": 0.5571,
+        "metal": 0.4182,
         "orit": 2.0
       },
-      "goods_out": 0.3919,
+      "goods_out": 0.3941,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N10": {
-      "wealth": 19.401230874844423,
+      "wealth": 19.551613983579944,
       "paper_wealth": 0,
       "power": 4,
-      "law": 4.299999999999999,
+      "law": 4.399999999999999,
       "tech": 2,
       "industry": 1,
       "prod": {
@@ -961,7 +951,7 @@
         "orit": 0.0
       },
       "stock": {
-        "grain": 20.25,
+        "grain": 21.0,
         "oil": 2.55,
         "metal": 6.0554,
         "goods": 6.02,
@@ -970,7 +960,7 @@
       "pop": 85,
       "pop_start": 85,
       "influence": {
-        "A": 2.4000000000000004,
+        "A": 3.2,
         "B": 0.0
       },
       "debt": {
@@ -983,15 +973,11 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        21.0986,
         19.2312,
-        19.4012
+        19.4012,
+        19.5516
       ],
       "influence_history": [
-        {
-          "A": 0.8,
-          "B": 0.0
-        },
         {
           "A": 1.6,
           "B": 0.0
@@ -999,30 +985,34 @@
         {
           "A": 2.4,
           "B": 0.0
+        },
+        {
+          "A": 3.2,
+          "B": 0.0
         }
       ],
       "last_coup_turn": null,
       "wealth_peak": 25.0,
       "goods_capacity": 1.2,
-      "goods_planned": 0.5612,
+      "goods_planned": 0.5624,
       "need": {
         "grain": 2.55,
-        "goods": 1.1224,
-        "oil": 0.7906,
-        "metal": 0.5934,
+        "goods": 1.1249,
+        "oil": 0.7912,
+        "metal": 0.5937,
         "orit": 2.0
       },
-      "goods_out": 0.5612,
+      "goods_out": 0.5624,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N11": {
-      "wealth": 104.56647619470509,
+      "wealth": 105.09639091540492,
       "paper_wealth": 0,
       "power": 6,
       "law": 9,
-      "tech": 9.500000000000004,
-      "industry": 7.9999999999999964,
+      "tech": 9.650000000000004,
+      "industry": 8.099999999999996,
       "prod": {
         "oil": 1,
         "grain": 2,
@@ -1030,8 +1020,8 @@
       },
       "stock": {
         "grain": 18.0,
-        "oil": 5.2432,
-        "metal": 11.1864,
+        "oil": 5.2971,
+        "metal": 11.2942,
         "goods": 15.0,
         "orit": 0.0
       },
@@ -1051,9 +1041,9 @@
       "kind": "fallen",
       "coups": 0,
       "wealth_history": [
-        103.466,
         104.0178,
-        104.5665
+        104.5665,
+        105.0964
       ],
       "influence_history": [
         {
@@ -1070,34 +1060,34 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 103.73314286137176,
-      "goods_capacity": 15.2865,
-      "goods_planned": 2.8955,
+      "wealth_peak": 104.2630575820716,
+      "goods_capacity": 15.6,
+      "goods_planned": 2.9314,
       "need": {
         "grain": 1.5,
-        "goods": 1.3668,
-        "oil": 1.7477,
-        "metal": 1.1186,
+        "goods": 1.3714,
+        "oil": 1.7657,
+        "metal": 1.1294,
         "orit": 0.0
       },
-      "goods_out": 2.8955,
+      "goods_out": 2.9314,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N12": {
-      "wealth": 92.26324559166672,
+      "wealth": 93.81263600833339,
       "paper_wealth": 0,
       "power": 7,
       "law": 8,
-      "tech": 8.500000000000004,
-      "industry": 7.9999999999999964,
+      "tech": 8.650000000000004,
+      "industry": 8.099999999999996,
       "prod": {
         "oil": 2,
         "grain": 1,
         "metal": 2
       },
       "stock": {
-        "grain": 17.0105,
+        "grain": 15.7105,
         "oil": 21.98,
         "metal": 14.36,
         "goods": 19.6,
@@ -1119,9 +1109,9 @@
       "kind": "fallen",
       "coups": 0,
       "wealth_history": [
-        89.3787,
         90.7108,
-        92.2632
+        92.2632,
+        93.8126
       ],
       "influence_history": [
         {
@@ -1138,39 +1128,39 @@
         }
       ],
       "last_coup_turn": null,
-      "wealth_peak": 91.09657892500005,
-      "goods_capacity": 14.4965,
-      "goods_planned": 3.2079,
+      "wealth_peak": 92.64596934166671,
+      "goods_capacity": 14.8,
+      "goods_planned": 3.2564,
       "need": {
         "grain": 2.1,
-        "goods": 1.7583,
-        "oil": 2.024,
-        "metal": 1.3124,
+        "goods": 1.7764,
+        "oil": 2.0482,
+        "metal": 1.3269,
         "orit": 0.0
       },
-      "goods_out": 3.2079,
+      "goods_out": 3.2564,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N13": {
-      "wealth": 25.93562020594112,
+      "wealth": 24.068871572655684,
       "paper_wealth": 0,
-      "power": 10.0,
+      "power": 12.0,
       "law": 6,
-      "tech": 7.0000000000000036,
-      "industry": 6.359999999999997,
+      "tech": 7.350000000000004,
+      "industry": 6.459999999999996,
       "prod": {
         "oil": 0,
         "grain": 3,
         "metal": 2,
-        "orit": 2.0
+        "orit": 4.0
       },
       "stock": {
-        "grain": 31.6275,
+        "grain": 32.0775,
         "oil": 6.663,
         "metal": 14.4249,
-        "goods": 16.5093,
-        "orit": 0.665
+        "goods": 17.1871,
+        "orit": 1.365
       },
       "pop": 120,
       "pop_start": 120,
@@ -1188,9 +1178,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        29.5943,
         27.7429,
-        25.9356
+        25.9356,
+        24.0689
       ],
       "influence_history": [
         {
@@ -1208,38 +1198,38 @@
       ],
       "last_coup_turn": null,
       "wealth_peak": 50.0,
-      "goods_capacity": 10.4229,
-      "goods_planned": 2.7971,
+      "goods_capacity": 10.812,
+      "goods_planned": 2.7999,
       "need": {
         "grain": 3.6,
-        "goods": 1.7549,
-        "oil": 2.1186,
-        "metal": 1.4391,
+        "goods": 1.7187,
+        "oil": 2.12,
+        "metal": 1.44,
         "orit": 2.0
       },
-      "goods_out": 2.7971,
+      "goods_out": 2.7999,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N14": {
-      "wealth": 28.97473399867866,
+      "wealth": 31.293987779118446,
       "paper_wealth": 0,
-      "power": 8,
+      "power": 10.0,
       "law": 5,
-      "tech": 4.800000000000002,
+      "tech": 5.150000000000002,
       "industry": 3.3,
       "prod": {
         "oil": 3,
         "grain": 4,
         "metal": 2,
-        "orit": 2.0
+        "orit": 4.0
       },
       "stock": {
-        "grain": 30.0,
+        "grain": 28.0961,
         "oil": 15.9392,
         "metal": 11.064,
         "goods": 6.7033,
-        "orit": 0.0
+        "orit": 0.48
       },
       "pop": 100,
       "pop_start": 100,
@@ -1257,9 +1247,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        29.6264,
         29.293,
-        28.9747
+        28.9747,
+        31.294
       ],
       "influence_history": [
         {
@@ -1277,21 +1267,21 @@
       ],
       "last_coup_turn": null,
       "wealth_peak": 41.66660438222222,
-      "goods_capacity": 4.8345,
-      "goods_planned": 1.4882,
+      "goods_capacity": 4.884,
+      "goods_planned": 1.4829,
       "need": {
         "grain": 3.0,
-        "goods": 1.4882,
-        "oil": 1.3441,
-        "metal": 0.9465,
+        "goods": 1.4829,
+        "oil": 1.3415,
+        "metal": 0.9449,
         "orit": 2.0
       },
-      "goods_out": 1.4882,
+      "goods_out": 1.4829,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N15": {
-      "wealth": 36.883228062711844,
+      "wealth": 35.67543550138411,
       "paper_wealth": 0,
       "power": 7,
       "law": 3,
@@ -1301,7 +1291,7 @@
         "oil": 2,
         "grain": 1,
         "metal": 6,
-        "orit": 0.0
+        "orit": 2.0
       },
       "stock": {
         "grain": 8.5,
@@ -1326,9 +1316,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        39.3592,
         38.1121,
-        36.8832
+        36.8832,
+        35.6754
       ],
       "influence_history": [
         {
@@ -1347,20 +1337,20 @@
       "last_coup_turn": null,
       "wealth_peak": 40.819426176607784,
       "goods_capacity": 2.4,
-      "goods_planned": 1.3082,
+      "goods_planned": 1.2918,
       "need": {
         "grain": 2.4,
-        "goods": 1.3082,
-        "oil": 1.1341,
-        "metal": 0.7924,
+        "goods": 1.2918,
+        "oil": 1.1259,
+        "metal": 0.7875,
         "orit": 2.0
       },
-      "goods_out": 1.3082,
+      "goods_out": 1.2918,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     },
     "N16": {
-      "wealth": 17.857214729672844,
+      "wealth": 17.5473633121458,
       "paper_wealth": 0,
       "power": 4,
       "law": 4,
@@ -1395,9 +1385,9 @@
       "kind": "normal",
       "coups": 0,
       "wealth_history": [
-        18.504,
         18.166,
-        17.8572
+        17.8572,
+        17.5474
       ],
       "influence_history": [
         {
@@ -1416,15 +1406,15 @@
       "last_coup_turn": null,
       "wealth_peak": 22.0,
       "goods_capacity": 1.1,
-      "goods_planned": 0.5862,
+      "goods_planned": 0.5839,
       "need": {
         "grain": 2.7,
-        "goods": 1.1725,
-        "oil": 0.8331,
-        "metal": 0.6259,
+        "goods": 1.1679,
+        "oil": 0.832,
+        "metal": 0.6252,
         "orit": 2.0
       },
-      "goods_out": 0.5862,
+      "goods_out": 0.5839,
       "coverage": 1.0,
       "goods_sold_last": 0.0
     }
@@ -1470,141 +1460,40 @@
   "invasions": [],
   "messages_pending": [
     {
-      "from": "N3",
-      "to": "A",
-      "text": "Obchod s orit přijmeme za cenu 17.6000 při množství 1.000.",
-      "turn": 10,
-      "protinavrh": {
-        "type": "trade_offer",
-        "player": "A",
-        "npc": "N3",
-        "res": "orit",
-        "qty": 1.0,
-        "price": 17.6,
-        "expires": 13
-      }
-    },
-    {
       "from": "A",
       "to": "B",
-      "text": "Ostrogarde, příměří držím dál. O orit na východě soutěžím cenou a hotově, jak jste navrhl; plot nestavím a sankce nechystám.",
-      "turn": 10
+      "text": "Ostrogarde, příměří i otevřený trh držím dál; o orit soutěžím jen cenou a hotově, plot nestavím.",
+      "turn": 11
+    },
+    {
+      "from": "B",
+      "to": "A",
+      "text": "Kalvero, příměří držím také. Soutěžte cenou, jak říkáte; do zázemí mých přátel ale kapitál nepatří.",
+      "turn": 11
     }
   ],
   "news": [
-    "Tavra, rok 4: V Tavrosu objeveno nové ložisko oritu.",
-    "Brenna, rok 4: V Brenholdu objeveno nové ložisko oritu.",
-    "Dorvik, rok 4: Obchodníci v Dorvanu platí za orit desetinásobek ceny kovu a berou vše, co se vytěží."
+    "Meridport, rok 4: V Meridii i v Tavře a Kalderě objeveny nové zásoby oritu.",
+    "Dorvik, rok 4: V Dorvanu nalezena ložiska oritu a obchodníci v Dorvanu platí za orit desetinásobek ceny kovu a berou vše, co se vytěží.",
+    "Sarnov, rok 4: V Sarnii zvolen nový starosta hlavního města."
   ],
   "metrics": {
-    "prosperity_index": 83.22,
-    "A_trade_share": 0.3419,
-    "B_resource_share": 0.0872,
+    "prosperity_index": 83.99,
+    "A_trade_share": 0.3496,
+    "B_resource_share": 0.0833,
     "C_min_member": null,
     "W0": 864,
-    "W_real": 823.6,
+    "W_real": 830.73,
     "n_bida": 0,
-    "max_share": 0.127,
-    "trade_volume": 38.854,
-    "trade_volume_npc": 20.979,
-    "trade_volume_players": 17.875,
-    "trade_volume_goods": 6.237,
-    "trade_volume_AB": 5.647,
+    "max_share": 0.1265,
+    "trade_volume": 35.543,
+    "trade_volume_npc": 21.339,
+    "trade_volume_players": 14.204,
+    "trade_volume_goods": 3.443,
+    "trade_volume_AB": 5.645,
     "poverty_ids": []
   },
   "log": [
-    {
-      "turn": 2,
-      "events": [
-        {
-          "kind": "npc_decision",
-          "private": true,
-          "player": "A",
-          "npc": "N4",
-          "action": "trade_offer",
-          "outcome": "prijato"
-        },
-        {
-          "kind": "trade_opened",
-          "deal": {
-            "id": "d4",
-            "type": "trade",
-            "owner": "A",
-            "target": "N4",
-            "res": "oil",
-            "qty": 6.0,
-            "price": 0.95,
-            "direction": "npc_sells",
-            "since": 2
-          }
-        },
-        {
-          "kind": "npc_decision",
-          "private": true,
-          "player": "A",
-          "npc": "N2",
-          "action": "trade_offer",
-          "outcome": "prijato"
-        },
-        {
-          "kind": "trade_opened",
-          "deal": {
-            "id": "d5",
-            "type": "trade",
-            "owner": "A",
-            "target": "N2",
-            "res": "grain",
-            "qty": 3.0,
-            "price": 0.9,
-            "direction": "npc_sells",
-            "since": 2
-          }
-        },
-        {
-          "kind": "message",
-          "from": "A",
-          "to": "B"
-        },
-        {
-          "kind": "npc_decision",
-          "private": true,
-          "player": "B",
-          "npc": "N4",
-          "action": "protect",
-          "outcome": "podminka"
-        },
-        {
-          "kind": "protect_started",
-          "player": "B",
-          "target": "N4"
-        },
-        {
-          "kind": "npc_decision",
-          "private": true,
-          "player": "B",
-          "npc": "N7",
-          "action": "protect",
-          "outcome": "protinavrh"
-        },
-        {
-          "kind": "message",
-          "from": "B",
-          "to": "A"
-        },
-        {
-          "kind": "invest_industry_done",
-          "player": "A",
-          "target": "A",
-          "industry": 8.94
-        },
-        {
-          "kind": "invest_tech_done",
-          "player": "B",
-          "target": "B",
-          "tech": 4.3
-        }
-      ]
-    },
     {
       "turn": 3,
       "events": [
@@ -2246,60 +2135,80 @@
           "npc": "N5"
         }
       ]
+    },
+    {
+      "turn": 11,
+      "events": [
+        {
+          "kind": "trade_rejected",
+          "player": "A",
+          "target": "N3",
+          "res": "orit",
+          "reason": "cena mimo pasmo"
+        },
+        {
+          "kind": "offer_accepted",
+          "player": "B",
+          "npc": "N5",
+          "offer": {
+            "type": "sell",
+            "res": "grain",
+            "qty": 1.32,
+            "price": 0.7178,
+            "offer_id": "o35",
+            "player": "B",
+            "npc": "N5",
+            "created": 9,
+            "expires": 11
+          }
+        },
+        {
+          "kind": "invest_law_done",
+          "player": "B",
+          "target": "B",
+          "law": 4.499999999999999
+        },
+        {
+          "kind": "message",
+          "from": "A",
+          "to": "B"
+        },
+        {
+          "kind": "message",
+          "from": "B",
+          "to": "A"
+        },
+        {
+          "kind": "orit_found",
+          "npc": "N13"
+        },
+        {
+          "kind": "orit_found",
+          "npc": "N14"
+        },
+        {
+          "kind": "orit_found",
+          "npc": "N15"
+        },
+        {
+          "kind": "orit_found",
+          "npc": "N6"
+        }
+      ]
     }
   ],
   "prices": {
-    "grain": 0.6865,
-    "oil": 0.7338,
+    "grain": 0.6831,
+    "oil": 0.7139,
     "metal": 0.84,
-    "orit": 10.2017,
+    "orit": 7.7495,
     "goods": 1.05
   },
-  "prices_turn": 11,
+  "prices_turn": 12,
   "investments_pending": [],
   "wars": [],
   "refugees": [],
   "offers": [
-    {
-      "type": "sell",
-      "res": "grain",
-      "qty": 2.82,
-      "price": 0.7178,
-      "offer_id": "o33",
-      "player": "A",
-      "npc": "N1",
-      "created": 9,
-      "expires": 11
-    },
-    {
-      "type": "loan_request",
-      "amount": 20.0,
-      "offer_id": "o34",
-      "player": "A",
-      "npc": "N2",
-      "created": 9,
-      "expires": 11
-    },
-    {
-      "type": "sell",
-      "res": "grain",
-      "qty": 1.32,
-      "price": 0.7178,
-      "offer_id": "o35",
-      "player": "B",
-      "npc": "N5",
-      "created": 9,
-      "expires": 11
-    },
-    {
-      "type": "loan_request",
-      "amount": 20.0,
-      "offer_id": "o36",
-      "player": "B",
-      "npc": "N4",
-      "created": 9,
-      "expires": 11
-    },
     {
       "type": "sell",
       "res": "grain",
@@ -2339,6 +2248,46 @@
       "npc": "N2",
       "created": 10,
       "expires": 12
+    },
+    {
+      "type": "sell",
+      "res": "grain",
+      "qty": 2.775,
+      "price": 0.6865,
+      "offer_id": "o41",
+      "player": "A",
+      "npc": "N1",
+      "created": 11,
+      "expires": 13
+    },
+    {
+      "type": "loan_request",
+      "amount": 20.0,
+      "offer_id": "o42",
+      "player": "A",
+      "npc": "N2",
+      "created": 11,
+      "expires": 13
+    },
+    {
+      "type": "sell",
+      "res": "grain",
+      "qty": 0.495,
+      "price": 0.6865,
+      "offer_id": "o43",
+      "player": "B",
+      "npc": "N5",
+      "created": 11,
+      "expires": 13
+    },
+    {
+      "type": "loan_request",
+      "amount": 20.0,
+      "offer_id": "o44",
+      "player": "B",
+      "npc": "N4",
+      "created": 11,
+      "expires": 13
     }
   ],
   "counter_offers": [
@@ -2363,22 +2312,6 @@
   ],
   "private_log": {
     "A": [
-      {
-        "turn": 2,
-        "npc": "N4",
-        "action": "trade_offer",
-        "outcome": "prijato",
-        "reason": "Nabídka odpovídá našim zájmům.",
-        "counter": null
-      },
-      {
-        "turn": 2,
-        "npc": "N2",
-        "action": "trade_offer",
-        "outcome": "prijato",
-        "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
-        "counter": null
-      },
       {
         "turn": 3,
         "npc": "N13",
@@ -2466,25 +2399,17 @@
           "price": 17.6,
           "expires": 13
         }
+      },
+      {
+        "turn": 11,
+        "npc": "N3",
+        "action": "trade_rejected",
+        "outcome": "vyrazeno",
+        "reason": "cena mimo pasmo",
+        "counter": null
       }
     ],
     "B": [
-      {
-        "turn": 2,
-        "npc": "N4",
-        "action": "protect",
-        "outcome": "podminka",
-        "reason": "Svou obranu zvládneme sami.",
-        "counter": null
-      },
-      {
-        "turn": 2,
-        "npc": "N7",
-        "action": "protect",
-        "outcome": "protinavrh",
-        "reason": "Nabídku jsme po zvážení nepřijali.",
-        "counter": null
-      },
       {
         "turn": 3,
         "npc": "N7",
@@ -2560,117 +2485,78 @@
     ],
     "C": []
   },
-  "npc_decisions": [
-    {
-      "turn": 10,
-      "player": "A",
-      "npc": "N7",
-      "action": "trade_offer",
-      "outcome": "odmitnuto",
-      "reason": "Nabídku jsme po zvážení nepřijali.",
-      "score": 44.29,
-      "roll": 81,
-      "params": {
-        "res": "orit",
-        "qty": 2.0,
-        "price": 14.0
-      },
-      "counter": null
-    },
-    {
-      "turn": 10,
-      "player": "A",
-      "npc": "N3",
-      "action": "trade_offer",
-      "outcome": "protinavrh",
-      "reason": "K zahraničním nabídkám jsme obecně zdrženliví.",
-      "score": 45.18,
-      "roll": 80,
-      "params": {
-        "res": "orit",
-        "qty": 1.0,
-        "price": 16.0
-      },
-      "counter": {
-        "type": "trade_offer",
-        "player": "A",
-        "npc": "N3",
-        "res": "orit",
-        "qty": 1.0,
-        "price": 17.6,
-        "expires": 13
-      }
-    }
-  ],
+  "npc_decisions": [],
   "union_tariff": {},
   "transit_income": {
-    "N1": 0.0872,
-    "N2": 0.0281,
-    "N4": 0.024,
-    "N6": 0.1246,
-    "N7": 0.1345
+    "N1": 0.0904,
+    "N2": 0.029,
+    "N4": 0.0232,
+    "N6": 0.1292,
+    "N7": 0.1388
   },
   "union_solidarity": {},
   "offers_new": [
     {
       "type": "sell",
       "res": "grain",
-      "qty": 2.797,
-      "price": 0.6321,
-      "offer_id": "o37",
+      "qty": 2.775,
+      "price": 0.6865,
+      "offer_id": "o41",
       "player": "A",
-      "npc": "N10",
-      "created": 10,
-      "expires": 12
+      "npc": "N1",
+      "created": 11,
+      "expires": 13
     },
     {
       "type": "loan_request",
       "amount": 20.0,
-      "offer_id": "o38",
+      "offer_id": "o42",
       "player": "A",
-      "npc": "N4",
-      "created": 10,
-      "expires": 12
+      "npc": "N2",
+      "created": 11,
+      "expires": 13
     },
     {
       "type": "sell",
       "res": "grain",
-      "qty": 1.28,
-      "price": 0.7023,
-      "offer_id": "o39",
+      "qty": 0.495,
+      "price": 0.6865,
+      "offer_id": "o43",
       "player": "B",
-      "npc": "N1",
-      "created": 10,
-      "expires": 12
+      "npc": "N5",
+      "created": 11,
+      "expires": 13
     },
     {
       "type": "loan_request",
       "amount": 20.0,
-      "offer_id": "o40",
+      "offer_id": "o44",
       "player": "B",
-      "npc": "N2",
-      "created": 10,
-      "expires": 12
+      "npc": "N4",
+      "created": 11,
+      "expires": 13
     }
   ],
   "genre": {
     "A": {
-      "id": 4,
-      "key": "projev_domu",
-      "turn": 10,
+      "id": 2,
+      "key": "otazka",
+      "turn": 11,
       "day": 4,
       "day_counts": {
-        "4": 1
+        "4": 1,
+        "2": 1
       },
       "resolution_no": 0
     },
     "B": {
-      "id": 3,
-      "key": "tiskovka",
-      "turn": 10,
+      "id": 4,
+      "key": "projev_domu",
+      "turn": 11,
       "day": 4,
       "day_counts": {
-        "3": 1
+        "3": 1,
+        "4": 1
       },
       "resolution_no": 0
     }
