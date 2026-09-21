@@ -6,7 +6,7 @@
     "slot": 3,
     "rng_seed": 20260910,
     "started_at": "2026-09-16T18:43:09+00:00",
-    "paused": false,
+    "paused": true,
     "day1_date": "2026-09-16"
   },
   "phase": "displacement",
