@@ -432,6 +432,11 @@ function hlavicka(s) {
   if (s.union && s.union.active) casti.push(`<span>Unie: <b>${esc(s.union.name || "Unie")}</b></span>`);
   const idx = s.metrics && s.metrics.prosperity_index;
   if (idx != null) casti.push(`<span>index prosperity${vys("index prosperity")} <b>${cis(idx, 1)}</b></span>`);
+  // v2.0: kapital tri bankovnich soustav
+  const b = s.banks || {};
+  const kap = [["K", "kalverské"], ["AUR", "Aurelie"], ["U", "Unie"]].filter(([k]) => b[k])
+    .map(([k, n]) => `${n} ${b[k].failed ? "zkrachovaly" : cis(b[k].capital, 1)}${b[k].insolvent ? " (insolvence)" : ""}`);
+  if (kap.length) casti.push(`<span>kapitál bank: ${esc(kap.join(" · "))}</span>`);
   $("hlavicka").innerHTML = casti.join("");
   const cyklus = window.ARDAN_CYKLUS;
   $("faze-popis").textContent = cyklus ? (cyklus.faze[cyklus.podle_enginu[s.phase]] || "") : "";
@@ -604,6 +609,18 @@ async function panelStatu(id) {
       radky.push(["vliv Ostrogardu", cis(e.influence.B, 1), "vliv"]);
     }
     if (e.status) radky.push(["postavení", STATUS[e.status] || e.status, "sféra"]);
+    // v2.0: dluh u bank podle soustav (publikum vidi rozdeleni, hraci jen soucet)
+    const d = e.debt || {};
+    const dl = [["BANKY_K", "kalverské"], ["BANKY_AUR", "Aurelie"], ["BANKA_U", "Unie"]]
+      .filter(([k]) => Number(d[k] || 0) > 0.05).map(([k, n]) => `${n} ${cis(d[k], 1)}`);
+    if (dl.length) radky.push(["dluh u bank", dl.join(" · ")]);
+    const dh = ["A", "B", "C"].filter((k) => Number(d[k] || 0) > 0.05).map((k) => `${jm(k) || HRACI[k] || k} ${cis(d[k], 1)}`);
+    if (dh.length) radky.push(["dluh u hráčů", dh.join(" · ")]);
+  }
+  if (id === "A" && s && s.banks && s.banks.K) {
+    const k = s.banks.K;
+    radky.push(["kalverské banky", k.failed ? "zkrachovaly" : `kapitál ${cis(k.capital, 1)}, pohledávky ${cis(k.claims, 1)}, ` +
+      `dividenda ${cis(k.dividend, 2)}, politika ${k.policy === "tight" ? "přísná" : "běžná"}${k.insolvent ? ", insolvence" : ""}`]);
   }
   // v1.11: ukazatele pro publikum u vsech statu (summary.json, pro starsi tahy ze snimku)
   const ind = zakl && zakl.goods ? zakl : (e ? {
@@ -696,6 +713,12 @@ function akce(a) {
     case "accept_offer": return `Přijetí nabídky ${a.offer_id || ""}`.trim();
     case "set_tariff": return `Sazba cla: ${cis((a.rate || 0) * 100, 0)} %`;
     case "declare_war": return `Vyhlášení války: ${cil}`;
+    case "kapitalizace_banky": return `Kapitál bance Unie: ${cis(a.amount, 1)}`;
+    case "refinancovani": return `Refinancování dluhu: ${cil} u ${a.creditor === "BANKY_AUR" ? "bank Aurelie" : "kalverských bank"}`;
+    case "moratorium": return `Moratorium na splátky: ${a.target === "vsichni" ? "všichni členové" : cil}`;
+    case "zprisnit_uvery": return "Zpřísnění úvěrů kalverských bank";
+    case "uvolnit_uvery": return "Uvolnění úvěrů kalverských bank";
+    case "sanace_bank": return "Sanace kalverských bank";
     default: return a.type || "akce";
   }
 }
@@ -728,10 +751,13 @@ function panelTahu(snimek, t) {
     else if (m.mlci) html += `<p class="ticho">${esc(m.public_statement)} (vláda se rozhodla mlčet)</p>`;
     else if (g && g.id === 6) html += `<p class="ticho">${esc(m.public_statement || "Vláda dnes nevystoupila.")}</p>`;
     else html += `<p class="projev">${esc(m.public_statement)}</p>`;
-    if (m.private_reasoning) {
-      html += `<details><summary>Co si doopravdy myslel</summary><p>${esc(m.private_reasoning)}</p></details>`;
+    // v2.0: duverny_zapis (starsi snimky private_reasoning); pouziti zalozniho modelu vzdy s poznamkou
+    const zapis = m.duverny_zapis || m.private_reasoning;
+    if (m.zaloha) html += `<p class="ticho">Poznámka: ${esc(m.zaloha.poznamka || ("odpověděl záložní model " + m.zaloha.model))}</p>`;
+    if (zapis) {
+      html += `<details><summary>Důvěrný zápis vlády</summary><p>${esc(zapis)}</p></details>`;
     } else if (!m.silent) {
-      html += '<p class="ticho">Úvahy nezaznamenány (technická chyba, odpověď hráče dorazila neúplná).</p>';
+      html += '<p class="ticho">Důvěrný zápis nezaznamenán (technická chyba, odpověď hráče dorazila neúplná).</p>';
     }
     if (m.poznamky_pro_pristi_tah) {
       html += `<details><summary>Poznámky do spisu</summary><p>${esc(m.poznamky_pro_pristi_tah)}</p></details>`;
@@ -757,7 +783,32 @@ function panelTahu(snimek, t) {
       }).join("")}</ul>`;
     }
     return html + "</div>";
-  }).join("");
+  }).join("") + radaUnie(radek(t));
+}
+
+/* v2.0: hlasovani rady Unie, spolecna obrana a moratorium v kole */
+function radaUnie(s) {
+  const u = (s && s.union) || {};
+  let html = "";
+  const hl = u.votes || [];
+  if (hl.length) {
+    html += `<p class="popis">Rada Unie</p><ul class="seznam">${hl.map((v) => {
+      const proti = (v.proti || []).map(jm).join(", ");
+      return `<li>${esc(akce(v.action || {}))}: ${v.approved ? "schváleno, provede se v dalším kole" : "odmítnuto"}` +
+        (proti ? `; proti ${esc(proti)}` : "; nikdo proti") + "</li>";
+    }).join("")}</ul>`;
+  }
+  const ob = u.defense || [];
+  if (ob.length) {
+    html += `<p class="popis">Společná obrana</p><ul class="seznam">${ob.map((d) =>
+      `<li>${esc(jm(d.attacker) || HRACI[d.attacker] || d.attacker)} napadá ${esc((d.targets || []).map(jm).join(", "))}, obrana od kola ${cis(d.since, 0)}</li>`).join("")}</ul>`;
+  }
+  const mo = Object.entries(u.moratoria || {});
+  if (mo.length) {
+    html += `<p class="popis">Moratorium</p><ul class="seznam">${mo.map(([n, m]) =>
+      `<li>${esc(jm(n))}: kola ${cis(m.from, 0)} až ${cis(m.until, 0)}</li>`).join("")}</ul>`;
+  }
+  return html ? `<div class="hrac"><h3><span class="znacka" style="background:${BARVA.C}"></span>${esc(hra.jmena.C || "Unie")}: rada a obrana</h3>${html}</div>` : "";
 }
 
 function zpravy(s) {

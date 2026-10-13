@@ -570,21 +570,21 @@ def test_odpovedi() -> bool:
     import run_turn
     uvaha = "Ohlédnutí: soupeř uzavřel pakt s Haldenem, můj plán s ropou funguje, ale smlouvy mě stojí peníze."
     checks = []
-    prazdny = {"public_statement": "Projev.", "private_reasoning": "", "actions": [],
+    prazdny = {"public_statement": "Projev.", "duverny_zapis": "", "actions": [],
                "domestic_action": None, "message": None, "poznamky_pro_pristi_tah": ""}
     checks.append(("prázdná úvaha a žádná akce neprojde", not run_turn.valid_move(prazdny)))
-    checks.append(("krátká úvaha neprojde", not run_turn.valid_move(dict(prazdny, private_reasoning="Krátce.",
+    checks.append(("krátká úvaha neprojde", not run_turn.valid_move(dict(prazdny, duverny_zapis="Krátce.",
                                                                           domestic_action={"type": "invest_law"}))))
     checks.append(("úvaha bez akce, domácí akce i zprávy neprojde",
-                   not run_turn.valid_move(dict(prazdny, private_reasoning=uvaha))))
+                   not run_turn.valid_move(dict(prazdny, duverny_zapis=uvaha))))
     checks.append(("úvaha se zprávou projde", run_turn.valid_move(dict(
-        prazdny, private_reasoning=uvaha, message={"target": "A", "text": "Dobrý den."}))))
-    bez_poznamek = dict(prazdny, private_reasoning=uvaha, message={"target": "A", "text": "Dobrý den."})
+        prazdny, duverny_zapis=uvaha, message={"target": "A", "text": "Dobrý den."}))))
+    bez_poznamek = dict(prazdny, duverny_zapis=uvaha, message={"target": "A", "text": "Dobrý den."})
     bez_poznamek.pop("poznamky_pro_pristi_tah")
     checks.append(("odpověď bez pole poznámek neprojde", not run_turn.valid_move(bez_poznamek)))
     # unik poznamek: hrac dostane jen sve poznamky z minuleho tahu
-    snap = {"turns": {"A": {"private_reasoning": "", "poznamky_pro_pristi_tah": "Kalvera si pamatuje: ropa z Haldenu."},
-                      "B": {"private_reasoning": "", "poznamky_pro_pristi_tah": "Ostrogard si pamatuje: Tavros později."}}}
+    snap = {"turns": {"A": {"duverny_zapis": "", "poznamky_pro_pristi_tah": "Kalvera si pamatuje: ropa z Haldenu."},
+                      "B": {"duverny_zapis": "", "poznamky_pro_pristi_tah": "Ostrogard si pamatuje: Tavros později."}}}
     orig = run_turn.load_snapshot
     run_turn.load_snapshot = lambda t: snap if t == 5 else None
     try:
@@ -610,7 +610,7 @@ def test_odpovedi() -> bool:
                    [a["type"] for a in vysl if a.get("slot") == "domestic"] == ["invest_prod", "invest_law"] and not nad))
     checks.append(("akce, kterou rozhodčí vynechal, doplněna z tahu hráče",
                    [(d["player"], d["action"]["type"]) for d in dopl] == [("B", "accept_offer")]))
-    zadna = dict(prazdny, private_reasoning=uvaha, domestic_action={"type": "zadna"})
+    zadna = dict(prazdny, duverny_zapis=uvaha, domestic_action={"type": "zadna"})
     run_turn.normalize_domestic(zadna)
     checks.append(("volba zadna je bez domácí akce a sama tah nenese",
                    zadna["domestic_action"] is None and not run_turn.valid_move(zadna)))

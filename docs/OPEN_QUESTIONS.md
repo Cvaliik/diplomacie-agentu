@@ -4722,3 +4722,34 @@ domácí `invest_industry` při wealth nad 60, nejvýš jednou za den; B pakty N
 `invest_law` použilo 5 NPC (N2, N3, N5, N7, N15). Unie i crash v tahu 33 (den 11). validate 0 chyb. Scénář (0) prošel
 (crash tah 69). Stop podmínka „A na konci dne 5 aspoň 60“ nesplněna (51,7, z toho 50 wealth v pěti investicích
 do průmyslu); Adam výsledek přijal 16. 9. 2026.
+
+## v2.0 (rozhodnutí Adama z 24. 9. 2026)
+
+v2 (Unie po krizi) otevřena a zapsána ve v2.0, rozhodnutí Adama 24. 9. 2026: dluhové nástroje, banka Unie, fond,
+rada, společná obrana. Volby a partaje zůstávají ve v3.
+
+Důvod: Minskyho cyklus neměl úvěrový motor (nikdo nepůjčil, boom nepřišel), automatický průzkum NPC zaplavil svět
+oritem (41 jednotek při spotřebě 32, cena na dně) a vysál chudé státy, Unie po krizi neměla nástroje na dluhy, spory
+ani obranu.
+
+### Výklady enginu v2.0 (k potvrzení)
+
+| bod | výklad |
+|---|---|
+| jistina bank | banka eviduje jistinu u každého dlužníka; splátka ji snižuje o `splátka / přirážka` (1.2, u banky Unie 1.1), odpis poměrně k odepsané části dluhu. Strop jistiny se kontroluje při každé půjčce |
+| nevymožený dluh | v `distress` a `panic` se nevymožená část 10% vymáhání odepíše z dluhu a jde do ztráty banky; nesplácení se zapíše do `defaults` jednou za dvojici a kolo |
+| odpis | odpis snižuje kapitál o celou odepsanou část dluhu (včetně přirážky a úroků), jak říká zadání |
+| sanace „v tomtéž nebo příštím kole“ | sanace se provádí při vyúčtování bank na konci kola: `sanace_bank` zadaná v kole vzniku insolvence (předem) i v kole po něm banky zachrání; bez sanace padají na konci kola po vzniku insolvence. Doplněk: A platí celou díru, má-li na ni, jinak vše, co má, pokud je to aspoň polovina; vyřazená sanace (méně než polovina) je jako žádná sanace |
+| pád kalverských bank (doplněk) | pohledávky přejdou na `BANKY_AUR` nominálně; převzatá jistina se připíše k jistině aurelijských bank, takže se po převzetí počítá do jejich stropu (převod sám strop nekontroluje) |
+| zbytek ztráty AUR a banky Unie | „odepíše se dlužníkům“ = dluh u dané banky se všem dlužníkům sníží poměrně k jejich dluhu, kapitál 0 |
+| refinancování | cena snižuje jistinu věřitele na 0; kapitál věřitele klesne o rozdíl dluh minus cena (zadání); banka Unie pak eviduje jistinu = cena |
+| moratorium | kryje kola T až T+2, kde T je kolo provedení (kolo po schválení); v těchto kolech se u cizích věřitelů neroluje ani neúročí; opakované moratorium prodlouží konec |
+| průměr v radě | „wealth nad průměrem“ se počítá proti průměru ostatních členů (u všech typů hlasování) |
+| obrana a padlá říše | u člena, který je padlou říší, platí podmínka 4 × obrana (jako 4 × power u padlé říše v 7a) |
+| clo útočníka | clo navíc 0.10 platí po celou dobu aktivace obrany (invaze + 3 kola) |
+| vstupní odvod | 15 % platí pro zakladatele a vstup akcí `admit`; vstup bolestí a přijetí kandidáta odvod dál nemají (jako v1.x) |
+| boom | spouští první půjčka hráče nebo první bankovní půjčka v kole ve fázi `displacement` |
+| průzkum | světová těžba = součet efektivní produkce oritu všech 18 států, potřeba = součet `need.orit` podle fáze po přechodu kola |
+| rámec banky Unie | první kalibrace 0.5 × wealth místo 0.3 (U1 by jinak měla stejně členů v bídě jako U5); doplněk 0.4 (U1 index v kole 90 ≥ U5) |
+| doplněk 24. 9. | LTV euphoria 0.3, páka bank K a AUR 6, sanace aspoň z poloviny, pohledávky padlých kalverských bank přebírají banky Aurelie, odvod 3 % se neplatí při fondu nad 20 % součtu wealth členů; `private_reasoning` přejmenováno na `duverny_zapis` (Opus 5.5 původní pole odmítal jako `reasoning_extraction`), záložní model jen s poznámkou v logu a na webu |
+

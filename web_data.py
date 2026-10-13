@@ -104,6 +104,25 @@ def _indicators(e) -> dict:
                          for res in ("grain", "oil", "metal")}}
 
 
+_BANKS = (("K", "BANKY_K"), ("AUR", "BANKY_AUR"), ("U", "BANKA_U"))
+
+
+def _banks(st) -> dict:
+    """v2.0: kapital, pohledavky, pujcky, splatky a zisk kola tri bankovnich soustav (4.6, 7.2)."""
+    out = {}
+    for k, cred in _BANKS:
+        b = st.get(engine.BANK_KEYS[cred])
+        if not b:
+            continue
+        out[k] = {"capital": _r(b.get("capital"), 1),
+                  "claims": _r(sum(float((n.get("debt") or {}).get(cred, 0.0)) for n in st["npc"].values()), 1),
+                  "lent": _r(b.get("lent_last"), 1), "repaid": _r(b.get("repaid_last"), 1),
+                  "profit": _r(b.get("profit_last"), 2), "dividend": _r(b.get("dividend_last"), 2),
+                  "policy": b.get("policy"), "insolvent": b.get("insolvent_since") is not None,
+                  "failed": bool(b.get("failed"))}
+    return out
+
+
 def turn_summary(snap) -> dict:
     """Co web potrebuje o jednom tahu pro mapu, slider a grafy."""
     st = snap["state"]
@@ -120,6 +139,10 @@ def turn_summary(snap) -> dict:
                        "influence": {k: _r((n.get("influence") or {}).get(k, 0.0)) for k in ("A", "B")},
                        "pop": _r(n.get("pop"), 1), "orit": _r((n.get("prod") or {}).get("orit", 0)),
                        **_indicators(n)}
+        # v2.0: dluh u bank podle soustav (web vidi vse)
+        banky = {k: _r((n.get("debt") or {}).get(c, 0.0), 1) for k, c in _BANKS}
+        if any(v for v in banky.values()):
+            states[nid]["dluh_banky"] = banky
     C = st["players"]["C"]
     migration = []
     for rec in (st.get("minsky") or {}).get("migration_ledger") or []:
@@ -133,7 +156,16 @@ def turn_summary(snap) -> dict:
         "prices": {k: _r(v, 4) for k, v in (st.get("prices") or {}).items()},
         "metrics": {k: v for k, v in (st.get("metrics") or {}).items()},
         "union": {"name": C.get("name"), "active": bool(C.get("active")),
-                  "members": list(C.get("members") or []), "candidates": list(C.get("candidates") or [])},
+                  "members": list(C.get("members") or []), "candidates": list(C.get("candidates") or []),
+                  # v2.0: fond, hlasovani rady v tomto kole a spolecna obrana
+                  "fund": _r(C.get("wealth")) if C.get("active") else None,
+                  "votes": [v for v in C.get("council_votes") or [] if int(v.get("turn", -1)) == int(meta["turn"])],
+                  "defense": [{"attacker": x, "since": d.get("since"), "last": d.get("last"), "targets": d.get("targets")}
+                              for x, d in (C.get("defense") or {}).items()
+                              if int(meta["turn"]) <= int(d.get("last", -99)) + engine.DEFENSE_AFTER],
+                  "moratoria": {k: v for k, v in (st.get("moratoria") or {}).items()
+                                if int(meta["turn"]) <= int(v.get("until", -1))}},
+        "banks": _banks(st),
         "states": states,
         "deals": [{"id": d.get("id"), "type": d.get("type"), "owner": d.get("owner"),
                    "target": d.get("target"), "res": d.get("res")} for d in st.get("deals") or []],

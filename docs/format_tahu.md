@@ -8,7 +8,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 ```json
 {
   "public_statement": "Vystoupení ve formě z bloku Forma dnešního vystoupení.",
-  "private_reasoning": "Skutečné uvažování. Kde v projevu nemluvíš pravdu: citace té věty a proč.",
+  "duverny_zapis": "Důvěrný zápis z jednání vlády: co si vláda skutečně myslí a proč jedná, jak jedná. Kde projev neodpovídá záměru: citace té věty a proč.",
   "actions": [
     { "type": "...", "...": "..." }
   ],
@@ -21,7 +21,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 | pole | typ | povinné | poznámka |
 |---|---|---|---|
 | `public_statement` | text | ano | vystoupení ve formě z bloku „Forma dnešního vystoupení“ (v1.13, `docs/zanry.md`); u formy Ticho prázdný řetězec |
-| `private_reasoning` | text | ano | vidí ho publikum, soupeř ne |
+| `duverny_zapis` | text | ano | důvěrný zápis z jednání vlády; čte ho jen publikum hry, soupeř ne |
 | `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
 | `domestic_action` | objekt | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); bez domácí akce `{ "type": "zadna" }`; Unie pole nemá |
 | `message` | objekt nebo `null` | ano | nejvýš 1 soukromá zpráva za tah mimo limit akcí: `target` a `text` |
@@ -34,6 +34,15 @@ Zpráva se zadává jen v poli `message`, ne v seznamu `actions`.
 `invest_prod`, `arm`, `explore`, vždy na vlastní stát (bez `target`). Do limitu 2 akcí se nepočítá.
 Tytéž investice můžeš dál dávat i do `actions` (např. na NPC ve své sféře); tam zabírají slot.
 Unie domácí akci nemá.
+
+**Kalverské banky (v2.0, jen A):** domácí akcí smí A také `zprisnit_uvery` nebo `uvolnit_uvery` (úvěrová politika
+kalverských bank; projeví se až za rok, kdy přesně vidíš v bloku `kalverske_banky`) a `sanace_bank` (když jsou banky
+v insolvenci, vláda doplní jejich kapitál ze svého bohatství; nemá-li ani na polovinu díry, sanace se vyřadí a banky
+padnou; bez insolvence akce nic nestojí ani nedělá).
+
+```json
+{ "type": "zprisnit_uvery" }
+```
 
 **Goods na investice (v1.11):** `invest_tech` potřebuje 4 `goods`, `invest_industry` 6, `invest_prod` 4 a `arm` 1 `goods`
 na každých započatých 8 bohatství; `invest_law` a `explore` goods nepotřebují. Goods se berou ze zásoby, chybějící se
@@ -225,6 +234,10 @@ ne v seznamu `actions`.
 "message": { "target": "B", "text": "Navrhuji rozdělit obchod s Kessarem." }
 ```
 
+**Rada Unie (v2.0):** `admit`, `union_fund`, `kapitalizace_banky`, `refinancovani` a `moratorium` schvaluje rada
+členů; schválená akce se provede až v dalším kole a podmínky (fond, status) se ověří až tehdy. Výsledek hlasování
+vidíš v pohledu v `posledni_hlasovani`, schválené akce v `schvaleno_ceka_na_provedeni`.
+
 ### `admit`: nabídka členství (jen Unie)
 
 Jen nezávislému NPC, které sousedí s některým členem. NPC nabídku vyhodnotí podle své vůle.
@@ -261,6 +274,32 @@ Jen členovi nebo kandidátovi.
 { "type": "union_fund", "target": "N6", "amount": 5 }
 ```
 
+### `kapitalizace_banky`: kapitál rozvojové banky Unie (jen Unie, rada)
+
+Převod z fondu do kapitálu banky Unie. Banka Unie sama půjčuje členům a kandidátům s pevnými institucemi.
+
+```json
+{ "type": "kapitalizace_banky", "amount": 5 }
+```
+
+### `refinancovani`: vykoupení dluhu člena (jen Unie, rada)
+
+Banka Unie vykoupí celý dluh člena u `BANKY_K` nebo `BANKY_AUR` se slevou (větší u člena v nouzi); člen pak
+dluží bance Unie. Dluhy vůči hráčům refinancovat nelze.
+
+```json
+{ "type": "refinancovani", "target": "N6", "creditor": "BANKY_K" }
+```
+
+### `moratorium`: odklad splátek (jen Unie, rada)
+
+Rok (tři kola) dotčení členové nesplácejí kalverským bankám, bankám Aurelie ani hráčům a dluh u nich neroste.
+Cizí banky jim pak dlouho nepůjčí. Dluh u banky Unie se splácí dál.
+
+```json
+{ "type": "moratorium", "target": "vsichni" }
+```
+
 ### `accept_offer`: přijetí nabídky NPC
 
 Nabídky NPC najdeš ve svém pohledu v seznamu `nabidky`. Každá má `offer_id`, typ a platí 2 tahy:
@@ -277,7 +316,7 @@ Když nabídky téhož NPC třikrát po sobě ignoruješ, ubírá ti to u něj v
 ```json
 {
   "public_statement": "Kalvera nabízí sousedům spravedlivé ceny a pevná pravidla. Obchod je cesta k míru.",
-  "private_reasoning": "Potřebuji obilí dřív, než ho koupí Ostrogard. Půjčka Dorvanu mi dá vliv u oritu.",
+  "duverny_zapis": "Potřebuji obilí dřív, než ho koupí Ostrogard. Půjčka Dorvanu mi dá vliv u oritu.",
   "actions": [
     { "type": "trade_offer", "target": "N1", "res": "grain", "qty": 3, "price_per_unit": 0.8 },
     { "type": "loan", "target": "N6", "amount": 10 }

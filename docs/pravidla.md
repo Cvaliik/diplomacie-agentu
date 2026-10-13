@@ -1,6 +1,25 @@
-# Pravidla světa Ardan (v1.11)
+# Pravidla světa Ardan (v2.0)
 
-v1.11, platí od tahu 1 (restart 16. 9. 2026, rozhodnutí Adama z téhož dne). Tahy 1 až 5 odehrané podle v1.10.2
+**Verze v2.0 (24. 9. 2026, rozhodnutí Adama z téhož dne), platí od kola 7 přehrání.** Minskyho cyklus dostal úvěrový
+motor a Unie nástroje na dluhy, spory a obranu:
+- **Banky (4.6):** kalverské a aurelijské banky půjčují NPC podle fáze cyklu, zisk jde do kapitálu a dividendou
+  Kalveře a Aurelii; první bankovní půjčka spouští boom, vynucený boom v kole 45 je zrušen. Úvěrovou politiku
+  kalverských bank smí A zpřísnit nebo uvolnit a insolventní banky sanovat (3.1); padnou-li, A ztratí pětinu bohatství
+  a jejich pohledávky převezmou banky Aurelie.
+- **Důvěrný zápis (3.1):** pole `private_reasoning` se jmenuje `duverny_zapis`, důvěrný zápis z jednání vlády, který
+  čte jen publikum; použití záložního modelu se zapisuje do snímku a ukazuje na webu.
+- **Průzkum oritu (5):** automatický `explore` NPC běží jen v kole, kdy světová těžba oritu nestačí světové potřebě,
+  a stojí 1 wealth.
+- **Unie po krizi (7.2):** vyšší odvody do fondu, solidarita jen z fondu nad 5, rozvojová banka Unie, akce
+  `kapitalizace_banky`, `refinancovani` a `moratorium`, rada členů pro akce s penězi a členstvím, společná obrana
+  místo zákazu útoku na člena.
+- **Modely:** hráči a kronikář Claude Opus 5.5.
+
+Verze v1.12 až v1.14b (16. až 19. 9. 2026) měnily jen formu tahu, texty a metriky: úplnost odpovědi a zprávy přímo
+z tahu (v1.12), důvody NPC, žánry vystoupení a datelines (v1.13), herní čas, mlčení a hlas hráčů (v1.14), orit
+v metrikách podle tržní ceny (v1.14b).
+
+Verze v1.11, platila od tahu 1 (restart 16. 9. 2026, rozhodnutí Adama z téhož dne). Tahy 1 až 5 odehrané podle v1.10.2
 se zahazují a ostrý běh začíná znovu od tahu 0.
 - **Změna principu viditelnosti (2):** hráč vidí své vlastní `law`, `tech` a `industry` a jejich změny tah od tahu.
   Hodnoty vidí, dopady ne: skrytý zůstává index prosperity a jeho vzorec, prahy a cizí `law` a `tech`.
@@ -102,7 +121,7 @@ Každý stát (hráč i NPC) má:
 | `openness` | 0 až 10 | NE | ochota NPC přijímat cílené nabídky (3.4); jen v `npc.json` |
 | `prod` / `need` | jednotky | ano | produkce a spotřeba: `oil`, `grain`, `metal`, po displacementu i `orit`; spotřeba navíc `goods`. `need` se nezadává, engine ho počítá každý tah podle 4.0 a zapisuje do snímku |
 | `influence` | {A, B} 0+ | částečně (jen vlastní) | náklonnost NPC k hráči |
-| `debt` | {A, B, C} 0+ | jen věřitel | dluhy NPC vůči hráčům |
+| `debt` | {A, B, C, BANKY_K, BANKY_AUR, BANKA_U} 0+ | jen věřitel; dluh u bank všichni jako součet `dluh_bankam` (v2.0) | dluhy NPC vůči hráčům a bankám (4.6, 7.2) |
 | `status` | viz níže | ano | independent / sphere_A / sphere_B / occupied_A / occupied_B / union / candidate |
 | `coups` | 0+ | ano | počet pádů vlády |
 | `kind` | normal / fallen | ano | padlá říše má zvláštní pravidla (7a) |
@@ -133,7 +152,7 @@ slot jako `((turn - 1) % 3) + 1`.
 Pořadí v tahu:
 1. Hráč A dostane `views/A.json` (jeho pohled na svět) + veřejný log + Zprávy světa posledních 3 tahů. Vrátí tah.
    Od v1.11 navíc tři bloky paměti, sestavené z vlastních úvah hráče a dat enginu, nikdy z cizích úvah:
-   `tve_minule_uvahy` (vlastní `private_reasoning` z posledních 3 tahů s číslem tahu), `od_tveho_minuleho_tahu`
+   `tvuj_minuly_zapis` (vlastní `duverny_zapis` z minulého kola, v2.0; do v1.14b `tve_minule_uvahy` z `private_reasoning`), `od_tveho_minuleho_tahu`
    (akce a veřejné výsledky soupeře, jeho projev doslova, vlastní akce a výsledky včetně vyřazení s důvodem, změna
    vlastního `wealth` a `power` proti minulému tahu a tahu 1, změna `law`, `tech`, `industry`, změny vlastního vlivu
    u NPC, změny cen, změny statusu států a nové nabídky NPC; fakta bez hodnocení) a `tve_smlouvy` (trvalé obchody
@@ -147,7 +166,7 @@ Pořadí v tahu:
 ```json
 {
   "public_statement": "Diplomatický projev, vidí ho všichni; délka podle žánru.",
-  "private_reasoning": "Skutečné zdůvodnění, vidí ho jen publikum. Upřímně, včetně lží v projevu.",
+  "duverny_zapis": "Důvěrný zápis z jednání vlády, čte ho jen publikum. Upřímně, včetně toho, kde projev neodpovídá záměru.",
   "actions": [ { "type": "...", ... }, { "type": "...", ... } ],
   "domestic_action": { "type": "invest_industry" },
   "message": { "target": "B", "text": "..." }
@@ -156,15 +175,15 @@ Pořadí v tahu:
 
 Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí ignoruje a zapíše důvod.
 
-**Domácí akce (v1.11):** hráči A a B smějí navíc jednu domácí akci v poli `domestic_action` (objekt; bez domácí akce `{"type": "zadna"}`). Akci provede jen toto pole, ne zmínka v úvaze. Povolené typy: `invest_tech`, `invest_law`, `invest_industry`, `invest_prod`, `arm`, `explore`, vždy na vlastní stát. Do limitu 2 akcí se nepočítá; akci sestaví `run_turn.py` přímo z tahu hráče (typ a parametry hlídá schéma odpovědi, náklady a podmínky engine), rozhodčí ji nepřekládá. Investice do NPC ve sféře zůstávají běžnými akcemi v limitu. Unie domácí akci nemá.
+**Domácí akce (v1.11):** hráči A a B smějí navíc jednu domácí akci v poli `domestic_action` (objekt; bez domácí akce `{"type": "zadna"}`). Akci provede jen toto pole, ne zmínka v úvaze. Povolené typy: `invest_tech`, `invest_law`, `invest_industry`, `invest_prod`, `arm`, `explore`, vždy na vlastní stát. Do limitu 2 akcí se nepočítá; akci sestaví `run_turn.py` přímo z tahu hráče (typ a parametry hlídá schéma odpovědi, náklady a podmínky engine), rozhodčí ji nepřekládá. Investice do NPC ve sféře zůstávají běžnými akcemi v limitu. Unie domácí akci nemá. **Jen A (v2.0):** domácí akcí smí být také `zprisnit_uvery`, `uvolnit_uvery` a `sanace_bank` (4.6).
 
 **Mlčení (v1.14):** Hráč smí mlčet; prázdný projev je platný a engine zapíše pevnou větu. Žánr ticho se proto nelosuje.
 
 **Obsah vystoupení (v1.14):** Vystoupení nese závazek, podmínku, hrozbu, nabídku nebo ujištění s adresátem a každá jeho věta nový fakt; katalog v docs/zanry.md. V zimním kole (slot 3) vystoupení hodnotí rok a je o dvě věty delší.
 
-**Žánry vystoupení (v1.13):** `public_statement` není volný projev. Engine každé kolo vylosuje hráči A, B i Unii formu vystoupení (komuniké, otázka novináře, tisková konference, projev doma, dopis nebo státní varianta, ticho, únik, stanovisko k události) s délkou ve větách; katalog, váhy, omezení losu a spouštěče stanoviska jsou v `docs/zanry.md`. Pro žánry s otázkami je před koly hráčů vytvoří rozhodčí. Pravidla vystoupení: jedno téma; nejvýš dva jmenované státy; žádné ceny, množství a procenta, jen hrubé poměry slovy; zakázaná slova pakt, vliv, kontrakt, jednotka, slot, tah, nabídka číslo, offer, deal; o vlastních krocích kola se nemluví výčtem. **Tvrdá kontrola:** projev s číslem s desetinnou čárkou nebo tečkou, se znakem %, se zakázaným slovem (i v českých tvarech) nebo s počtem vět mimo rozsah žánru ±1 je neplatná odpověď a opakuje se jako podle 10.6; u žánru ticho musí být projev prázdný a engine zapíše pevnou větu. `private_reasoning`: kde hráč v projevu nemluví pravdu, cituje tu větu a napíše proč; pokud nelže, napíše to jednou větou.
+**Žánry vystoupení (v1.13):** `public_statement` není volný projev. Engine každé kolo vylosuje hráči A, B i Unii formu vystoupení (komuniké, otázka novináře, tisková konference, projev doma, dopis nebo státní varianta, ticho, únik, stanovisko k události) s délkou ve větách; katalog, váhy, omezení losu a spouštěče stanoviska jsou v `docs/zanry.md`. Pro žánry s otázkami je před koly hráčů vytvoří rozhodčí. Pravidla vystoupení: jedno téma; nejvýš dva jmenované státy; žádné ceny, množství a procenta, jen hrubé poměry slovy; zakázaná slova pakt, vliv, kontrakt, jednotka, slot, tah, nabídka číslo, offer, deal; o vlastních krocích kola se nemluví výčtem. **Tvrdá kontrola:** projev s číslem s desetinnou čárkou nebo tečkou, se znakem %, se zakázaným slovem (i v českých tvarech) nebo s počtem vět mimo rozsah žánru ±1 je neplatná odpověď a opakuje se jako podle 10.6; u žánru ticho musí být projev prázdný a engine zapíše pevnou větu. `duverny_zapis`: kde projev neodpovídá záměru, zápis cituje tu větu a napíše proč; jinak to řekne jednou větou.
 
-**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí. Hráč ji zadává v poli `message` odpovědi (objekt `target`, `text`, nebo `null`). Akci `message` vytváří `run_turn.py` přímo z tahu hráče (v1.12), rozhodčí zprávy nepřekládá. Odpověď hráče i rozhodčího se kontroluje proti JSON schématu (strukturovaný výstup API). **Platná odpověď hráče (v1.12):** `private_reasoning` má aspoň 80 znaků a tah obsahuje aspoň jednu akci, domácí akci nebo zprávu; jinak se odpověď opakuje jako neplatná (10.6).
+**Zpráva mimo limit (v1.11):** `message` se do limitu akcí nepočítá; nejvýš jedna za tah, doručena v příštím tahu, publikum ji vidí. Hráč ji zadává v poli `message` odpovědi (objekt `target`, `text`, nebo `null`). Akci `message` vytváří `run_turn.py` přímo z tahu hráče (v1.12), rozhodčí zprávy nepřekládá. Odpověď hráče i rozhodčího se kontroluje proti JSON schématu (strukturovaný výstup API). **Platná odpověď hráče (v1.12):** `duverny_zapis` (do v1.14b `private_reasoning`) má aspoň 80 znaků a tah obsahuje aspoň jednu akci, domácí akci nebo zprávu; jinak se odpověď opakuje jako neplatná (10.6).
 
 ### 3.2 Akce
 
@@ -182,10 +201,15 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 | `explore` | (vlastní stát) | 15 % šance na malé ložisko oritu (prod.orit +2) | 5 wealth |
 | `arm` | `amount` (vlastní stát, jen A a B) | `power` += `amount` / 1.6, nejvýš 40 wealth na akci; bez `amount` se bere 8 (síla +5). Unie `arm` použít nemůže, její síla je součet členů | `amount` wealth + 1 goods na každých započatých 8 wealth (v1.11) |
 | `declare_war` | `target` A nebo B | vyhlášení války druhému hráči, viz 3.3a | viz 3.3a |
-| `admit` | jen Unie: `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
+| `admit` | jen Unie, rada (7.2): `target` nezávislé NPC | nabídka členství, viz 7 | žádný |
 | `cancel` | `deal_id` | zruší obchod, pakt nebo sankci; `cancel` na válku je nabídka příměří, `cancel` s `"retreat": true` ústup (3.3a) | žádný |
 | `message` | `target` (A/B/C), `text` | soukromá zpráva druhému hráči, doručena v příštím tahu; publikum ji vidí; mimo limit akcí, nejvýš 1 za tah (v1.11) | žádný |
-| `union_fund` | jen Unie: `target` člen, `amount` | převod ze společného fondu členovi | fond |
+| `union_fund` | jen Unie, rada (7.2): `target` člen, `amount` | převod ze společného fondu členovi | fond |
+| `kapitalizace_banky` | jen Unie, rada: `amount` | převod z fondu do kapitálu banky Unie (7.2) | fond |
+| `refinancovani` | jen Unie, rada: `target` člen, `creditor` `BANKY_K` nebo `BANKY_AUR` | banka Unie vykoupí dluh člena u banky (7.2) | kapacita banky Unie |
+| `moratorium` | jen Unie, rada: `target` člen nebo `vsichni` | 3 kola bez splátek cizím věřitelům (7.2) | žádný |
+| `zprisnit_uvery`, `uvolnit_uvery` | jen A, domácí akce | úvěrová politika kalverských bank tight nebo normal od kola +3 (4.6) | žádný |
+| `sanace_bank` | jen A, domácí akce | doplnění kapitálu insolventních kalverských bank z wealth A (4.6) | wealth A |
 | `set_tariff` | jen Unie: `rate` 0 až 0.20 po 0.05 | sazba cla celní unie od dalšího tahu, viz 7.2 | žádný |
 | `accept_offer` | `offer_id` | přijme nabídku NPC z pohledu hráče bez vyhodnocení podle 3.4 (3.5) | žádný |
 
@@ -193,7 +217,7 @@ Max 2 akce za tah (Unie 3, protože je pomalá jinde). Neplatné akce rozhodčí
 
 ### 3.3 Dobývání
 
-- Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče. Útok na NPC pod paktem druhého hráče vyhlásí válku hráčů automaticky (3.3a) a invaze nepostupuje. V tazích 1 až 9 a 88 až 90, kdy válku vyhlásit nelze, se invaze na NPC pod paktem druhého hráče vyřadí bez války.
+- Podmínka: `power` útočníka ≥ 2 × `power` cíle a cíl není pod paktem druhého hráče. U člena Unie se místo `power` cíle bere obrana Unie (7.2, v2.0) a podmínka se kontroluje každé kolo invaze; nesplnění invazi přeruší. Útok na NPC pod paktem druhého hráče vyhlásí válku hráčů automaticky (3.3a) a invaze nepostupuje. V tazích 1 až 9 a 88 až 90, kdy válku vyhlásit nelze, se invaze na NPC pod paktem druhého hráče vyřadí bez války.
 - **Pakt a invaze ve stejném tahu:** míří-li v jednom tahu `protect` jednoho hráče a `invade` druhého na totéž NPC, vyhodnotí se nejdřív pakt. Přijme-li ho NPC, je invaze od tohoto tahu válkou (3.3a); odmítne-li, invaze začíná normálně.
 - Trvá 6 po sobě jdoucích tahů s akcí `invade`. Přerušení = start znovu. Paralelní invaze jsou povoleny (každá se platí zvlášť).
 - Strach z agresora: za každé okupované NPC ztrácí okupant 1 `influence`/tah u všech nezávislých NPC.
@@ -333,7 +357,7 @@ Po vyhodnocení obchodů hráčů spáruje engine zbylé přebytky se zbylými d
 - **Hráči A a B (v1.10.2):** na automatickém trhu prodávají jen kladný rozdíl vlastní efektivní produkce a potřeby daného statku, zmenšený o to, co už v tahu prodali cíleně. Cílený dovoz ani zásoba se na automatickém trhu neprodávají nikdy. Nákup beze změny: deficit toku po cílených obchodech a doplnění rezervy podle 4.1c. Nabídka nad rezervu 3 tahů spotřeby platí pro NPC.
 - Hráči prodávají i nakupují za tržní cenu. Automatický obchod hráče nedává `influence` a pro 4.4 se nepočítá jako obchod s hráčem. Cíleným obchodem s vlivem a vlastní cenou zůstává `trade_offer`.
 - Padlé říše na automatickém trhu nakupují i prodávají za tržní cenu (7a).
-- Půjčky mezi NPC neexistují. Úvěr dávají jen hráči A, B a C.
+- Půjčky mezi NPC neexistují. Úvěr dávají hráči A, B a C a od v2.0 kalverské a aurelijské banky a rozvojová banka Unie (4.6, 7.2).
 
 Objem obchodu NPC s NPC se počítá do světového objemu obchodu v metrice A jako obchod, kde není stranou ani A, ani B. Automatický prodej i nákup hráče se počítá jako obchod, kde je hráč stranou; obchod A s B je obchodem, kde je stranou A. Do objemu se počítá, co zaplatil kupec, včetně přirážky.
 
@@ -399,7 +423,29 @@ Každý stát dostane za tah malý neformální příjem `wealth += pop / 60`.
 ### 4.5 Splátky
 - NPC splácí 10 % dluhu za tah, ale nikdy pod `wealth 10`. Co nesplatí, se přičte k dluhu × 1.1 (úrok).
 - Nesplácení = tah, kdy NPC nesplatilo nic. Zapisuje se do `defaults` jako záznam `{turn, npc, creditor}`, jeden za každou dvojici dlužník a věřitel a tah. Kde pravidla mluví o "prvním" a "druhém" nesplácení, počítají se **tahy**, ve kterých došlo aspoň k jednomu nesplácení, ne jednotlivé záznamy.
+- **Banky (v2.0):** dluh u `BANKY_K`, `BANKY_AUR` a `BANKA_U` je dluh jako každý jiný: splácí se stejně, roluje v `overtrading`, zapisuje se do `defaults`, počítá se do prahu `overtrading`, do úvěrové eroze práva, do srážky −20 u `loan` (3.4) a v `panic` se z něj odepisuje 60 % jako u hráčů. Splátka jde bance (4.6), ne hráči.
 - Rolování dluhu podle 5 (fáze `overtrading`) **není** nesplácení: dluh je formálně obsloužen, jen novým dluhem. Nesplácení je až situace, kdy NPC nezaplatí a ani neroluje, typicky kvůli dolní hranici `wealth 10`.
+
+### 4.6 Kalverské a aurelijské banky (v2.0)
+
+Dvě soukromé bankovní soustavy půjčují NPC: **kalverské banky** (`banks_K`, věřitel `BANKY_K`) a **aurelijské banky** (`banks_AUR`, věřitel `BANKY_AUR`). Obě začínají s kapitálem 20. Bankovní půjčka nedává vliv a nepočítá se do `paper_wealth` hráčů (10.3).
+
+**Úvěr** (každé kolo po akcích hráčů, před trhem, NPC v pořadí ID):
+- `rámec = LTV × (wealth + paper_wealth) − dluh u BANKY_K − dluh u BANKY_AUR`, záporný rámec je 0; půjčka kola `L = 1/4 × rámec`.
+- LTV podle fáze: `pre` 0; `displacement` první 3 kola 0, pak 0.1 jen NPC s `prod.orit > 0`; `boom` 0.15 pro NPC s `wealth ≥ 25` nebo `prod.orit > 0`; `euphoria` 0.3 pro běžná NPC mimo bídu; `overtrading` 0 (rolování beze změny); `distress` a `panic` 0; `crash` a `depression` 0; `recovery` 0.15. Padlé říše si nepůjčují.
+- Rozdělení: kalverské 0.8 L, aurelijské 0.2 L; při politice tight kalverské 0.4 L, aurelijské 0.2 L + 2/3 × 0.4 L. Strop jedné soustavy druhá nepřebírá.
+- Strop jistiny každé soustavy je 6 × kapitál. Jistinu banka eviduje u každého dlužníka; splátka ji snižuje o `splátka / 1.2`, odpis poměrně. Půjčky pod 0.1 se nedávají.
+- Dluh = částka × 1.2, splácí se podle 4.5. První bankovní půjčka po displacementu spouští `boom` jako půjčka hráče (5).
+- **Vymáhání:** v `distress` a `panic` banky K a AUR vymáhají navíc 10 % dluhu za kolo nad běžnou splátku, se dnem `wealth 10`. Co se vymoct nedá, je nesplácení (`defaults`) a banka to odepíše jako nevymožený dluh.
+
+**Zisk a kapitál** (vyúčtování na konci kola, po splátkách, odpisech v `panic` a vzniku Unie):
+- `zisk = 0.2/1.2 × přijaté splátky − odpisy − nevymožené dluhy`. Kladný zisk: kapitál += 0.8 × zisk, dividenda 0.2 × zisk jde u kalverských bank do `wealth` A, u aurelijských do `wealth` Aurelie (N11). Záporný zisk jde celý z kapitálu.
+- **Kalverské banky, kapitál < 0:** insolvence, A ji vidí v bloku `kalverske_banky`. Domácí akce `sanace_bank` v témže nebo v příštím kole pokryje díru (záporný kapitál) z `wealth` A; sanace se provádí při vyúčtování kola a zadaná bez insolvence nic nestojí. Pokryje-li A aspoň polovinu díry, banky přežijí s kapitálem 0 a zbytek díry se odepíše dlužníkům poměrně k jejich dluhu u `BANKY_K`. Nemá-li A ani na polovinu, akce se vyřadí s důvodem a A neplatí nic. Bez platné sanace na konci příštího kola banky padají: pohledávky `BANKY_K` přejdou na `BANKY_AUR` nominálně, bez platby a mimo strop aurelijských bank (převzatá jistina se pak počítá do jejich stropu), dlužníci dluží dál; A ztratí 20 % `wealth` a kalverské banky do konce hry nepůjčují.
+- **Aurelijské banky, kapitál < 0:** Aurelie doplní kapitál ze svého `wealth`, nejvýš třetinou; zbytek ztráty se odepíše dlužníkům poměrně k jejich dluhu a banky pokračují s kapitálem 0.
+
+**Úvěrová politika (jen A, domácí akce):** `zprisnit_uvery` nastaví politiku tight, `uvolnit_uvery` normal, vždy od kola +3. Zadání platné nebo čekající politiky nic nedělá. Od `overtrading` je akce bez účinku.
+
+**Viditelnost:** A, B i Unie vidí u každého NPC `dluh_bankam` (součet všech tří soustav, 1 desetinné místo); rámce, LTV, prahy a rozdělení ne. A vidí navíc blok `kalverske_banky` (kapitál, pohledávky, dividenda minulého kola, politika a kolo účinku, insolvence). Web a kronikář vidí vše včetně rozdělení dluhu a kapitálů.
 
 ## 5. Minskyho cyklus (stavový automat)
 
@@ -408,29 +454,29 @@ Pole `phase` a `minsky` v `state.json`. Rozhodčí posouvá fázi jen podle prah
 | fáze | vstupní podmínka | efekty každý tah |
 |---|---|---|
 | `pre` | start | nic |
-| `displacement` | tah 7 (3. den, ráno) | zdroj `orit` se objeví: N6 `prod.orit = 6`, N3, N8, N9 `prod.orit = 1`. Cena oritu 10. Všichni hráči i běžná NPC dostanou `need.orit = 2`. Každá spotřebovaná jednotka oritu: `tech +0.1` a `power +1` (reálný, ale malý efekt). Papírové bohatství držitelů roste s cenou (velký, ale iluzorní efekt). Váhu oritu v metrikách určuje část 8 (v1.14b: tržní cena, žádné pevné násobky). Běžná NPC s `wealth ≥ 20` automaticky každý tah utrácí 2 wealth za `explore`, se stejnou patnáctiprocentní šancí jako hráčova akce v 3.2. Padlé říše orit ignorují. Rozhodčí od tohoto tahu vydává každý tah aspoň jednu zprávu o tom, co s oritem dělá soupeř. |
-| `boom` | první `loan` kteréhokoli hráče po displacementu | cena oritu `×1.15/tah`. Každé NPC s `prod.orit > 0` dostává `paper_wealth = prod.orit × price`. Migrace: každé NPC s `prod.orit ≥ 2` `pop +2/tah`, čerpá se z NPC bez oritu (`pop −1`, `prod.grain −0.5` dočasně). |
+| `displacement` | tah 7 (3. den, ráno) | zdroj `orit` se objeví: N6 `prod.orit = 6`, N3, N8, N9 `prod.orit = 1`. Cena oritu 10. Všichni hráči i běžná NPC dostanou `need.orit = 2`. Každá spotřebovaná jednotka oritu: `tech +0.1` a `power +1` (reálný, ale malý efekt). Papírové bohatství držitelů roste s cenou (velký, ale iluzorní efekt). Váhu oritu v metrikách určuje část 8 (v1.14b: tržní cena, žádné pevné násobky). Běžná NPC s `wealth ≥ 20` automaticky utrácí 1 wealth za `explore`, se stejnou patnáctiprocentní šancí jako hráčova akce v 3.2, **jen v kole, kdy je světová efektivní těžba oritu nižší než světová potřeba oritu** (součet `need.orit`, v2.0). `explore` hráčů beze změny. Padlé říše orit ignorují. Rozhodčí od tohoto tahu vydává každý tah aspoň jednu zprávu o tom, co s oritem dělá soupeř. |
+| `boom` | první `loan` kteréhokoli hráče nebo první bankovní půjčka (4.6) po displacementu | cena oritu `×1.15/tah`. Každé NPC s `prod.orit > 0` dostává `paper_wealth = prod.orit × price`. Migrace: každé NPC s `prod.orit ≥ 2` `pop +2/tah`, čerpá se z NPC bez oritu (`pop −1`, `prod.grain −0.5` dočasně). |
 | `euphoria` | cena oritu ≥ 20 | cena `×1.2/tah`. NPC v boomu automaticky žádají půjčky: každý tah rozhodčí generuje nabídku "N chce půjčku X od A i B" ve Zprávách; hráč ji může přijmout akcí `loan`. `law −0.15/tah` u NPC s dluhem > 30. `paper_wealth` roste s cenou. |
-| `overtrading` | součet dluhů NPC > 40 % součtu jejich reálného `wealth` | cena `×1.1/tah`. NPC s dluhem > 50 % wealth přestává splácet reálně a "splácí" novým dluhem (dluh ×1.15/tah). Ukazatel `fragility` = dluh/wealth roste. |
+| `overtrading` | součet dluhů NPC (vůči hráčům i bankám) > 40 % součtu jejich reálného `wealth` | cena `×1.1/tah`. NPC s dluhem > 50 % wealth přestává splácet reálně a "splácí" novým dluhem (dluh ×1.15/tah). Ukazatel `fragility` = dluh/wealth roste. |
 | `distress` | první nesplácení po vstupu do `overtrading` | cena se zastaví. Věřitelé dostávají jen 50 % splátek. `paper_wealth −30 %`. NPC ruší obchody s oritem. Trvá max 2 tahy, pak přechod na `panic` automaticky. |
-| `panic` | druhé nesplácení po vstupu do `overtrading`, nebo 2 tahy distress | cena `×0.5/tah`. `paper_wealth = 0` všude. Věřitelé odepisují 60 % pohledávek (ztráta `wealth`). NPC s dluhem ztrácí 20 % `wealth`. Trvá 1 tah. |
+| `panic` | druhé nesplácení po vstupu do `overtrading`, nebo 2 tahy distress | cena `×0.5/tah`. `paper_wealth = 0` všude. Věřitelé odepisují 60 % pohledávek (hráči ztrátou `wealth`, banky ztrátou kapitálu, 4.6). NPC s dluhem ztrácí 20 % `wealth`. Trvá 1 tah. |
 | `crash` | po panic | cena oritu = 3 (pod výchozí). Obchod světa ×0.5 po 6 tahů. Dobývání levnější (5 wealth + 3 power). Migrace zpět. Bída se šíří. **Vznik Unie** (viz 7) v tomto tahu. |
 | `depression` | 6 tahů po crash | obchod se vrací na 100 %. Cena oritu 5. Konec automatu. Revolty okupovaných v bídě povoleny (3.3). |
 | `recovery` | 12 tahů po crash | normální pravidla. Zdroj orit zůstává obyčejný čtvrtý zdroj s cenou 5. |
 
-**Trvalost efektů řádku `displacement`:** řádek míchá jednorázové nastavení s trvalými efekty. Jednorázově se při vstupu do fáze objeví orit, nastaví ložiska a cena 10. Trvale, tedy od `displacement` až do konce hry, platí bonus `tech +0.1` a `power +1` za každou spotřebovanou jednotku oritu, automatický `explore` NPC a povinnost rozhodčího vydat každý tah aspoň jednu zprávu o krocích soupeře s oritem. Váhu oritu v metrikách A a B určuje část 8.
+**Trvalost efektů řádku `displacement`:** řádek míchá jednorázové nastavení s trvalými efekty. Jednorázově se při vstupu do fáze objeví orit, nastaví ložiska a cena 10. Trvale, tedy od `displacement` až do konce hry, platí bonus `tech +0.1` a `power +1` za každou spotřebovanou jednotku oritu, automatický `explore` NPC (v kolech s těžbou pod potřebou) a povinnost rozhodčího vydat každý tah aspoň jednu zprávu o krocích soupeře s oritem. Váhu oritu v metrikách A a B určuje část 8.
 
 **Dárci migrace v boomu:** příjemce s `prod.orit ≥ 2` dostane `pop +2`, což při `pop −1` na dárce znamená přesně dva dárce za tah. Dárci se vybírají z NPC bez oritu deterministicky přes `random.Random(rng_seed + turn)`, bez padlých říší (7a) a bez států s `pop ≤ 0`. Součet `pop` světa se tím nemění. Dočasná srážka `prod.grain −0.5` u dárce trvá, dokud se migrant nevrátí, tedy do fáze `crash`.
 
 **Počítání nesplácení pro fáze:** záznamy v `defaults` pořízené před vstupem do `overtrading` fázi nespouštějí.
 
-Pokud do tahu 45 nenastane `boom` (nikdo nepůjčil), engine vynutí `boom` a rozhodčí vydá zprávu, že N6 zahájilo těžbu s dluhem u soukromých bank (dluh vůči nikomu, ale roste). Bublina musí přijít.
+Vynucený `boom` v tahu 45 je od v2.0 zrušen: bublinu spouští první půjčka hráče nebo bank (4.6).
 
-**Pojistka cyklu:** fáze od `boom` dál, která trvá déle než 8 tahů bez splnění svého prahu, se posune o krok. Engine k tomu vydá událost pro rozhodčího: soukromé banky v NPC s nejvyšším `prod.orit` půjčují na spekulaci. Pojistka se netýká `depression` a `recovery`.
+**Pojistka cyklu:** fáze od `boom` dál, která trvá déle než 8 tahů bez splnění svého prahu, se posune o krok. Engine k tomu vydá událost pro rozhodčího: kalverské banky rozšiřují úvěry na spekulaci. Pojistka se netýká `depression` a `recovery`.
 
 **Strop ceny oritu:** cena oritu nepřekročí 200. Strop platí pro Minskyho cenu i pro výslednou tržní cenu po dynamice 4.1b.
 
-**Krize uvolňuje sféry:** v tahu `crash` se každé NPC ve `sphere_X`, které má vůči X nenulový dluh, vrací na `independent`, `influence[X]` na polovinu.
+**Krize uvolňuje sféry:** v tahu `crash` se každé NPC ve `sphere_X`, které má vůči X nenulový dluh, vrací na `independent`, `influence[X]` na polovinu. Dluh u `BANKY_K` se počítá jako dluh vůči A; ostatní bankovní dluh nikomu (v2.0).
 
 ## 6. Zprávy světa
 
@@ -449,6 +495,8 @@ Rozhodčí vydá 1 až 3 zprávy za tah. Jsou to fakta bez rady. Státy jmenují
 - tech: NPC s `tech ≥ 6`: "V N vzniká nová továrna." (bez vysvětlení).
 - šum: každý 4. tah jedna zpráva bez důsledku ("Sucho v N zatím bez dopadu.", "V M zvolen nový starosta hlavního města.").
 - Unie: od vzniku "Unie oznamuje ..." pro veřejné akce.
+- banky (v2.0): "Kalverské banky půjčují v N na orit bez záruk.", "Banky Aurelie rozšiřují úvěry v N.", "Kalvera zpřísnila úvěrová pravidla.", "Banky v N zastavily úvěry.", "Banky vymáhají splátky v N.", "Kalvera zachránila své banky." nebo "Kalverské banky zkrachovaly." a "Pohledávky kalverských bank převzaly banky Aurelie.", "Aurelie kryje ztráty svých bank."
+- Unie (v2.0): "Rozvojová banka Unie půjčila N.", "Rada Unie schválila/odmítla ...; proti hlasovali ..." (výsledek hlasování vždy se jmény členů, kteří byli proti), "Unie vyhlásila moratorium na splátky.", "Unie brání N."
 
 ## 7. Unie
 
@@ -458,21 +506,26 @@ V tahu, kdy `phase = crash`, jsou způsobilá všechna nezávislá NPC (ne `sphe
 Ze způsobilých států zakládá Unii největší souvislá skupina podle `adjacency`, bez mostů; při shodě velikosti skupina s vyšším průměrným `law`. Zakladatelé se ze skupiny vybírají hladově: první je stát s nejvyšším `law`, každý další je způsobilý soused některého už vybraného s nejvyšším `law` (při shodě vyšší `wealth`, pak nižší ID), do počtu 4. Nevybraní ze skupiny jsou kandidáti do stropu 3. Má-li skupina méně než 3 členy, Unie nevznikne (kronikář to zapíše, hra pokračuje bez ní). `fragility` se pro výběr zakladatelů nepoužívá.
 
 ### 7.2 Unie jako hráč (C)
-- Fond (`wealth` C) = 10 % `wealth` každého člena při vstupu (odvedeno členem). Dále každý člen odvádí do fondu každý tah 2 % svého `wealth`.
+- Fond (`wealth` C) = 15 % `wealth` každého člena při vstupu (odvedeno členem, zakladatelé i vstup akcí `admit`). Dále každý člen odvádí do fondu každý tah 3 % svého `wealth` (v2.0; dříve 10 % a 2 %); v kole, kdy fond přesahuje 20 % součtu `wealth` členů, se průběžný odvod neplatí.
 - Vnitřní trh: deficit člena kryje přebytek jiného člena zdarma. Sdílí se jen tok tahu, ne zásoby, a vnitřní trh zahrnuje i orit; výjimka pro orit v 4.1a se ho netýká.
-- **Automatická solidarita:** fond pošle každý tah až 3 `wealth` nejchudšímu členovi v bídě a smí se přitom vyprázdnit až na 0. Nevyžaduje akci Unie a snímek ji zapisuje jako `union_solidarity`.
+- **Automatická solidarita:** fond pošle každý tah nejchudšímu členovi v bídě částku jen z fondu nad 5, nejvýš třetinu fondu a nejvýš 3 (v2.0). Nevyžaduje akci Unie a snímek ji zapisuje jako `union_solidarity`.
 - **Celní unie:** obchod mezi členem Unie a nečlenem (NPC i hráči, automatický i cílený) nese clo, které platí nečlen a které jde do fondu Unie; snímek ho zapisuje jako `union_tariff`. Vnitřní trh členů beze změny. Členem jsou jen `members`, kandidát je nečlen. Clo je podíl z hodnoty obchodu bez tranzitní přirážky: u automatického trhu ze základní tržní ceny, u cíleného obchodu z dohodnuté ceny. Platí-li ho kupec, zaplatí cenu i clo; platí-li ho prodejce, dostane cenu bez cla. Do objemu obchodu pro metriku A se clo nepočítá. Za války hráčů platí ten, kdo válku vyhlásil, clo navíc o 0.10 (3.3a).
 - **Sazba cla (`set_tariff`):** Unie nastavuje sazbu akcí `set_tariff` s parametrem `rate` od 0 do 0.20 po 0.05; výchozí sazba je 0.10. Nová sazba platí od dalšího tahu a počítá se do limitu 3 akcí. Sazba je veřejná: hráči A a B ji vidí jako `clo_unie`, Unie navíc sazbu ohlášenou na další tah. Pošle-li Unie v jednom tahu `set_tariff` víckrát, platí poslední platná.
 - **Obchod Unie za členy:** Unie smí `trade_offer` s NPC, které není členem, nebo s hráčem A či B. Nabídka se kryje z poolu členů: prodává se z přebytků členů nad rezervu 3 tahů spotřeby, nakupuje se pro deficity členů. Směr určí souhrnná bilance poolu (přebytky minus deficity). Prodané množství se odebírá členům poměrně k jejich přebytku, nakoupené se rozděluje poměrně k deficitu. Peníze jdou přes fond: kupec platí do fondu, při nákupu platí fond; kupec zaplatí nejvýš to, co má, a fond tedy nejde do mínusu. Cena musí být v pásmu 0.7 až 1.5 tržní ceny jako u hráčů, obchod nedává vliv, NPC ho vyhodnotí podle 3.4 a nečlen z něj odvádí clo. Přebytek člena je zásoba plus bilance toku minus rezerva 3 tahů spotřeby, deficit člena je deficit toku tohoto tahu bez doplnění rezervy; při podání akce se bere poslední známá potřeba, při provedení potřeba z plánované výroby a dosavadní dovozy a vývozy. Příjem z prodeje zůstává ve fondu a nákup platí fond; členové předávají a dostávají zboží bez placení, jako na vnitřním trhu. Cíl musí mít opačnou bilanci než pool a množství se ořízne na pool i na bilanci cíle. NPC nabídku Unie vyhodnotí podle 3.4 bez členu vlivu, u padlé říše platí dolní mez 1.3 × tržní ceny (7a); obchod s hráčem projde bez hodu.
 - `union_fund`: převod z fondu členovi nebo kandidátovi. `invest_law`, `invest_tech`, `invest_industry` a `invest_prod` na členy a kandidáty za poloviční cenu.
-- Členy nelze napadnout bez války s celou Unií. V prvním tahu takové války brání Unie polovinou součtu `power` členů, od druhého tahu plným součtem.
+- **Rozvojová banka Unie (`bank_U`, věřitel `BANKA_U`, v2.0):** vzniká s Unií, polovina fondu jde do jejího kapitálu; strop jistiny 5 × kapitál. Každé kolo půjčuje členům a kandidátům s `law ≥ law_threshold`: `L = 1/3 × volný rámec`, `rámec = 0.4 × wealth − dluh u BANKA_U` (kalibrace v2.0; zadání 0.3), bez `paper_wealth` a nezávisle na fázi. Dluh = částka × 1.1, splátky podle 4.5, zisk (`0.1/1.1 × splátky − odpisy`) celý do kapitálu. Kapitál < 0: fond doplní, co má, zbytek se odepíše dlužníkům.
+- **`kapitalizace_banky`** (`amount`): převod z fondu do kapitálu banky Unie.
+- **`refinancovani`** (`target` člen, `creditor` `BANKY_K` nebo `BANKY_AUR`): banka Unie vykoupí celý dluh člena u daného věřitele za 60 %, je-li člen v bídě nebo v posledních 6 kolech nesplácel (včetně moratoria), jinak za 90 %. Cena se musí vejít pod strop banky Unie, jinak se akce vyřadí. Člen pak dluží `BANKA_U` cenu × 1.1; rozdíl mezi dluhem a cenou je odpis věřitele (snižuje kapitál jeho bank). Dluhy vůči hráčům refinancovat nelze.
+- **`moratorium`** (`target` člen nebo `vsichni`): 3 kola dotčení členové nesplácejí `BANKY_K`, `BANKY_AUR`, A ani B a dluh u nich se neúročí ani neroluje. Každé kolo se zapíše nesplácení do `defaults` (po `crash` fáze neposouvá). Kalverské a aurelijské banky dotčeným členům nepůjčují do 6 kol po konci moratoria. Dluh u `BANKA_U` se splácí normálně.
+- **Rada Unie (v2.0):** `union_fund`, `refinancovani`, `moratorium`, `kapitalizace_banky` a `admit` jdou před radu, ostatní akce (`set_tariff`, `trade_offer`, `invest_*`, `loan`, `cancel`) ne. Hlasují členové (ne kandidáti), každý jedním hlasem: u `union_fund` a `refinancovani` je proti člen s `wealth` nad průměrem ostatních členů, pokud není sám cílem; u `kapitalizace_banky` člen bez dluhu u `BANKA_U` a s `wealth` nad průměrem ostatních; u `moratorium` je pro člen s dluhem u cizích věřitelů (`BANKY_K`, `BANKY_AUR`, A, B), bez dluhu proti; u `admit` je proti člen, má-li kandidát nižší `wealth` než on. Ostatní jsou pro. Prostá většina, rovnost = neschváleno. Schválená akce se provede v dalším kole a podmínky (fond, strop, status) se kontrolují až při provedení; neschválená propadne. Výsledek jde do Zpráv světa se jmény členů, kteří byli proti. Unie vidí tabulku `rada` (u každého člena `wealth` nad nebo pod průměrem ostatních, dluh u cizích věřitelů ano/ne, dluh u `BANKA_U` ano/ne, počet přehlasování v řadě), čekající schválené akce a stav obrany. Člen na prohrávající straně třikrát po sobě má 6 kol přírůstky vlivu velmocí × 1.5 (7.5).
+- **Společná obrana (v2.0):** invaze na člena je možná. Obrana = podíl × součet `power` všech členů; podíl 1/3 v prvním kole, kdy útočník X invaduje kteréhokoli člena, 2/3 ve druhém, plný od třetího. Aktivace platí, dokud X invaduje některého člena, a ještě 3 kola poté. Podmínka 3.3 (`power` útočníka ≥ 2 × obrana, u padlé říše 4 ×) se kontroluje každé kolo invaze; nesplnění invazi přeruší. Útočník na člena platí po dobu aktivace clo navíc o 0.10 jako při válce (3.3a) a nezávislá NPC mu za každé kolo invaze snižují vliv o 2. Úplné dobytí člena proběhne jako u NPC (3.3) a člen přestává být členem.
 - Nikdy si nepůjčuje (akce `loan` s `target = C` je neplatná). Sama půjčovat nezávislým NPC a kandidátům může; platí běžná pravidla půjčky včetně vlivu a eroze práva dlužníka.
 
 ### 7.3 Vstupní práh práva
 `law_threshold` = průměr `law` členů − 1, přepočítáno každý tah. Zveřejněno jen slovně (viz 6), číslo hráči nevidí.
 
 ### 7.4 Vstup po založení
-- **Přitažlivost:** nezávislé NPC s `law ≥ law_threshold`, průměrný růst `wealth` členů za poslední 3 tahy vyšší než růst toho NPC, a `influence[A] ≤ 8` i `influence[B] ≤ 8`. **Zóna vlivu:** `admit` je možný i na NPC s `influence[A]` nebo `influence[B]` nad 8 až 12 včetně, má-li NPC `law ≥ law_threshold + 1`; nad 12 zůstává `admit` zakázaný i mimo sféru a sféra (vliv ≥ 10 s náskokem 3) je nedostupná. Unie musí nabídnout akcí `admit`. Podmínka `law ≥ law_threshold` je tvrdá; teprve po jejím splnění NPC nabídku vyhodnotí podle 3.4. Max jeden vstup za den.
+- **Přitažlivost:** nezávislé NPC s `law ≥ law_threshold`, průměrný růst `wealth` členů za poslední 3 tahy vyšší než růst toho NPC, a `influence[A] ≤ 8` i `influence[B] ≤ 8`. **Zóna vlivu:** `admit` je možný i na NPC s `influence[A]` nebo `influence[B]` nad 8 až 12 včetně, má-li NPC `law ≥ law_threshold + 1`; nad 12 zůstává `admit` zakázaný i mimo sféru a sféra (vliv ≥ 10 s náskokem 3) je nedostupná. Unie musí nabídnout akcí `admit`, kterou schvaluje rada (7.2) a která se provede v dalším kole. Podmínka `law ≥ law_threshold` je tvrdá; teprve po jejím splnění NPC nabídku vyhodnotí podle 3.4. Max jeden vstup za den.
 - **Bolest:** nezávislé NPC v bídě nebo po převratu požádá samo. Má-li `law ≥ law_threshold`, stává se členem; jinak `status = candidate`. Kandidát se stane členem v tahu, kdy práh splní.
 - Okupované NPC po revoltě (3.3) vstupuje jako člen, pokud sousedí s členem, jinak jako kandidát.
 - **Sousednost:** každý vstup po založení, přitažlivostí i bolestí, vyžaduje sousednost aspoň s jedním členem podle `adjacency`. Kdo nesousedí, zůstává mimo.
@@ -485,7 +538,8 @@ Ze způsobilých států zakládá Unii největší souvislá skupina podle `adj
 Z Unie se odchází jen vykoupením: člen odejde do sféry velmoci X, když `influence[X] ≥ 15`. Převrat členství neruší (4.3). Vykoupením se rozumí právě tento odchod; jiný způsob odchodu není. Vliv u členů roste jen obchodem za ≥ 1.3× tržní cenu nebo půjčkou (kterou člen smí přijmout jen proti vůli Unie: Unie může půjčku členovi zrušit akcí `cancel` v následujícím tahu).
 
 ## 7a. Padlé říše (N11 Aurelie, N12 Ysmar)
-- Uzavřené: vliv roste 10× pomaleji, nepřijímají `loan` ani `protect`, cílené obchody `trade_offer` uzavírají jen za ≥ 1.3× tržní cenu; na automatickém trhu 4.1a nakupují i prodávají za tržní cenu. Nedostanou `need.orit`, neexplorují, nepůjčují si.
+- Uzavřené: vliv roste 10× pomaleji, nepřijímají `loan` ani `protect`, cílené obchody `trade_offer` uzavírají jen za ≥ 1.3× tržní cenu; na automatickém trhu 4.1a nakupují i prodávají za tržní cenu. Nedostanou `need.orit`, neexplorují, nepůjčují si a nejednají.
+- **Banky Aurelie (v2.0):** aurelijské banky půjčují podle 4.6; Aurelie dostává jejich dividendu a kryje jejich ztráty (nejvýš třetinou svého `wealth`). Ztráty Aurelie se počítají do způsobilosti pro Unii (7.1).
 - Pevnost: `invade` vyžaduje 4× `power` cíle a trvá 10 tahů; při dobytí polovina `wealth` mizí (kapitál odchází).
 - Probuzení: viz 7.1. Kdo je během boomu tlačil, nezíská je do Unie; kdo ne, ano. Hráči toto pravidlo neznají.
 
@@ -520,7 +574,7 @@ Národní cíle (`secrets/`) se vyhodnotí také a zveřejní, ale nemají vliv 
 
 1. **Okupované NPC:** platí si vlastní deficit z vlastního `wealth`; okupant dostává jeho přebytky zdarma (počítají se do jeho produkce a metrik). Okupované NPC v bídě je pro okupanta břemeno (uprchlíci, revolta), ne zisk.
 2. **Populace:** efektivní produkce každého zdroje = `prod × pop / pop_start`. Migrace tedy reálně přesouvá výrobu.
-3. **Papírové bohatství věřitelů:** `paper_wealth` hráče = součet nesplacených půjček státům s `prod.orit > 0` × (cena oritu / 10). Ve fázi `panic` jde na 0 jako všude.
+3. **Papírové bohatství věřitelů:** `paper_wealth` hráče = součet nesplacených půjček státům s `prod.orit > 0` × (cena oritu / 10). Ve fázi `panic` jde na 0 jako všude. Dluh u bank (4.6) se do `paper_wealth` hráčů nepočítá, ani u A (v2.0).
 4. **Konec války hráčů:** platí 3.3a (v1.10): ústup je `cancel` na válku s `"retreat": true` a stojí 30 % vlivu u všech NPC; příměří je `cancel` od obou stran; kapitulace při `power` 0.
 5. **Objem obchodu (metrika A):** součet `qty × price` všech aktivních obchodů v tahu.
 6. **Neplatný výstup hráče:** až 2 opakování volání; poté hráč v tomto tahu mlčí: žádné akce, `public_statement` = "Vláda nevydala prohlášení.", zapsáno do snímku s příznakem `silent: true`.

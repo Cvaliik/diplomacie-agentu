@@ -57,7 +57,7 @@ INDUSTRY_FLOOR = 0.5                        # dno prumyslu vsech statu (4.2c, v1
 INCOME_POP_DIVISOR = 60.0                   # neformalni prijem pop / 60 (4.2b, v1.4)
 REFILL_MIN_WEALTH = 25.0                    # rezervu doplnuje jen stat s wealth >= 25 (4.1c, v1.6)
 SPHERE_OVERLOAD = 0.8                       # pretizeni sfer: 0.8 na kazdou drzenou sferu (4.4, v1.6)
-UNION_CONTRIBUTION = 0.02                   # prispevek clena do fondu za tah (7.2, v1.6)
+UNION_CONTRIBUTION = 0.03                   # prispevek clena do fondu za tah (7.2, v2.0; driv 2 %)
 UNION_FOUNDER_LOSS = 0.20                   # ztrata 20 % predkrizoveho maxima (7.1, v1.6)
 OFFER_VALID_TURNS = 2                       # nabidka NPC plati 2 tahy (3.5, v1.6)
 COUNTER_VALID_TURNS = 3                     # protinavrh plati 3 tahy (3.4, v1.6)
@@ -94,6 +94,53 @@ TRANSIT_SURCHARGE = 0.1                     # prirazka za prejezd (4.1a, v1.5)
 SOLIDARITY_MAX = 3.0                        # automaticka solidarita Unie za tah (7.2, v1.5)
 SOLIDARITY_FUND_FLOOR = 5.0                 # ve fondu musi zustat aspon 5 (7.2, v1.5)
 COUP_LAW_PENALTY = 1.0                      # clenovi Unie po prevratu klesne law (4.3, v1.5)
+NPC_EXPLORE_COST = 1.0                      # 5 (v2.0): automaticky explore NPC za 1 wealth, jen pri tezbe pod potrebou
+
+# 4.6 (v2.0): kalverske a aurelijske banky, 7.2 (v2.0): rozvojova banka Unie
+BANK_K, BANK_AUR, BANK_U = "BANKY_K", "BANKY_AUR", "BANKA_U"
+BANK_CREDITORS = (BANK_K, BANK_AUR, BANK_U)
+FOREIGN_CREDITORS = (BANK_K, BANK_AUR, "A", "B")   # cizi veritele clenu Unie (7.2, moratorium)
+BANK_KEYS = {BANK_K: "banks_K", BANK_AUR: "banks_AUR", BANK_U: "bank_U"}
+BANK_CAPITAL_START = 20.0                   # vychozi kapital kalverskych i aurelijskych bank
+BANK_LEVERAGE = 6.0                         # strop jistiny = 6 x kapital (doplnek v2.0; driv 10)
+BANK_DRAW = 0.25                            # pujcka kola = 1/4 volneho ramce
+BANK_MARKUP = 1.2                           # dluh = castka x 1.2
+BANK_SHARE_K = 0.8                          # rozdeleni L: kalverske 0.8, aurelijske 0.2
+BANK_SHARE_K_TIGHT = 0.4                    # politika tight: kalverske 0.4 L ...
+BANK_TIGHT_SHIFT = 2.0 / 3.0                # ... aurelijske 0.2 L + 2/3 x 0.4 L
+BANK_DIVIDEND = 0.2                         # podil zisku pro A (kalverske) a Aurelii (aurelijske)
+BANK_LTV = {"displacement": 0.1, "boom": 0.15, "euphoria": 0.3, "recovery": 0.15}   # euphoria 0.3 (doplnek v2.0)
+BANK_DISPLACEMENT_WAIT = 3                  # prvni 3 kola displacementu banky nepujcuji
+BANK_BOOM_MIN_WEALTH = 25.0                 # boom: LTV jen NPC s wealth >= 25 nebo prod.orit > 0
+BANK_ENFORCE = 0.10                         # distress a panic: vymahani 10 % dluhu nad bezne splatky
+BANK_MIN_LOAN = 0.1                         # mensi pujcku banky nedavaji
+BANK_FAIL_LOSS = 0.20                       # pad kalverskych bank: A ztrati 20 % wealth
+AUR_COVER = 1.0 / 3.0                       # Aurelie kryje ztraty bank nejvys tretinou wealth
+SANACE_MIN_SHARE = 0.5                      # sanace: A musi pokryt aspon polovinu diry, zbytek se odepise dluznikum
+UNION_FUND_CAP_SHARE = 0.2                  # prubezny odvod se neplati, kdyz fond > 20 % souctu wealth clenu
+POLICY_DELAY = 3                            # zprisnit/uvolnit uvery: ucinek od kola +3
+BANK_DOMESTIC = ("zprisnit_uvery", "uvolnit_uvery", "sanace_bank")   # domaci akce jen pro A (3.1)
+UNION_BANK_SHARE = 0.5                      # banka Unie: polovina fondu do kapitalu pri vzniku
+UNION_BANK_LEVERAGE = 5.0                   # strop jistiny banky Unie = 5 x kapital
+UNION_BANK_LTV = 0.4                        # ramec = 0.4 x wealth - dluh u BANKA_U (kalibrace doplnku v2.0; zadani 0.3, prvni kalibrace 0.5)
+UNION_BANK_DRAW = 1.0 / 3.0                 # pujcka kola = 1/3 volneho ramce
+UNION_BANK_MARKUP = 1.1                     # dluh = castka x 1.1
+UNION_BANK = True                           # kalibrace U5: False = Unie bez banky
+UNION_ENTRY_LEVY = 0.15                     # vstupni odvod do fondu (7.2, v2.0)
+SOLIDARITY_SHARE = 1.0 / 3.0                # solidarita nejvys tretina fondu
+REFI_PRICE_DISTRESSED = 0.6                 # refinancovani clena v bide nebo po nesplaceni
+REFI_PRICE_NORMAL = 0.9
+REFI_DEFAULT_WINDOW = 6
+MORATORIUM_TURNS = 3
+MORATORIUM_LENDING_BAN = 6                  # banky K a AUR nepujcuji 6 kol po konci moratoria
+COUNCIL_TYPES = ("union_fund", "refinancovani", "moratorium", "kapitalizace_banky", "admit")
+UNION_NEW_TYPES = ("kapitalizace_banky", "refinancovani", "moratorium")
+OVERRULED_STREAK = 3                        # trikrat prehlasovan v rade ...
+OVERRULED_TURNS = 6                         # ... 6 kol prirustky vlivu velmoci x 1.5
+OVERRULED_MULT = 1.5
+DEFENSE_SHARES = (1.0 / 3.0, 2.0 / 3.0, 1.0)   # spolecna obrana: podil v 1., 2. a dalsich kolech
+DEFENSE_AFTER = 3                           # aktivace trva jeste 3 kola po posledni invazi
+DEFENSE_INFLUENCE = 2.0                     # nezavisla NPC: vliv utocnika na clena -2 za kolo invaze
 
 # Faze, ve kterych orit uz existuje (displacement a dal).
 ORIT_PHASES = ("displacement", "boom", "euphoria", "overtrading",
@@ -416,6 +463,26 @@ def normalize(state) -> None:
     state.setdefault("counter_offers", [])
     state.setdefault("private_log", {"A": [], "B": [], "C": []})
     state.setdefault("npc_decisions", [])
+    # 4.6 (v2.0): kalverske a aurelijske banky od vychoziho stavu, banka Unie vznika s Unii (7.2)
+    state.setdefault("banks_K", new_bank(BANK_CAPITAL_START, policy=True))
+    state.setdefault("banks_AUR", new_bank(BANK_CAPITAL_START))
+    state.setdefault("bank_U", None)
+    state.setdefault("moratoria", {})
+    C = state["players"]["C"]
+    C.setdefault("council_pending", [])
+    C.setdefault("council_votes", [])
+    C.setdefault("defense", {})
+
+
+def new_bank(capital: float, policy: bool = False) -> dict:
+    """4.6 (v2.0): bankovni soustava. loans = jistina podle dluznika (strop jistiny = paka x kapital)."""
+    b = {"capital": float(capital), "loans": {}, "lent_last": 0.0, "repaid_last": 0.0, "losses_last": 0.0,
+         "profit_last": 0.0, "dividend_last": 0.0, "dividends_total": 0.0, "insolvent_since": None,
+         "failed": False, "failed_turn": None, "rescues": [], "capital_min": float(capital),
+         "_repaid": 0.0, "_losses": 0.0, "_lent": 0.0}
+    if policy:
+        b.update({"policy": "normal", "policy_next": None, "policy_from": None})
+    return b
 
 
 class Trace:
@@ -481,6 +548,9 @@ def add_influence(state, nid: str, pid: str, amount: float) -> float:
     if amount > 0 and n["status"] != "sphere_%s" % pid:
         held = sum(1 for x in state["npc"].values() if x["status"] == "sphere_%s" % pid)
         amount *= SPHERE_OVERLOAD ** held
+        # 7.2 a 7.5 (v2.0): clen trikrat po sobe prehlasovany v rade nasloucha velmocem 6 kol x 1.5
+        if pid in ("A", "B") and int(n.get("overruled_until") or -1) >= int(state["meta"]["turn"]):
+            amount *= OVERRULED_MULT
     n["influence"][pid] = float(n["influence"].get(pid, 0.0)) + amount
     return amount
 
@@ -824,9 +894,16 @@ def _union_deal_execute(state, d, needs, imports, exports, trade_mult, trace) ->
 def _tariff_for(state, payer) -> float:
     """7.2 a 3.3a (v1.10): sazba cla pro platce; kdo valku vyhlasil, plati po dobu valky +0.10."""
     rate = tariff_rate(state)
-    if payer in ("A", "B") and any(w["aggressor"] == payer for w in state.get("wars", [])):
-        rate += WAR_TARIFF_EXTRA
+    if payer in ("A", "B") and (any(w["aggressor"] == payer for w in state.get("wars", []))
+                                or defense_active(state, payer)):
+        rate += WAR_TARIFF_EXTRA   # 7.2 (v2.0): utocnik na clena plati navic jako pri valce
     return rate
+
+
+def defense_active(state, attacker) -> bool:
+    """7.2 (v2.0): spolecna obrana proti utocnikovi plati, dokud invaduje clena, a jeste 3 kola."""
+    d = (state["players"]["C"].get("defense") or {}).get(attacker)
+    return bool(d) and int(state["meta"]["turn"]) <= int(d["last"]) + DEFENSE_AFTER
 
 
 def _pact_holder(state, nid):
@@ -1107,9 +1184,15 @@ def action_slot(act) -> str:
     if act.get("type") == "message":
         return "message"
     if (act.get("player") in ("A", "B") and act.get("slot") == "domestic"
-            and act.get("type") in DOMESTIC_TYPES and act.get("target") in (None, "", act.get("player"))):
+            and act.get("type") in domestic_types(act.get("player"))
+            and act.get("target") in (None, "", act.get("player"))):
         return "domestic"
     return "foreign"
+
+
+def domestic_types(pid) -> tuple:
+    """3.1 (v2.0): povolene domaci akce; A navic uverova politika a sanace bank."""
+    return DOMESTIC_TYPES + (BANK_DOMESTIC if pid == "A" else ())
 
 
 def slot_limit(pid: str, slot: str) -> int:
@@ -1221,6 +1304,8 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
     """
     events: list[dict] = []
     counts: dict[tuple, int] = {}
+    # 7.2 (v2.0): akce schvalene radou Unie v minulem kole se provedou pred akcemi tohoto kola
+    _execute_council_pending(state, npcdata, events, trace)
 
     # limit akci predem; do souteze o cil (3.4a) vstupuji jen akce v limitu.
     # 3.1 a 3.2 (v1.11): domaci akce A a B a jedna zprava se do limitu nepocitaji
@@ -1555,11 +1640,17 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                 "turn": state["meta"]["turn"]})
             events.append({"kind": "message", "from": pid, "to": act.get("target")})
 
-        # --- admit (jen Unie) -------------------------------------------------------
-        elif atype == "admit":
+        # --- akce Unie pred radou (7.2, v2.0): admit, union_fund, kapitalizace, refinancovani, moratorium ---
+        elif atype in COUNCIL_TYPES:
             if pid != "C" or not state["players"]["C"]["active"]:
+                events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                               "reason": "akce jen pro Unii"})
                 continue
-            _union_admit(state, npcdata, target, events, trace)
+            _council_vote(state, act, events, trace)
+
+        # --- uverova politika a sanace bank (3.1 a 4.6, v2.0, jen A) -----------------
+        elif atype in BANK_DOMESTIC:
+            _bank_domestic(state, pid, atype, events, trace)
 
         # --- accept_offer (3.5, v1.6) -------------------------------------------------
         elif atype == "accept_offer":
@@ -1598,22 +1689,6 @@ def apply_actions(state, npcdata, actions, rng, trace: Trace) -> list[dict]:
                            "from_turn": int(state["meta"]["turn"]) + 1})
             trace.add("7.2 set_tariff", {"rate": C["tariff_next"]},
                       {"dosud": C.get("tariff_rate"), "plati_od_tahu": int(state["meta"]["turn"]) + 1})
-
-        # --- union_fund -------------------------------------------------------------
-        elif atype == "union_fund":
-            if pid != "C" or not state["players"]["C"]["active"]:
-                continue
-            amount = float(act.get("amount", 0))
-            C = state["players"]["C"]
-            if target not in state["npc"] or amount <= 0 or float(C["wealth"]) < amount:
-                continue
-            if target not in C["members"] and target not in C["candidates"]:
-                continue
-            C["wealth"] = float(C["wealth"]) - amount
-            state["npc"][target]["wealth"] = float(state["npc"][target]["wealth"]) + amount
-            events.append({"kind": "union_fund", "target": target, "amount": amount})
-            trace.add("7.2 union_fund", {"target": target, "amount": amount},
-                      {"fund": C["wealth"]})
 
     _log_rejections(state, events)
     return events
@@ -1664,7 +1739,38 @@ def _register_invasion(state, npcdata, pid, target, events, trace) -> None:
                        "reason": "nedostatek zdroju na invazi"})
         return
     ratio = 4.0 if n.get("kind") == "fallen" else 2.0
-    if float(player["power"]) < ratio * float(n["power"]):
+    C = state["players"]["C"]
+    turn = state["meta"]["turn"]
+    member = C["active"] and target in C["members"]
+    if member:
+        # 7.2 (v2.0): spolecna obrana. Obrana = podil x soucet power clenu (1/3, 2/3, pak plny),
+        # aktivace trva, dokud utocnik invaduje clena, a 3 kola potom; 3.3 se kontroluje kazde kolo.
+        dmap = C.setdefault("defense", {})
+        d = dmap.get(pid)
+        if d is None or int(turn) > int(d["last"]) + DEFENSE_AFTER:
+            d = {"since": int(turn), "last": int(turn), "targets": []}
+            dmap[pid] = d
+        d["last"] = int(turn)
+        if target not in d["targets"]:
+            d["targets"].append(target)
+        k = int(turn) - int(d["since"])
+        share = DEFENSE_SHARES[min(k, len(DEFENSE_SHARES) - 1)]
+        total = sum(float(state["npc"][mm]["power"]) for mm in C["members"])
+        defense = share * total
+        ok = float(player["power"]) >= ratio * defense
+        events.append({"kind": "union_defense", "attacker": pid, "target": target, "share": round(share, 3),
+                       "defense": round(defense, 2), "stopped": not ok})
+        trace.add("7.2 spolecna obrana", {"utocnik": pid, "cil": target, "kolo_aktivace": k + 1,
+                                           "podil": round(share, 4), "soucet_power_clenu": round(total, 3)},
+                  {"obrana": round(defense, 3), "power_utocnika": round(float(player["power"]), 3),
+                   "invaze_pokracuje": ok})
+        if not ok:
+            # nesplneni 3.3 invazi prerusi (start znovu)
+            state["invasions"] = [v for v in state["invasions"] if not (v["attacker"] == pid and v["target"] == target)]
+            events.append({"kind": "invade_blocked", "player": pid, "target": target,
+                           "reason": "obrana Unie: power pod %sx obrany" % ratio})
+            return
+    elif float(player["power"]) < ratio * float(n["power"]):
         events.append({"kind": "invade_blocked", "player": pid, "target": target,
                        "reason": f"power pod {ratio}x cile"})
         return
@@ -1682,15 +1788,13 @@ def _register_invasion(state, npcdata, pid, target, events, trace) -> None:
             events.append({"kind": "invade_blocked", "player": pid, "target": target,
                            "reason": "NPC je pod paktem %s, valka probiha" % other})
         return
-    # Unie brani cleny (pravidlo 7.2)
-    C = state["players"]["C"]
-    if C["active"] and target in C["members"]:
-        events.append({"kind": "invade_blocked", "player": pid, "target": target,
-                       "reason": "clen Unie, nutna valka s Unii"})
-        return
     player["wealth"] = float(player["wealth"]) - cost_w
     player["power"] = float(player["power"]) - cost_p
-    turn = state["meta"]["turn"]
+    if member:
+        # 7.2 (v2.0): nezavisla NPC snizuji utocnikovi na clena vliv o 2 za kolo invaze
+        for nn in state["npc"].values():
+            if nn["status"] == "independent":
+                nn["influence"][pid] = max(0.0, float(nn["influence"].get(pid, 0.0)) - DEFENSE_INFLUENCE)
     inv = None
     for v in state["invasions"]:
         if v["attacker"] == pid and v["target"] == target:
@@ -2481,6 +2585,26 @@ def step_poverty(state, npcdata, grain_deficit, trace: Trace, events: list) -> N
 # 4.5 splatky
 # --------------------------------------------------------------------------
 
+def _receive_payment(state, nid, cred, pay) -> None:
+    """4.5 a 4.6 (v2.0): splatka jde veriteli; u banky do prijatych splatek kola a jistina klesne o pay / prirazka."""
+    bank = get_bank(state, cred)
+    if bank is not None:
+        bank["_repaid"] = float(bank.get("_repaid", 0.0)) + pay
+        loans = bank["loans"]
+        loans[nid] = max(0.0, float(loans.get(nid, 0.0)) - pay / bank_markup(cred))
+        return
+    creditor = state["players"].get(cred)
+    if creditor is not None:
+        creditor["wealth"] = float(creditor["wealth"]) + pay
+
+
+def under_moratorium(state, nid) -> bool:
+    """7.2 (v2.0): clen v moratoriu (3 kola) nesplaci cizim veritelum a jeho dluh u nich se neuroci."""
+    m = (state.get("moratoria") or {}).get(nid)
+    turn = int(state["meta"]["turn"])
+    return bool(m) and int(m["from"]) <= turn <= int(m["until"])
+
+
 def step_repayments(state, trace: Trace, events: list) -> None:
     turn = state["meta"]["turn"]
     phase = state["phase"]
@@ -2488,11 +2612,19 @@ def step_repayments(state, trace: Trace, events: list) -> None:
         total_debt = sum(float(v) for v in n["debt"].values())
         if total_debt <= 0:
             continue
+        mora = under_moratorium(state, i)
+        if mora:
+            # 7.2 (v2.0): moratorium, cizi veritele nedostanou nic, dluh se neuroci; nesplaceni se zapise
+            for cred in FOREIGN_CREDITORS:
+                if float(n["debt"].get(cred, 0.0)) > 0:
+                    state["minsky"]["defaults"].append({"turn": turn, "npc": i, "creditor": cred, "moratorium": True})
+                    events.append({"kind": "default", "npc": i, "creditor": cred, "moratorium": True,
+                                   "debt": n["debt"][cred]})
         rollover = phase == "overtrading" and total_debt > 0.5 * max(1.0, float(n["wealth"]))
         if rollover:
-            # Ponziho zona: splaci novym dluhem, dluh x1.15 (pravidlo 5)
+            # Ponziho zona: splaci novym dluhem, dluh x1.15 (pravidlo 5); i u bank (4.6)
             for cred in list(n["debt"].keys()):
-                if float(n["debt"][cred]) > 0:
+                if float(n["debt"][cred]) > 0 and not (mora and cred in FOREIGN_CREDITORS):
                     n["debt"][cred] = float(n["debt"][cred]) * 1.15
             events.append({"kind": "rollover", "npc": i,
                            "debt": sum(float(v) for v in n["debt"].values())})
@@ -2502,7 +2634,7 @@ def step_repayments(state, trace: Trace, events: list) -> None:
         paid_any = False
         for cred in list(n["debt"].keys()):
             owed = float(n["debt"][cred])
-            if owed <= 0:
+            if owed <= 0 or (mora and cred in FOREIGN_CREDITORS):
                 continue
             due = 0.10 * owed
             capacity = max(0.0, float(n["wealth"]) - 10.0)
@@ -2512,9 +2644,7 @@ def step_repayments(state, trace: Trace, events: list) -> None:
             if pay > 0:
                 n["wealth"] = float(n["wealth"]) - pay
                 n["debt"][cred] = owed - pay
-                creditor = state["players"].get(cred)
-                if creditor is not None:
-                    creditor["wealth"] = float(creditor["wealth"]) + pay
+                _receive_payment(state, i, cred, pay)
                 paid_any = True
             unpaid = due - pay
             if unpaid > 0:
@@ -2523,7 +2653,26 @@ def step_repayments(state, trace: Trace, events: list) -> None:
                 state["minsky"]["defaults"].append({"turn": turn, "npc": i, "creditor": cred})
                 events.append({"kind": "default", "npc": i, "creditor": cred,
                                "debt": n["debt"][cred]})
-        trace.add("4.5 splatky", {"npc": i, "wealth": n["wealth"]},
+            # 4.6 (v2.0): v distress a panic banky K a AUR vymahaji navic 10 % dluhu, dno wealth 10;
+            # co se vymoci neda, je nesplaceni a banka ho odepise jako nevymozeny dluh
+            if phase in ("distress", "panic") and cred in (BANK_K, BANK_AUR) and float(n["debt"][cred]) > 0:
+                extra = BANK_ENFORCE * owed
+                got = min(extra, max(0.0, float(n["wealth"]) - 10.0))
+                if got > 0:
+                    n["wealth"] = float(n["wealth"]) - got
+                    n["debt"][cred] = max(0.0, float(n["debt"][cred]) - got)
+                    _receive_payment(state, i, cred, got)
+                lost = min(extra - got, float(n["debt"][cred]))
+                if lost > 1e-9:
+                    bank_write_off(state, i, cred, lost)
+                    if pay > 0:   # nesplaceni zapsane jednou za dvojici a kolo
+                        state["minsky"]["defaults"].append({"turn": turn, "npc": i, "creditor": cred,
+                                                            "vymahani": True})
+                        events.append({"kind": "default", "npc": i, "creditor": cred, "vymahani": True,
+                                       "debt": n["debt"][cred]})
+                trace.add("4.6 vymahani bank", {"npc": i, "banka": cred, "pozadovano": round(extra, 3)},
+                          {"vymozeno": round(got, 3), "nevymozeno": round(max(0.0, lost), 3)})
+        trace.add("4.5 splatky", {"npc": i, "wealth": n["wealth"], "moratorium": mora},
                   {"debt": {k: round(float(v), 3) for k, v in n["debt"].items()},
                    "paid_any": paid_any})
 
@@ -2545,6 +2694,12 @@ def step_invasions(state, npcdata, trace: Trace, events: list) -> None:
         if inv["turns"] < need:
             continue
         att = inv["attacker"]
+        C = state["players"]["C"]
+        if target in C.get("members", []) or target in C.get("candidates", []):
+            # 7.2 (v2.0): uplne dobyti clena, clen prestava byt clenem
+            C["members"] = [x for x in C["members"] if x != target]
+            C["candidates"] = [x for x in C["candidates"] if x != target]
+            events.append({"kind": "union_member_lost", "npc": target, "attacker": att})
         n["status"] = f"occupied_{att}"
         n["law"] = clamp(float(n["law"]) - 3.0, 0.0, 10.0)
         loss = 0.5 if n.get("kind") == "fallen" else 0.3  # 7a: pevnost, kapital odchazi
@@ -2707,16 +2862,13 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
         phase = state["phase"]
 
     elif phase == "displacement":
-        loans = [e for e in events if e.get("kind") == "loan_given"]
+        # 5 a 4.6 (v2.0): boom spousti prvni pujcka hrace i prvni bankovni pujcka; vynuceny boom v kole 45 zrusen
+        loans = [e for e in events if e.get("kind") in ("loan_given", "bank_loan")]
         if loans:
-            _set_phase(state, "boom", "prvni loan po displacementu", loans[0]["player"],
-                       trace, events)
+            first = loans[0]
+            _set_phase(state, "boom", "prvni pujcka po displacementu",
+                       first.get("player") or first.get("bank"), trace, events)
             m["boom_started_turn"] = turn
-        elif turn >= 45:
-            # bublina musi prijit (pravidlo 5)
-            _set_phase(state, "boom", "tah 45 bez pujcky, vynuceny boom", turn, trace, events)
-            m["boom_started_turn"] = turn
-            events.append({"kind": "forced_boom", "npc": "N6"})
         phase = state["phase"]
 
     elif phase == "boom" and float(m["orit_price"] or 0) >= 20.0:
@@ -2771,8 +2923,7 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
                        "pojistka cyklu: %d tahu bez splneni prahu" % CYCLE_GUARD_TURNS,
                        turn - entry, trace, events)
             events.append({"kind": "cycle_guard", "npc": top, "from": phase_at_start,
-                           "to": nxt, "duvod": "soukrome banky v NPC s nejvyssim prod.orit "
-                                               "pujcuji na spekulaci"})
+                           "to": nxt, "duvod": "kalverské banky rozšiřují úvěry na spekulaci"})
             if nxt == "crash":
                 m["crash_turn"] = turn
             if nxt == "boom":
@@ -2800,16 +2951,21 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
         m["orit_price"] = float(m["orit_price"]) * 0.5
         for i in world_ids(state):
             ent(state, i)["paper_wealth"] = 0.0
-        for pid in ("A", "B", "C"):
-            p = state["players"][pid]
+        # 5 (v2.0): odpis 60 % pohledavek u vsech veritelu, hracu i bank (4.6)
+        for pid in ("A", "B", "C") + BANK_CREDITORS:
             written_off = 0.0
-            for nn in state["npc"].values():
+            for nid, nn in state["npc"].items():
                 owed = float(nn["debt"].get(pid, 0.0))
                 if owed > 0:
                     written_off += owed * 0.6
-                    nn["debt"][pid] = owed * 0.4
+                    if pid in BANK_CREDITORS:
+                        bank_write_off(state, nid, pid, owed * 0.6)
+                    else:
+                        nn["debt"][pid] = owed * 0.4
             if written_off > 0:
-                p["wealth"] = max(0.0, float(p["wealth"]) - written_off)
+                if pid in state["players"]:
+                    p = state["players"][pid]
+                    p["wealth"] = max(0.0, float(p["wealth"]) - written_off)
                 trace.add("5 panic odpis pohledavek", {"creditor": pid},
                           {"odepsano": round(written_off, 3)})
         for i, nn in state["npc"].items():
@@ -2822,8 +2978,10 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
             # uvolneni sfer: NPC ve sphere_X, ktere X nesplacelo, zpet na independent
             for i, nn in state["npc"].items():
                 for pid in ("A", "B"):
-                    # 5 (v1.6): staci nenulovy dluh vuci X, ne jen nesplaceni
-                    if nn["status"] == f"sphere_{pid}" and float(nn["debt"].get(pid, 0.0)) > 0:
+                    # 5 (v1.6): staci nenulovy dluh vuci X, ne jen nesplaceni;
+                    # v2.0: dluh u kalverskych bank se pocita jako dluh vuci A, ostatni bankovni dluh nikomu
+                    owed = float(nn["debt"].get(pid, 0.0)) + (float(nn["debt"].get(BANK_K, 0.0)) if pid == "A" else 0.0)
+                    if nn["status"] == f"sphere_{pid}" and owed > 0:
                         nn["status"] = "independent"
                         nn["influence"][pid] = float(nn["influence"][pid]) / 2.0
                         events.append({"kind": "sphere_released", "npc": i, "from": pid})
@@ -2861,14 +3019,18 @@ def step_minsky(state, npcdata, rng, trace: Trace, events: list) -> None:
     if phase in ("boom", "euphoria", "overtrading"):
         _migration(state, rng, trace, events)
 
-    # automaticky explore NPC od displacementu
-    if phase in ORIT_PHASES:
+    # automaticky explore NPC od displacementu; v2.0 jen v kole, kdy svetova efektivni tezba oritu
+    # nestaci svetove potrebe (soucet need.orit), za 1 wealth
+    world_orit = sum(eff_prod(ent(state, i), "orit") for i in world_ids(state))
+    world_orit_need = sum(orit_need(state, i) for i in world_ids(state))
+    m["orit_world"] = {"tezba": round(world_orit, 3), "potreba": round(world_orit_need, 3)}
+    if phase in ORIT_PHASES and world_orit < world_orit_need:
         for i, nn in sorted(state["npc"].items()):
             if nn.get("kind") == "fallen":
                 continue
             if float(nn["wealth"]) >= 20.0:
-                nn["wealth"] = float(nn["wealth"]) - 2.0
-                trace.add("5 explore NPC platba", {"npc": i}, {"cost": 2.0})
+                nn["wealth"] = float(nn["wealth"]) - NPC_EXPLORE_COST
+                trace.add("5 explore NPC platba", {"npc": i}, {"cost": NPC_EXPLORE_COST})
                 if rng.random() < 0.15:
                     nn["prod"]["orit"] = float(nn["prod"].get("orit", 0.0)) + 2.0
                     events.append({"kind": "orit_found", "npc": i})
@@ -3065,10 +3227,16 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
             C["name"] = C.get("name") or "Unie"
             fund = 0.0
             for f in founders:
-                take = float(state["npc"][f]["wealth"]) * 0.10
+                take = float(state["npc"][f]["wealth"]) * UNION_ENTRY_LEVY   # 7.2 (v2.0): 15 %
                 state["npc"][f]["wealth"] -= take
                 state["npc"][f]["status"] = "union"
                 fund += take
+            # 7.2 (v2.0): rozvojova banka Unie vznika s Unii, polovina fondu jde do jejiho kapitalu
+            if UNION_BANK:
+                cap = fund * UNION_BANK_SHARE
+                fund -= cap
+                state["bank_U"] = new_bank(cap)
+                events.append({"kind": "union_bank_founded", "capital": round(cap, 3)})
             C["wealth"] = fund
             C["fund"] = fund
             if extra_candidates:
@@ -3150,8 +3318,14 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
     # 7.2 (v1.6): prispevky clenu 2 % wealth za tah a solidarita nejchudsimu clenovi v bide.
     # Obojí od tahu po zalozeni; fond se smi solidaritou vyprazdnit az na 0.
     state["union_contributions"] = {}
+    members_w = sum(float(state["npc"][mm]["wealth"]) for mm in C["members"])
+    # 7.2 (doplnek v2.0): prubezny odvod se v kole neplati, kdyz fond presahuje 20 % souctu wealth clenu
+    levy_on = float(C["wealth"]) <= UNION_FUND_CAP_SHARE * members_w
+    if not levy_on and C.get("founded_turn") != turn:
+        trace.add("7.2 odvod do fondu neplacen", {"fond": round(float(C["wealth"]), 3), "wealth_clenu": round(members_w, 3)},
+                  {"strop": round(UNION_FUND_CAP_SHARE * members_w, 3)})
     if C.get("founded_turn") != turn:
-        for mm in sorted(C["members"], key=_npc_key):
+        for mm in (sorted(C["members"], key=_npc_key) if levy_on else []):
             take = float(state["npc"][mm]["wealth"]) * UNION_CONTRIBUTION
             if take <= 0:
                 continue
@@ -3165,7 +3339,9 @@ def step_union(state, npcdata, trace: Trace, events: list) -> None:
         poor_members = [mm for mm in C["members"] if mm in poor]
         if poor_members:
             mm = min(poor_members, key=lambda x: (float(state["npc"][x]["wealth"]), _npc_key(x)))
-            amount = min(SOLIDARITY_MAX, float(C["wealth"]))
+            # 7.2 (v2.0): jen z fondu nad 5, nejvys tretina fondu a nejvys 3 za kolo
+            fund_now = float(C["wealth"])
+            amount = max(0.0, min(SOLIDARITY_MAX, fund_now * SOLIDARITY_SHARE, fund_now - SOLIDARITY_FUND_FLOOR))
             if amount > 1e-9:
                 C["wealth"] = float(C["wealth"]) - amount
                 state["npc"][mm]["wealth"] = float(state["npc"][mm]["wealth"]) + amount
@@ -3214,11 +3390,515 @@ def _union_admit(state, npcdata, target, events, trace) -> None:
     n["status"] = "union"
     if target not in C["members"]:
         C["members"].append(target)
-    take = float(n["wealth"]) * 0.10
+    take = float(n["wealth"]) * UNION_ENTRY_LEVY   # 7.2 (v2.0): vstupni odvod 15 %
     n["wealth"] -= take
     C["wealth"] = float(C["wealth"]) + take
     events.append({"kind": "union_join", "npc": target, "how": "admit"})
     trace.add("7.4 admit", {"npc": target}, {"fond": C["wealth"]})
+
+
+# --------------------------------------------------------------------------
+# 7.2 rada Unie a nove akce Unie (v2.0)
+# --------------------------------------------------------------------------
+
+def _foreign_debt(state, nid) -> bool:
+    return any(float(state["npc"][nid]["debt"].get(c, 0.0)) > 1e-9 for c in FOREIGN_CREDITORS)
+
+
+def _council_votes(state, act) -> dict:
+    """7.2 (v2.0): hlas kazdeho clena (ne kandidata) podle pravidla akce. Vraci {clen: True pro / False proti}."""
+    C = state["players"]["C"]
+    members = list(C["members"])
+    atype, target = act.get("type"), act.get("target")
+    w = {mm: float(state["npc"][mm]["wealth"]) for mm in members}
+    votes = {}
+    for mm in members:
+        others = [w[x] for x in members if x != mm]
+        above = bool(others) and w[mm] > sum(others) / len(others)
+        if atype in ("union_fund", "refinancovani"):
+            votes[mm] = not (above and target != mm)
+        elif atype == "kapitalizace_banky":
+            no_u_debt = float(state["npc"][mm]["debt"].get(BANK_U, 0.0)) <= 1e-9
+            votes[mm] = not (no_u_debt and above)
+        elif atype == "moratorium":
+            votes[mm] = _foreign_debt(state, mm)
+        elif atype == "admit":
+            cand = state["npc"].get(target)
+            votes[mm] = not (cand is not None and float(cand["wealth"]) < w[mm])
+        else:
+            votes[mm] = True
+    return votes
+
+
+def _council_vote(state, act, events, trace) -> None:
+    """7.2 (v2.0): akce pred radou. Prosta vetsina, rovnost = neschvaleno; schvalena akce se provede
+    v dalsim kole (podminky se kontroluji az pri provedeni), neschvalena propada."""
+    C = state["players"]["C"]
+    turn = int(state["meta"]["turn"])
+    votes = _council_votes(state, act)
+    pro = sorted([mm for mm, v in votes.items() if v], key=_npc_key)
+    proti = sorted([mm for mm, v in votes.items() if not v], key=_npc_key)
+    approved = len(pro) > len(proti)
+    losers = proti if approved else pro
+    for mm in C["members"]:
+        n = state["npc"][mm]
+        if mm in losers:
+            n["overruled_streak"] = int(n.get("overruled_streak", 0)) + 1
+            if n["overruled_streak"] >= OVERRULED_STREAK:
+                n["overruled_until"] = turn + OVERRULED_TURNS
+                n["overruled_streak"] = 0
+                events.append({"kind": "union_member_overruled", "npc": mm, "until": n["overruled_until"],
+                               "private": True})
+        else:
+            n["overruled_streak"] = 0
+    clean = {k: v for k, v in act.items() if k not in ("player", "slot")}
+    rec = {"turn": turn, "action": clean, "approved": approved, "pro": pro, "proti": proti}
+    C.setdefault("council_votes", []).append(rec)
+    C["council_votes"] = C["council_votes"][-12:]
+    if approved:
+        C.setdefault("council_pending", []).append({"action": clean, "voted": turn, "execute": turn + 1})
+    events.append({"kind": "council_vote", "type": act.get("type"), "target": act.get("target"),
+                   "creditor": act.get("creditor"), "amount": act.get("amount"),
+                   "approved": approved, "against": proti, "for": pro})
+    trace.add("7.2 rada Unie", {"akce": clean, "hlasy": votes}, {"schvaleno": approved, "proti": proti})
+
+
+def _execute_council_pending(state, npcdata, events, trace) -> None:
+    C = state["players"]["C"]
+    turn = int(state["meta"]["turn"])
+    pend = C.get("council_pending") or []
+    due = [p for p in pend if int(p["execute"]) <= turn]
+    C["council_pending"] = [p for p in pend if int(p["execute"]) > turn]
+    if not C.get("active"):
+        return
+    for p in due:
+        _execute_union_action(state, npcdata, dict(p["action"], player="C"), events, trace)
+
+
+def _union_invalid(state, events, atype, reason, target=None) -> None:
+    events.append({"kind": "action_invalid", "player": "C", "type": atype, "target": target, "reason": reason})
+    # do soukromeho logu jde na konci apply_actions spolu s ostatnimi vyrazenimi
+
+
+def _execute_union_action(state, npcdata, act, events, trace) -> None:
+    """Provedeni akce schvalene radou; podminky (fond, strop, status) se kontroluji ted."""
+    C = state["players"]["C"]
+    atype, target = act.get("type"), act.get("target")
+    turn = int(state["meta"]["turn"])
+    if atype == "admit":
+        _union_admit(state, npcdata, target, events, trace)
+    elif atype == "union_fund":
+        try:
+            amount = float(act.get("amount", 0))
+        except (TypeError, ValueError):
+            amount = 0.0
+        if target not in state["npc"] or amount <= 0 or float(C["wealth"]) < amount:
+            return _union_invalid(state, events, atype, "neplatny cil nebo nedostatek ve fondu", target)
+        if target not in C["members"] and target not in C["candidates"]:
+            return _union_invalid(state, events, atype, "cil neni clen ani kandidat", target)
+        C["wealth"] = float(C["wealth"]) - amount
+        state["npc"][target]["wealth"] = float(state["npc"][target]["wealth"]) + amount
+        events.append({"kind": "union_fund", "target": target, "amount": amount})
+        trace.add("7.2 union_fund", {"target": target, "amount": amount}, {"fund": C["wealth"]})
+    elif atype == "kapitalizace_banky":
+        bank = state.get("bank_U")
+        try:
+            amount = float(act.get("amount", 0))
+        except (TypeError, ValueError):
+            amount = 0.0
+        if bank is None or amount <= 0 or float(C["wealth"]) < amount:
+            return _union_invalid(state, events, atype, "banka Unie neexistuje nebo nedostatek ve fondu")
+        C["wealth"] = float(C["wealth"]) - amount
+        bank["capital"] = float(bank["capital"]) + amount
+        events.append({"kind": "union_bank_capital", "amount": amount, "capital": round(bank["capital"], 3)})
+        trace.add("7.2 kapitalizace banky Unie", {"castka": amount},
+                  {"kapital": round(bank["capital"], 3), "fond": round(float(C["wealth"]), 3)})
+    elif atype == "refinancovani":
+        cred = act.get("creditor")
+        bank = state.get("bank_U")
+        if target not in C["members"] or cred not in (BANK_K, BANK_AUR) or bank is None:
+            return _union_invalid(state, events, atype, "cil neni clen, veritel neni banka K ani AUR, nebo chybi banka Unie", target)
+        n = state["npc"][target]
+        debt = float(n["debt"].get(cred, 0.0))
+        if debt <= 1e-9:
+            return _union_invalid(state, events, atype, "clen u tohoto veritele nedluzi", target)
+        recent = any(d["npc"] == target and int(d["turn"]) > turn - REFI_DEFAULT_WINDOW
+                     for d in state["minsky"]["defaults"])
+        distressed = int(n.get("poverty_streak", 0)) > 0 or recent
+        price = debt * (REFI_PRICE_DISTRESSED if distressed else REFI_PRICE_NORMAL)
+        room = UNION_BANK_LEVERAGE * float(bank["capital"]) - bank_principal(bank)
+        if price > room + 1e-9:
+            return _union_invalid(state, events, atype, "cena nad strop banky Unie", target)
+        src = get_bank(state, cred)
+        loss = debt - price
+        src["_repaid"] = float(src.get("_repaid", 0.0))   # cena splaci jistinu, rozdil je odpis
+        src["_losses"] = float(src.get("_losses", 0.0)) + loss
+        src["loans"].pop(target, None)
+        n["debt"][cred] = 0.0
+        n["debt"][BANK_U] = float(n["debt"].get(BANK_U, 0.0)) + price * UNION_BANK_MARKUP
+        bank["loans"][target] = float(bank["loans"].get(target, 0.0)) + price
+        events.append({"kind": "union_refinancing", "npc": target, "creditor": cred,
+                       "price": round(price, 3), "debt": round(debt, 3)})
+        trace.add("7.2 refinancovani", {"clen": target, "veritel": cred, "dluh": round(debt, 3),
+                                        "v_tisni": distressed},
+                  {"cena": round(price, 3), "odpis_veritele": round(loss, 3),
+                   "dluh_u_BANKA_U": round(n["debt"][BANK_U], 3)})
+    elif atype == "moratorium":
+        who = list(C["members"]) if target == "vsichni" else [target]
+        who = [x for x in who if x in C["members"]]
+        if not who:
+            return _union_invalid(state, events, atype, "cil neni clen", target)
+        mor = state.setdefault("moratoria", {})
+        for x in who:
+            old = mor.get(x)
+            until = turn + MORATORIUM_TURNS - 1
+            if old and int(old["until"]) >= turn:
+                until = max(until, int(old["until"]))
+                mor[x] = {"from": int(old["from"]), "until": until}
+            else:
+                mor[x] = {"from": turn, "until": until}
+        events.append({"kind": "union_moratorium", "members": who, "until": turn + MORATORIUM_TURNS - 1})
+        trace.add("7.2 moratorium", {"clenove": who}, {"do_kola": turn + MORATORIUM_TURNS - 1})
+
+
+# --------------------------------------------------------------------------
+# 4.6 banky (v2.0)
+# --------------------------------------------------------------------------
+
+def get_bank(state, cred):
+    key = BANK_KEYS.get(cred)
+    return state.get(key) if key else None
+
+
+def bank_markup(cred) -> float:
+    return UNION_BANK_MARKUP if cred == BANK_U else BANK_MARKUP
+
+
+def bank_principal(bank) -> float:
+    return sum(float(v) for v in (bank.get("loans") or {}).values())
+
+
+def bank_claims(state, cred) -> float:
+    return sum(float(n["debt"].get(cred, 0.0)) for n in state["npc"].values())
+
+
+def bank_debt(n) -> float:
+    """Dluh NPC u vsech tri bankovnich soustav (verejne `dluh_bankam`)."""
+    return sum(float(n["debt"].get(c, 0.0)) for c in BANK_CREDITORS)
+
+
+def bank_write_off(state, nid, cred, amount) -> None:
+    """Odpis pohledavky banky: dluh i jistina klesnou pomerne, ztrata jde do odpisu kola."""
+    n = state["npc"][nid]
+    owed = float(n["debt"].get(cred, 0.0))
+    amount = min(amount, owed)
+    if amount <= 0:
+        return
+    bank = get_bank(state, cred)
+    n["debt"][cred] = owed - amount
+    if bank is not None:
+        loans = bank["loans"]
+        loans[nid] = float(loans.get(nid, 0.0)) * (1.0 - amount / owed) if owed > 0 else 0.0
+        bank["_losses"] = float(bank.get("_losses", 0.0)) + amount
+
+
+def _forgive_claims(state, cred, amount) -> float:
+    """Zbytek ztraty se odepise dluznikum pomerne k dluhu (AUR a banka Unie). Vraci odepsano."""
+    total = bank_claims(state, cred)
+    if total <= 0 or amount <= 0:
+        return 0.0
+    amount = min(amount, total)
+    bank = get_bank(state, cred)
+    for nid, n in state["npc"].items():
+        owed = float(n["debt"].get(cred, 0.0))
+        if owed <= 0:
+            continue
+        cut = amount * owed / total
+        n["debt"][cred] = owed - cut
+        bank["loans"][nid] = float(bank["loans"].get(nid, 0.0)) * (1.0 - cut / owed)
+    return amount
+
+
+def lending_banned(state, nid) -> bool:
+    """7.2 (v2.0): banky K a AUR nepujcuji clenovi v moratoriu a 6 kol po jeho konci."""
+    m = (state.get("moratoria") or {}).get(nid)
+    return bool(m) and int(state["meta"]["turn"]) <= int(m["until"]) + MORATORIUM_LENDING_BAN
+
+
+def bank_ltv(state, nid) -> float:
+    """4.6 (v2.0): LTV podle faze. Padle rise si nepujcuji."""
+    n = state["npc"][nid]
+    if n.get("kind") == "fallen":
+        return 0.0
+    phase = state["phase"]
+    turn = int(state["meta"]["turn"])
+    orit = float(n["prod"].get("orit", 0.0)) > 0
+    if phase == "displacement":
+        entry = _phase_entry_turn(state, "displacement")
+        if entry is None or turn - int(entry) < BANK_DISPLACEMENT_WAIT:
+            return 0.0
+        return BANK_LTV["displacement"] if orit else 0.0
+    if phase == "boom":
+        return BANK_LTV["boom"] if (float(n["wealth"]) >= BANK_BOOM_MIN_WEALTH or orit) else 0.0
+    if phase == "euphoria":
+        return BANK_LTV["euphoria"] if int(n.get("poverty_streak", 0)) == 0 else 0.0
+    if phase == "recovery":
+        return BANK_LTV["recovery"]
+    return 0.0
+
+
+def bank_policy(state) -> str:
+    return (state.get("banks_K") or {}).get("policy", "normal")
+
+
+def _bank_lend(state, nid, cred, amount, events) -> float:
+    bank = get_bank(state, cred)
+    lev = UNION_BANK_LEVERAGE if cred == BANK_U else BANK_LEVERAGE
+    if bank is None or bank.get("failed") or float(bank["capital"]) <= 0:
+        return 0.0
+    room = lev * float(bank["capital"]) - bank_principal(bank)
+    amount = min(amount, room)
+    if amount < BANK_MIN_LOAN:
+        return 0.0
+    n = state["npc"][nid]
+    n["wealth"] = float(n["wealth"]) + amount
+    n["debt"][cred] = float(n["debt"].get(cred, 0.0)) + amount * bank_markup(cred)
+    bank["loans"][nid] = float(bank["loans"].get(nid, 0.0)) + amount
+    bank["_lent"] = float(bank.get("_lent", 0.0)) + amount
+    return amount
+
+
+def step_bank_lending(state, trace: Trace, events: list) -> None:
+    """4.6 a 7.2 (v2.0): uver kazde kolo po akcich hracu, pred trhem. Nepresouva vliv ani paper_wealth hracu."""
+    turn = int(state["meta"]["turn"])
+    K, AUR = state["banks_K"], state["banks_AUR"]
+    # 4.6: uverova politika plati od kola, ktere A urcil (+3)
+    if K.get("policy_next") and turn >= int(K.get("policy_from") or 0):
+        K["policy"] = K["policy_next"]
+        K["policy_next"], K["policy_from"] = None, None
+        events.append({"kind": "bank_policy_active", "policy": K["policy"], "private": K["policy"] == "normal"})
+    tight = K.get("policy") == "tight"
+    share_k = BANK_SHARE_K_TIGHT if tight else BANK_SHARE_K
+    share_aur = (1.0 - BANK_SHARE_K) + (BANK_TIGHT_SHIFT * BANK_SHARE_K_TIGHT if tight else 0.0)
+    detail = {}
+    for nid in sorted(state["npc"], key=_npc_key):
+        n = state["npc"][nid]
+        ltv = bank_ltv(state, nid)
+        if ltv <= 0 or lending_banned(state, nid):
+            continue
+        frame = ltv * (float(n["wealth"]) + float(n.get("paper_wealth", 0.0))) \
+            - float(n["debt"].get(BANK_K, 0.0)) - float(n["debt"].get(BANK_AUR, 0.0))
+        L = BANK_DRAW * max(0.0, frame)
+        if L < BANK_MIN_LOAN:
+            continue
+        got = {BANK_K: _bank_lend(state, nid, BANK_K, share_k * L, events),
+               BANK_AUR: _bank_lend(state, nid, BANK_AUR, share_aur * L, events)}
+        if any(v > 0 for v in got.values()):
+            detail[nid] = {"ltv": ltv, "ramec": round(frame, 3), "L": round(L, 3),
+                           "K": round(got[BANK_K], 3), "AUR": round(got[BANK_AUR], 3)}
+    # 7.2 (v2.0): banka Unie pujcuje clenum a kandidatum s law >= law_threshold, nezavisle na fazi
+    U = state.get("bank_U")
+    C = state["players"]["C"]
+    detail_u = {}
+    if U is not None and C.get("active") and C.get("law_threshold") is not None:
+        for nid in sorted(list(C["members"]) + list(C["candidates"]), key=_npc_key):
+            n = state["npc"][nid]
+            if float(n["law"]) < float(C["law_threshold"]):
+                continue
+            frame = UNION_BANK_LTV * float(n["wealth"]) - float(n["debt"].get(BANK_U, 0.0))
+            L = UNION_BANK_DRAW * max(0.0, frame)
+            got = _bank_lend(state, nid, BANK_U, L, events)
+            if got > 0:
+                detail_u[nid] = round(got, 3)
+    for cred, b in ((BANK_K, K), (BANK_AUR, AUR), (BANK_U, U)):
+        if b is None or b.get("_lent", 0.0) <= 0:
+            continue
+        lent = {nid: d[cred.split("_")[1]] for nid, d in detail.items() if d.get(cred.split("_")[1])} \
+            if cred != BANK_U else detail_u
+        top = sorted(lent, key=lambda x: -lent[x])[:3]
+        events.append({"kind": "bank_loan", "bank": cred, "amount": round(b["_lent"], 3),
+                       "npc": top, "borrowers": len(lent)})
+    if detail or detail_u:
+        trace.add("4.6 bankovni uver", {"faze": state["phase"], "politika": K.get("policy")},
+                  {"pujcky": detail, "banka_unie": detail_u})
+
+
+def _bank_domestic(state, pid, atype, events, trace) -> None:
+    """3.1 a 4.6 (v2.0): domaci akce A. zprisnit/uvolnit uvery od kola +3, sanace pri vyuctovani bank."""
+    turn = int(state["meta"]["turn"])
+    K = state["banks_K"]
+    if pid != "A":
+        events.append({"kind": "action_invalid", "player": pid, "type": atype, "reason": "jen pro Kalveru"})
+        return
+    if atype == "sanace_bank":
+        state["_sanace_A"] = True
+        trace.add("4.6 sanace bank zadana", {"kolo": turn}, {"insolvence_od": K.get("insolvent_since")})
+        return
+    want = "tight" if atype == "zprisnit_uvery" else "normal"
+    if PHASE_ORDER.index(state["phase"]) >= PHASE_ORDER.index("overtrading") or K.get("failed"):
+        events.append({"kind": "action_invalid", "player": pid, "type": atype,
+                       "reason": "od overtrading bez ucinku"})
+        return
+    if want == K.get("policy_next") or (want == K.get("policy") and not K.get("policy_next")):
+        events.append({"kind": "bank_policy_same", "player": pid, "policy": want, "private": True})
+        trace.add("4.6 uverova politika beze zmeny", {"zadano": want},
+                  {"plati": K.get("policy"), "ceka": K.get("policy_next")})
+        return
+    K["policy_next"], K["policy_from"] = want, turn + POLICY_DELAY
+    events.append({"kind": "bank_policy_set", "player": pid, "policy": want, "from_turn": turn + POLICY_DELAY})
+    trace.add("4.6 uverova politika", {"zadano": want}, {"od_kola": turn + POLICY_DELAY})
+
+
+def _settle_profit(bank, cred) -> float:
+    m = bank_markup(cred)
+    return float(bank.get("_repaid", 0.0)) * (m - 1.0) / m - float(bank.get("_losses", 0.0))
+
+
+def step_banks(state, trace: Trace, events: list) -> None:
+    """4.6 a 7.2 (v2.0): vyuctovani bank po splatkach a odpisech kola: zisk, dividenda, insolvence."""
+    turn = int(state["meta"]["turn"])
+    A = state["players"]["A"]
+    sanace = bool(state.pop("_sanace_A", False))
+    # --- kalverske banky
+    K = state["banks_K"]
+    profit = _settle_profit(K, BANK_K)
+    div = 0.0
+    if not K.get("failed"):
+        if profit > 0:
+            K["capital"] = float(K["capital"]) + profit * (1.0 - BANK_DIVIDEND)
+            div = profit * BANK_DIVIDEND
+            A["wealth"] = float(A["wealth"]) + div
+        else:
+            K["capital"] = float(K["capital"]) + profit
+    out = {"zisk": round(profit, 3), "dividenda_A": round(div, 3)}
+    if not K.get("failed") and float(K["capital"]) < -1e-9:
+        hole = -float(K["capital"])
+        if sanace and min(hole, float(A["wealth"])) >= SANACE_MIN_SHARE * hole - 1e-9:
+            # 4.6 (doplnek v2.0): A pokryje diru ze svych wealth; pokryje-li aspon polovinu, banky preziji
+            # s kapitalem 0 a zbytek diry se odepise dluznikum pomerne
+            pay = min(hole, float(A["wealth"]))
+            A["wealth"] = float(A["wealth"]) - pay
+            forgiven = _forgive_claims(state, BANK_K, hole - pay) if hole - pay > 1e-9 else 0.0
+            K["capital"] = 0.0
+            K["insolvent_since"] = None
+            K.setdefault("rescues", []).append({"turn": turn, "hole": round(hole, 3), "amount": round(pay, 3),
+                                                "forgiven": round(forgiven, 3)})
+            out.update({"dira": round(hole, 3), "sanace": round(pay, 3), "odepsano_dluznikum": round(forgiven, 3)})
+            events.append({"kind": "banks_rescued", "amount": round(pay, 3), "hole": round(hole, 3),
+                           "forgiven": round(forgiven, 3)})
+        elif sanace:
+            # A nema ani na polovinu diry: akce se vyradi, A neplati nic, banky padaji podle puvodniho pravidla
+            events.append({"kind": "action_invalid", "player": "A", "type": "sanace_bank",
+                           "reason": "wealth nestaci ani na polovinu diry bank (dira %.1f)" % hole})
+            _log_rejections(state, events[-1:])
+            out.update({"dira": round(hole, 3), "sanace": "vyrazena"})
+            if K.get("insolvent_since") is None:
+                K["insolvent_since"] = turn
+                events.append({"kind": "banks_insolvent", "bank": BANK_K, "capital": round(K["capital"], 3),
+                               "private": True})
+            elif turn - int(K["insolvent_since"]) >= 1:
+                _fail_banks_K(state, events, out)
+        elif K.get("insolvent_since") is None:
+            K["insolvent_since"] = turn
+            events.append({"kind": "banks_insolvent", "bank": BANK_K, "capital": round(K["capital"], 3),
+                           "private": True})
+        elif turn - int(K["insolvent_since"]) >= 1:
+            _fail_banks_K(state, events, out)
+    elif not K.get("failed"):
+        if sanace and K.get("insolvent_since") is None:
+            events.append({"kind": "action_invalid", "player": "A", "type": "sanace_bank",
+                           "reason": "banky nejsou v insolvenci"})
+            _log_rejections(state, events[-1:])
+        K["insolvent_since"] = None
+    _close_bank(K, profit, div)
+    trace.add("4.6 kalverske banky", {"splatky": round(K["repaid_last"], 3), "odpisy": round(K["losses_last"], 3)},
+              dict(out, kapital=round(K["capital"], 3), jistina=round(bank_principal(K), 3)))
+    # --- aurelijske banky
+    AUR = state["banks_AUR"]
+    N11 = state["npc"].get("N11")
+    profit = _settle_profit(AUR, BANK_AUR)
+    div = 0.0
+    if profit > 0:
+        AUR["capital"] = float(AUR["capital"]) + profit * (1.0 - BANK_DIVIDEND)
+        div = profit * BANK_DIVIDEND
+        if N11 is not None:
+            N11["wealth"] = float(N11["wealth"]) + div
+    else:
+        AUR["capital"] = float(AUR["capital"]) + profit
+    out = {"zisk": round(profit, 3), "dividenda_N11": round(div, 3)}
+    if float(AUR["capital"]) < -1e-9:
+        cover = min(-float(AUR["capital"]), AUR_COVER * float(N11["wealth"])) if N11 is not None else 0.0
+        if N11 is not None:
+            N11["wealth"] = float(N11["wealth"]) - cover
+        AUR["capital"] = float(AUR["capital"]) + cover
+        forgiven = _forgive_claims(state, BANK_AUR, -float(AUR["capital"])) if AUR["capital"] < 0 else 0.0
+        AUR["capital"] = 0.0
+        out.update({"aurelie_kryje": round(cover, 3), "odepsano_dluznikum": round(forgiven, 3)})
+        events.append({"kind": "aur_cover", "amount": round(cover, 3), "forgiven": round(forgiven, 3)})
+    _close_bank(AUR, profit, div)
+    trace.add("4.6 aurelijske banky", {"splatky": round(AUR["repaid_last"], 3), "odpisy": round(AUR["losses_last"], 3)},
+              dict(out, kapital=round(AUR["capital"], 3), jistina=round(bank_principal(AUR), 3)))
+    # --- banka Unie: zisk cely do kapitalu, ztratu kryje fond do nuly, zbytek se odepise
+    U = state.get("bank_U")
+    if U is not None:
+        C = state["players"]["C"]
+        profit = _settle_profit(U, BANK_U)
+        U["capital"] = float(U["capital"]) + profit
+        out = {"zisk": round(profit, 3)}
+        if float(U["capital"]) < -1e-9:
+            cover = min(-float(U["capital"]), max(0.0, float(C["wealth"])))
+            C["wealth"] = float(C["wealth"]) - cover
+            U["capital"] = float(U["capital"]) + cover
+            forgiven = _forgive_claims(state, BANK_U, -float(U["capital"])) if U["capital"] < 0 else 0.0
+            U["capital"] = 0.0
+            out.update({"fond_kryje": round(cover, 3), "odepsano_dluznikum": round(forgiven, 3)})
+            C["fund"] = C["wealth"]
+        _close_bank(U, profit, 0.0)
+        trace.add("7.2 banka Unie", {"splatky": round(U["repaid_last"], 3), "odpisy": round(U["losses_last"], 3)},
+                  dict(out, kapital=round(U["capital"], 3), jistina=round(bank_principal(U), 3)))
+    # moratoria dlouho po skonceni se mazou
+    state["moratoria"] = {k: v for k, v in (state.get("moratoria") or {}).items()
+                          if turn <= int(v["until"]) + MORATORIUM_LENDING_BAN}
+
+
+def _close_bank(bank, profit, div) -> None:
+    bank["lent_last"] = round(float(bank.pop("_lent", 0.0)), 4)
+    bank["repaid_last"] = round(float(bank.pop("_repaid", 0.0)), 4)
+    bank["losses_last"] = round(float(bank.pop("_losses", 0.0)), 4)
+    bank["_lent"], bank["_repaid"], bank["_losses"] = 0.0, 0.0, 0.0
+    bank["profit_last"] = round(profit, 4)
+    bank["dividend_last"] = round(div, 4)
+    bank["dividends_total"] = round(float(bank.get("dividends_total", 0.0)) + div, 4)
+    bank["capital_min"] = round(min(float(bank.get("capital_min", bank["capital"])), float(bank["capital"])), 4)
+    bank["loans"] = {k: round(v, 6) for k, v in bank["loans"].items() if v > 1e-6}
+
+
+def _fail_banks_K(state, events, out) -> None:
+    """4.6 (v2.0, doplnek): pad kalverskych bank. Pohledavky BANKY_K prejdou na BANKY_AUR nominalne, bez platby
+    a mimo strop aurelijskych bank (jistina se pripise k jejich jistine); dluznici dluzi dal. A ztrati 20 % wealth,
+    kalverske banky do konce hry nepujcuji."""
+    K = state["banks_K"]
+    AUR = state["banks_AUR"]
+    A = state["players"]["A"]
+    gone = 0.0
+    for nid, n in state["npc"].items():
+        amt = float(n["debt"].pop(BANK_K, 0.0) or 0.0)
+        if amt > 0:
+            n["debt"][BANK_AUR] = float(n["debt"].get(BANK_AUR, 0.0)) + amt
+            gone += amt
+    for nid, p in (K.get("loans") or {}).items():
+        AUR["loans"][nid] = float(AUR["loans"].get(nid, 0.0)) + float(p)
+    loss = float(A["wealth"]) * BANK_FAIL_LOSS
+    A["wealth"] = float(A["wealth"]) - loss
+    K["loans"] = {}
+    K["failed"] = True
+    K["failed_turn"] = int(state["meta"]["turn"])
+    K["capital"] = 0.0
+    K["insolvent_since"] = None
+    out.update({"pad": True, "prevedeno_na_AUR": round(gone, 3), "ztrata_A": round(loss, 3)})
+    events.append({"kind": "banks_failed", "bank": BANK_K, "claims_to": BANK_AUR, "claims": round(gone, 3),
+                   "loss_A": round(loss, 3),
+                   "zprava": "Pohledávky kalverských bank převzaly banky Aurelie."})
 
 
 # --------------------------------------------------------------------------
@@ -3461,6 +4141,56 @@ def _wars_view(state, pid: str) -> list[dict]:
     return out
 
 
+def _banks_k_view(state) -> dict:
+    """4 (v2.0): A vidi sve banky: kapital, pohledavky, dividendu, politiku a insolvenci. Mechaniku ne."""
+    K = state["banks_K"]
+    out = {"kapital": round(float(K["capital"]), 1), "pohledavky": round(bank_claims(state, BANK_K), 1),
+           "dividenda_minule_kolo": round(float(K.get("dividend_last", 0.0)), 2),
+           "politika": "prisna" if K.get("policy") == "tight" else "bezna",
+           "insolvence": K.get("insolvent_since") is not None, "zkrachovaly": bool(K.get("failed"))}
+    if K.get("policy_next"):
+        out["politika_ceka"] = {"politika": "prisna" if K["policy_next"] == "tight" else "bezna",
+                                "od_kola": K["policy_from"]}
+    if K.get("insolvent_since") is not None:
+        out["sanaci_nejpozdeji_v_kole"] = int(K["insolvent_since"]) + 1
+    return out
+
+
+def _union_bank_view(state) -> dict:
+    """4 (v2.0): Unie vidi banku Unie, radu, schvalene akce cekajici na provedeni a stav obrany."""
+    C = state["players"]["C"]
+    turn = int(state["meta"]["turn"])
+    out = {}
+    U = state.get("bank_U")
+    if U is not None:
+        out["banka_unie"] = {"kapital": round(float(U["capital"]), 1),
+                             "pohledavky": round(bank_claims(state, BANK_U), 1),
+                             "dluznici": {nid: round(float(n["debt"].get(BANK_U, 0.0)), 1)
+                                          for nid, n in state["npc"].items() if float(n["debt"].get(BANK_U, 0.0)) > 0.05},
+                             "zisk_minule_kolo": round(float(U.get("profit_last", 0.0)), 2)}
+    members = list(C.get("members") or [])
+    rada = {}
+    for mm in members:
+        n = state["npc"][mm]
+        others = [float(state["npc"][x]["wealth"]) for x in members if x != mm]
+        avg = sum(others) / len(others) if others else float(n["wealth"])
+        rada[mm] = {"wealth_proti_prumeru": "nad" if float(n["wealth"]) > avg else "pod",
+                    "dluh_u_cizich_veritelu": _foreign_debt(state, mm),
+                    "dluh_u_banky_unie": float(n["debt"].get(BANK_U, 0.0)) > 1e-9,
+                    "prehlasovan_v_rade": int(n.get("overruled_streak", 0))}
+    out["rada"] = rada
+    out["schvaleno_ceka_na_provedeni"] = [dict(p["action"], provede_se_v_kole=p["execute"])
+                                          for p in C.get("council_pending") or []]
+    out["posledni_hlasovani"] = [v for v in C.get("council_votes") or [] if int(v["turn"]) >= turn - 2]
+    out["obrana"] = [{"utocnik": x, "od_kola": d["since"], "posledni_invaze": d["last"], "cile": d.get("targets", []),
+                      "aktivni_do_kola": int(d["last"]) + DEFENSE_AFTER}
+                     for x, d in (C.get("defense") or {}).items() if turn <= int(d["last"]) + DEFENSE_AFTER]
+    mor = {k: v for k, v in (state.get("moratoria") or {}).items() if turn <= int(v["until"])}
+    if mor:
+        out["moratorium"] = mor
+    return out
+
+
 def build_views(state, npcdata) -> dict:
     views = {}
     C = state["players"]["C"]
@@ -3484,6 +4214,8 @@ def build_views(state, npcdata) -> dict:
                 "pop": round(float(nn["pop"]), 2),
                 "coups": int(nn.get("coups", 0)),
                 "kind": nn.get("kind", "normal"),
+                # 4 (v2.0): dluh u bank, soucet vsech tri soustav, bez rozdeleni
+                "dluh_bankam": round(bank_debt(nn), 1),
             }
             if pid in ("A", "B"):
                 item["influence_moje"] = round(float(nn["influence"].get(pid, 0.0)), 3)
@@ -3524,6 +4256,7 @@ def build_views(state, npcdata) -> dict:
             # 7.2 (v1.9): platna sazba cla a sazba ohlasena na pristi tah
             mine["clo"] = tariff_rate(state)
             mine["clo_od_pristiho_tahu"] = C.get("tariff_next")
+            mine.update(_union_bank_view(state))
         views[pid] = {
             "turn": state["meta"]["turn"],
             "cas": game_time(int(state["meta"]["turn"]) + 1),   # v1.14: herni cas kola, ktere hrac hraje
@@ -3540,6 +4273,8 @@ def build_views(state, npcdata) -> dict:
             "news": list(state.get("news", [])),
             "valky": _wars_view(state, pid),   # 3.3a (v1.10): valky verejne, nabidka primeri (V14)
         }
+        if pid == "A":
+            views[pid]["kalverske_banky"] = _banks_k_view(state)   # 4 (v2.0)
         if C["active"]:
             views[pid]["clo_unie"] = tariff_rate(state)   # 7.2 (v1.9): verejna sazba cla
     return views
@@ -3574,6 +4309,7 @@ def apply_turn(state, npcdata, actions):
         step_prices(st, trace)
         st["prices_turn"] = turn
     events = apply_actions(st, npcdata, actions, rng, trace)
+    step_bank_lending(st, trace, events)      # 4.6 (v2.0): bankovni uver po akcich hracu, pred trhem
     step_npc_auto_invest(st, trace, events)   # 4.2a (v1.11): pred trhem kvuli nakupu goods
     upkeep_deals(st, trace, events)
     step_wars(st, trace, events)   # 3.3a (v1.10)
@@ -3588,6 +4324,7 @@ def apply_turn(state, npcdata, actions):
     step_influence(st, trace, events)
     step_minsky(st, npcdata, rng, trace, events)
     step_union(st, npcdata, trace, events)
+    step_banks(st, trace, events)             # 4.6 a 7.2 (v2.0): vyuctovani bank
     step_offers(st, npcdata, trace, events)
     step_metrics(st, trace)
 

@@ -6,7 +6,7 @@ Orchestrace jednoho tahu podle BUILD.md cast 3.
   2. engine vygeneruje pohledy (views/X.json),
   3. paralelne zavola hrace (A, B, a C, pokud je Unie aktivni); kazdy dostane svuj prompt,
      svuj tajny cil, docs/format_tahu.md, svuj pohled, poslednich 9 tahu verejneho logu
-     (projevy, Zpravy sveta, verejne akce, bez private_reasoning) a soukrome zpravy pro nej
+     (projevy, Zpravy sveta, verejne akce, bez duverneho zapisu) a soukrome zpravy pro nej
      z minuleho tahu; neplatny JSON = 2 opakovani, pak mlceni (pravidla 10.6),
   4. rozhodci prelozi tahy na akce (actions, rejected, rulings),
   5. engine prepocita svet,
@@ -57,7 +57,8 @@ MIN_REASONING_CHARS = 80
 # delka odpovedi: strop tokenu pro hrace a rozhodciho
 PLAYER_MAX_TOKENS = 5000
 REFEREE_MAX_TOKENS = 4000
-# premysleni: hraci adaptivne s nizkym usilim (Opus 5 budget_tokens odmita), rozhodci bez premysleni
+# premysleni: hraci adaptivne s nizkym usilim (Opus 5.5 jako Opus 5 budget_tokens odmita, effort "low" prijima;
+# overeno testovacim volanim v2.0), rozhodci bez premysleni
 PLAYER_THINKING = {"type": "adaptive"}
 PLAYER_EFFORT = "low"
 REFEREE_THINKING = {"type": "disabled"}
@@ -70,7 +71,7 @@ NO_DOMESTIC = "zadna"   # vyslovna volba bez domaci akce; dal se zpracuje jako n
 
 # Co hrac nikdy nesmi dostat (zadani 14. 9. 2026, bod 7). Klice se hledaji v pohledu
 # a ve verejnem logu; law a tech se hlidaji zvlast, protoze C je u clenu a kandidatu vidi.
-FORBIDDEN_KEYS = ("private_reasoning", "openness", "prosperity_index", "law_threshold",
+FORBIDDEN_KEYS = ("duverny_zapis", "private_reasoning", "openness", "prosperity_index", "law_threshold",
                   "metrics", "influence", "debt", "paper_wealth_detail")
 
 
@@ -89,7 +90,9 @@ def dump(obj) -> str:
 # pohled hrace: bez odsazeni, cisla na 1 desetinne misto; ceny a clo na 2, jinak by se
 # ztratila sazba po 0.05 a pasmo ceny u trade_offer (docs/OPEN_QUESTIONS.md, v1.10)
 PRECISE_KEYS = ("ceny", "clo", "clo_unie", "clo_od_pristiho_tahu", "price", "price_per_unit", "prumerna_cena")
-PLAYER_NAMES = {"A": "Kalverská federace", "B": "Lidová republika Ostrogard"}
+PLAYER_NAMES = {"A": "Kalverská federace", "B": "Lidová republika Ostrogard",
+                # v2.0: veritele v udalostech (nejsou staty, dateline podle dluznika nebo sidla bank)
+                "BANKY_K": "kalverské banky", "BANKY_AUR": "banky Aurelie", "BANKA_U": "rozvojová banka Unie"}
 
 
 def capitals(npc: dict) -> dict:
@@ -250,7 +253,7 @@ def history_path(turn: int) -> Path:
 def public_log(turn: int) -> list[dict]:
     """Poslednich PUBLIC_LOG_TURNS tahu z history/: projevy, Zpravy sveta a verejne akce.
 
-    private_reasoning se nepredava nikomu (ani vlastni), text soukromych zprav take ne;
+    duverny zapis se nepredava nikomu (ani vlastni), text soukromych zprav take ne;
     z akce message zustane jen, kdo komu psal.
     """
     out = []
@@ -281,7 +284,17 @@ def private_messages(state, pid: str) -> list[dict]:
 # pamet hracu (v1.11, E9 az E11): jen z vlastnich uvah a dat enginu
 # --------------------------------------------------------------------------
 
-MEMORY_TURNS = 1   # tve_minule_uvahy: jen minuly tah (dlouhodobou pamet si hrac vede v poznamkach)
+MEMORY_TURNS = 1   # tvuj_minuly_zapis: jen minuly tah (dlouhodobou pamet si hrac vede v poznamkach)
+# v2.0: pole duverneho zapisu vlady (driv private_reasoning; Opus 5.5 ho pod starym nazvem a popisem odmital
+# jako reasoning_extraction). Snimky history pred v2.0 nesou stary nazev, cteni zvlada oba (zapis_of).
+ZAPIS_FIELD = "duverny_zapis"
+OLD_ZAPIS_FIELD = "private_reasoning"
+
+
+def zapis_of(move) -> str:
+    """Duverny zapis z tahu hrace; u starych snimku z pole private_reasoning."""
+    move = move or {}
+    return move.get(ZAPIS_FIELD) or move.get(OLD_ZAPIS_FIELD) or ""
 NOTES_FIELD = "poznamky_pro_pristi_tah"
 MEMORY_PLAYERS = ("A", "B")
 OPPONENT = {"A": "B", "B": "A"}
@@ -305,14 +318,14 @@ def _r(x, d=1):
 
 
 def memory_reasoning(turn: int, pid: str) -> list[dict]:
-    """E9: vlastni private_reasoning z poslednich 3 tahu s cislem tahu, nikdy cizi."""
+    """E9: vlastni duverny zapis z minuleho tahu s cislem tahu, nikdy cizi."""
     out = []
     for t in range(max(1, turn - MEMORY_TURNS), turn):
         snap = load_snapshot(t)
         move = ((snap or {}).get("turns") or {}).get(pid) or {}
-        text = move.get("private_reasoning") or ""
+        text = zapis_of(move)
         if text:
-            out.append({"tah": t, "uvaha": text})
+            out.append({"kolo": t, "zapis": text})
     return out
 
 
@@ -971,7 +984,7 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
     ]
     if pid in MEMORY_PLAYERS:
         memory += [
-            "## tve_minule_uvahy (tvá vlastní úvaha z minulého tahu)",
+            "## tvuj_minuly_zapis (tvůj důvěrný zápis z minulého kola)",
             "```json",
             _compact(memory_reasoning(turn, pid)),
             "```",
@@ -1036,8 +1049,10 @@ def referee_actions_prompt(state, moves: dict) -> str:
         "meta.paused = %s" % str(bool(state["meta"].get("paused"))).lower(),
         "Limity akcí: A %d, B %d, C %d. Tahy 1 až 6 nejednoznačné akce doplňuj, od tahu 7 vyřazuj." % (
             engine.ACTION_LIMIT["A"], engine.ACTION_LIMIT["B"], engine.ACTION_LIMIT["C"]),
-        "Mimo limit (v1.11): domestic_action A a B (jedna, typy %s, akce s \"slot\": \"domestic\") "
-        "a message (jedna za tah)." % ", ".join(engine.DOMESTIC_TYPES),
+        "Mimo limit (v1.11): domestic_action A a B (jedna, typy %s, u A navic %s, akce s \"slot\": \"domestic\") "
+        "a message (jedna za tah)." % (", ".join(engine.DOMESTIC_TYPES), ", ".join(engine.BANK_DOMESTIC)),
+        "Unie (v2.0): union_fund, refinancovani, moratorium, kapitalizace_banky a admit jdou pred radu; "
+        "překládej je jako ostatní akce, hlasování a provedení v dalším kole dělá engine.",
         "",
         "## Tahy hráčů",
         "```json",
@@ -1091,7 +1106,7 @@ def _walk_keys(obj, path=""):
 
 
 def check_player_input(state, views, pid: str, log: list) -> list[str]:
-    """Hrac nesmi dostat cizi private_reasoning, cizi law/tech, openness, cizi stock ani index."""
+    """Hrac nesmi dostat cizi duverny zapis, cizi law/tech, openness, cizi stock ani index."""
     errors = list(validate_views(state, {pid: views[pid]}))
     C = state["players"]["C"]
     allowed_lt = set(C.get("members") or []) | set(C.get("candidates") or []) if pid == "C" else set()
@@ -1107,20 +1122,20 @@ def check_player_input(state, views, pid: str, log: list) -> list[str]:
     if pid == "C" and "stock" in views[pid].get("ja", {}):
         errors.append("pohled C obsahuje stock")
     for where, key in _walk_keys(log, "log"):
-        if key in ("private_reasoning", "openness", "prosperity_index", "metrics", "text"):
+        if key in (ZAPIS_FIELD, OLD_ZAPIS_FIELD, "openness", "prosperity_index", "metrics", "text"):
             errors.append("%s: zakazane pole %s" % (where, key))
     return errors
 
 
 def check_foreign_reasoning(pid: str, turn: int, user: str) -> list[str]:
-    """v1.11 (E9): v promptu hrace nesmi byt cizi private_reasoning ani cizi poznamky; vlastni poznamky
+    """v1.11 (E9): v promptu hrace nesmi byt cizi duverny zapis ani cizi poznamky; vlastni poznamky
     jsou prave ty z minuleho tahu hrace pid."""
     errors = []
     for t in range(max(1, turn - config.PUBLIC_LOG_TURNS - 1), turn):
         snap = load_snapshot(t)
         for q, move in ((snap or {}).get("turns") or {}).items():
-            for field, label in (("private_reasoning", "uvahu"), (NOTES_FIELD, "poznamky")):
-                text = (move.get(field) or "").strip()
+            for field, label in ((ZAPIS_FIELD, "zapis"), (NOTES_FIELD, "poznamky")):
+                text = (zapis_of(move) if field == ZAPIS_FIELD else (move.get(field) or "")).strip()
                 if q != pid and len(text) >= 20 and text[:200] in user:
                     errors.append("prompt obsahuje %s hrace %s z tahu %d" % (label, q, t))
     own = memory_notes(turn, pid)
@@ -1150,14 +1165,16 @@ def client():
     return _client
 
 
-# ceny v USD za milion tokenu (vstup, vystup); zapis do cache 1.25x vstupu, cteni 0.1x vstupu
-PRICES = {"claude-opus-5": (5.0, 25.0), "claude-sonnet-5": (2.0, 10.0), "claude-opus-4-8": (5.0, 25.0)}
+# ceny v USD za milion tokenu (vstup, vystup, nasobek cteni z cache) podle platform.claude.com/docs/en/about-claude/pricing
+# (overeno 24. 9. 2026); zapis do cache (5 min) 1.25x vstupu u vsech modelu, cteni 0.1x, u Opus 5.5 0.05x
+PRICES = {"claude-opus-5-5": (4.0, 20.0, 0.05), "claude-opus-5": (5.0, 25.0, 0.1), "claude-sonnet-5": (2.0, 10.0, 0.1),
+          "claude-opus-4-8": (5.0, 25.0, 0.1)}
 
 
 def call_cost(u: dict) -> float:
-    pin, pout = PRICES.get(u["model"], (5.0, 25.0))
+    pin, pout, read = PRICES.get(u["model"], (5.0, 25.0, 0.1))
     return (u["input_tokens"] * pin + u["cache_creation_input_tokens"] * pin * 1.25
-            + u["cache_read_input_tokens"] * pin * 0.1 + u["output_tokens"] * pout) / 1e6
+            + u["cache_read_input_tokens"] * pin * read + u["output_tokens"] * pout) / 1e6
 
 
 # --------------------------------------------------------------------------
@@ -1166,7 +1183,7 @@ def call_cost(u: dict) -> float:
 
 ACTION_TYPES = ("trade_offer", "loan", "pressure", "protect", "invade", "declare_war", "invest_tech", "invest_law",
                 "invest_industry", "invest_prod", "explore", "arm", "cancel", "admit", "union_fund", "set_tariff",
-                "accept_offer")
+                "accept_offer") + engine.UNION_NEW_TYPES   # v2.0: kapitalizace_banky, refinancovani, moratorium
 ACTION_PARAMS = {
     "target": {"type": "string"},
     "res": {"type": "string", "enum": ["grain", "oil", "metal", "goods", "orit"]},
@@ -1178,6 +1195,7 @@ ACTION_PARAMS = {
     "demand": {"type": "string"},
     "rate": {"type": "number"},
     "retreat": {"type": "boolean"},
+    "creditor": {"type": "string", "enum": [engine.BANK_K, engine.BANK_AUR]},   # v2.0: refinancovani
 }
 MESSAGE_SCHEMA = {"type": "object", "additionalProperties": False, "required": ["target", "text"],
                   "properties": {"target": {"type": "string", "enum": ["A", "B", "C"]}, "text": {"type": "string"}}}
@@ -1189,7 +1207,7 @@ def player_schema(pid: str) -> dict:
               "properties": {"type": {"type": "string", "enum": list(ACTION_TYPES)}, **ACTION_PARAMS}}
     props = {
         "public_statement": {"type": "string"},
-        "private_reasoning": {"type": "string", "minLength": MIN_REASONING_CHARS},
+        ZAPIS_FIELD: {"type": "string", "minLength": MIN_REASONING_CHARS},
         "actions": {"type": "array", "items": action},
         "message": {"anyOf": [{"type": "null"}, MESSAGE_SCHEMA]},
         NOTES_FIELD: {"type": "string"},
@@ -1198,7 +1216,7 @@ def player_schema(pid: str) -> dict:
         # domaci akce je vzdy vyslovna volba: investice, nebo "zadna" (null model volil i tam, kde investovat chtel)
         props["domestic_action"] = {
             "type": "object", "additionalProperties": False, "required": ["type"],
-            "properties": {"type": {"type": "string", "enum": list(engine.DOMESTIC_TYPES) + [NO_DOMESTIC]},
+            "properties": {"type": {"type": "string", "enum": list(engine.domestic_types(pid)) + [NO_DOMESTIC]},
                            "amount": {"type": "number"},
                            "res": {"type": "string", "enum": ["grain", "oil", "metal"]}}}
     return {"type": "object", "additionalProperties": False, "required": list(props), "properties": props}
@@ -1272,12 +1290,21 @@ def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usag
         if not kwargs["output_config"]:
             kwargs.pop("output_config")
         resp = send(kwargs)
+    fallback = resp.model != model
+    if fallback:
+        # v2.0: zalozni model nikdy potichu; zaznam jde do usage, do tahu hrace (pole zaloha) a na web
+        print("ZALOHA (%s): %s odmitl pozadavek, odpovedel %s" % (label, model, resp.model))
     if usage_log is not None:
         u = {"call": label, "model": resp.model, "input_tokens": resp.usage.input_tokens,
              "cache_creation_input_tokens": getattr(resp.usage, "cache_creation_input_tokens", 0) or 0,
              "cache_read_input_tokens": getattr(resp.usage, "cache_read_input_tokens", 0) or 0,
              "output_tokens": resp.usage.output_tokens, "stop_reason": resp.stop_reason}
         u["cost_usd"] = round(call_cost(u), 5)
+        if fallback:
+            u["fallback_from"] = model
+        details = getattr(resp, "stop_details", None)
+        if resp.stop_reason == "refusal" and details is not None:
+            u["refusal_category"] = getattr(details, "category", None)
         usage_log.append(u)
     if resp.stop_reason == "refusal":
         return ""
@@ -1304,13 +1331,13 @@ def normalize_domestic(move) -> None:
 
 def valid_move(obj) -> bool:
     if not (isinstance(obj, dict) and isinstance(obj.get("public_statement"), str)
-            and isinstance(obj.get("private_reasoning"), str) and isinstance(obj.get("actions"), list)
+            and isinstance(obj.get(ZAPIS_FIELD), str) and isinstance(obj.get("actions"), list)
             and isinstance(obj.get("domestic_action"), (dict, type(None)))
             and isinstance(obj.get("message"), (dict, type(None)))
             and isinstance(obj.get(NOTES_FIELD), str)):
         return False
     # v1.12: uvaha aspon MIN_REASONING_CHARS znaku a aspon jedna akce, domaci akce nebo zprava
-    if len(obj["private_reasoning"].strip()) < MIN_REASONING_CHARS:
+    if len(obj[ZAPIS_FIELD].strip()) < MIN_REASONING_CHARS:
         return False
     return bool(obj["actions"]) or obj.get("domestic_action") is not None or obj.get("message") is not None
 
@@ -1387,7 +1414,7 @@ def player_domestic(actions: list, moves: dict, state) -> list:
         out.append(a)
     for pid, move in moves.items():
         dom = (move or {}).get("domestic_action")
-        if pid in MEMORY_PLAYERS and isinstance(dom, dict) and dom.get("type") in engine.DOMESTIC_TYPES:
+        if pid in MEMORY_PLAYERS and isinstance(dom, dict) and dom.get("type") in engine.domestic_types(pid):
             act = {"player": pid, "type": dom["type"], "slot": "domestic"}
             for k in ("amount", "res"):
                 if dom.get(k) is not None:
@@ -1432,7 +1459,7 @@ def mark_domestic(actions: list, moves: dict) -> list:
     for a in actions:
         a = dict(a)
         if a.get("slot") == "domestic" and (a.get("player") not in MEMORY_PLAYERS
-                                            or a.get("type") not in engine.DOMESTIC_TYPES
+                                            or a.get("type") not in engine.domestic_types(a.get("player"))
                                             or not isinstance((moves.get(a["player"]) or {}).get("domestic_action"), dict)):
             a.pop("slot")
         out.append(a)
@@ -1466,8 +1493,8 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
         normalize_domestic(move)
         if not valid_move(move):
             save_fail(turn, pid, attempt + 1, raw,
-                      "JSON bez public_statement, private_reasoning nebo actions, nebo domestic_action ci message "
-                      "neni objekt ani null, chybi poznamky_pro_pristi_tah, nebo (v1.12) private_reasoning kratsi nez %d znaku ci zadna akce, "
+                      "JSON bez public_statement, duverny_zapis nebo actions, nebo domestic_action ci message "
+                      "neni objekt ani null, chybi poznamky_pro_pristi_tah, nebo (v1.12) duverny_zapis kratsi nez %d znaku ci zadna akce, "
                       "domaci akce ani zprava" % MIN_REASONING_CHARS,
                       usage)
             continue
@@ -1487,8 +1514,13 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
             move["silent"] = False
             move["attempts"] = attempt + 1
             move["usage"] = usage
+            used = [u for u in usage if u.get("fallback_from")]
+            if used:
+                move["zaloha"] = {"model": used[-1]["model"], "misto": used[-1]["fallback_from"],
+                                  "poznamka": "Odpověď napsal záložní model %s, protože %s požadavek odmítl."
+                                              % (used[-1]["model"], used[-1]["fallback_from"])}
             return move
-    return {"public_statement": SILENT_STATEMENT, "private_reasoning": "", "actions": [], "domestic_action": None, "message": None, NOTES_FIELD: "",
+    return {"public_statement": SILENT_STATEMENT, ZAPIS_FIELD: "", "actions": [], "domestic_action": None, "message": None, NOTES_FIELD: "",
             "silent": True, "attempts": len(attempts), "raw": attempts, "usage": usage}
 
 
@@ -1665,7 +1697,7 @@ def main() -> int:
             print("zapsano %s" % path.relative_to(config.ROOT))
         if not args.only:
             placeholder = {pid: {"public_statement": "<odpověď hráče %s>" % pid,
-                                 "private_reasoning": "<odpověď hráče %s>" % pid,
+                                 ZAPIS_FIELD: "<odpověď hráče %s>" % pid,
                                  "actions": ["<akce hráče %s>" % pid],
                                  "domestic_action": ("<domácí akce hráče %s nebo null>" % pid) if pid in MEMORY_PLAYERS else None,
                                  "message": "<zpráva hráče %s nebo null>" % pid,
@@ -1710,7 +1742,7 @@ def main() -> int:
             return 0
 
     # 4. rozhodci: preklad tahu
-    public_moves = {pid: {k: m.get(k) for k in ("public_statement", "private_reasoning", "actions",
+    public_moves = {pid: {k: m.get(k) for k in ("public_statement", ZAPIS_FIELD, "actions",
                                                 "domestic_action", "message")}
                     for pid, m in moves.items()}
     ref_usage = []

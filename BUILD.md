@@ -33,14 +33,18 @@ web/index.html       statická stránka (GitHub Pages ze složky web/)
 
 1. Načti `state.json`. Je-li `meta.paused`, skonči bez změny.
 2. Engine vygeneruje pohledy.
-3. Paralelně zavolej hráče (A, B, a C pokud `players.C.active`). Každý hráč dostane: svůj prompt (`prompts/hrac_A.md` / `hrac_B.md` / `hrac_unie.md`), svůj tajný cíl (`secrets/cil_A.md` / `cil_B.md` / `cil_C.md`), svůj pohled, posledních 9 tahů veřejného logu (projevy, Zprávy, veřejné akce; NE cizí `private_reasoning`), soukromé zprávy adresované jemu z minulého tahu, `docs/format_tahu.md`. Hráči A a B navíc (v1.11) bloky paměti `tve_minule_uvahy` (vlastní `private_reasoning` z posledních 3 tahů), `od_tveho_minuleho_tahu` (fakta z enginu) a `tve_smlouvy`; kontrola vstupu ověří, že v promptu není cizí úvaha. Tah A a B má volitelné pole `domestic_action`, rozhodčí ho překládá na akci se `slot: domestic`. Odpověď musí být validní JSON; při selhání 2 opakování, pak `silent` (pravidla 10.6).
+3. Paralelně zavolej hráče (A, B, a C pokud `players.C.active`). Každý hráč dostane: svůj prompt (`prompts/hrac_A.md` / `hrac_B.md` / `hrac_unie.md`), svůj tajný cíl (`secrets/cil_A.md` / `cil_B.md` / `cil_C.md`), svůj pohled, posledních 9 tahů veřejného logu (projevy, Zprávy, veřejné akce; NE cizí `duverny_zapis`), soukromé zprávy adresované jemu z minulého tahu, `docs/format_tahu.md`. Hráči A a B navíc (v1.11) bloky paměti `tvuj_minuly_zapis` (vlastní `duverny_zapis` z minulého kola; v1.11 až v1.14b `tve_minule_uvahy` z `private_reasoning`), `od_tveho_minuleho_tahu` (fakta z enginu) a `tve_smlouvy`; kontrola vstupu ověří, že v promptu není cizí úvaha. Tah A a B má volitelné pole `domestic_action`, rozhodčí ho překládá na akci se `slot: domestic`. Odpověď musí být validní JSON; při selhání 2 opakování, pak `silent` (pravidla 10.6).
 4. Zavolej rozhodčího (`prompts/rozhodci.md`) s tahy a `docs/pravidla.md`: vrátí `actions`, `rejected`, `rulings`.
 5. Engine přepočítá svět.
 6. Zavolej rozhodčího podruhé jen se seznamem `events`: vrátí `news`.
-7. `validate.py`. Při úspěchu: zapiš `state.json`, `history/turn_NNN.json` (stav, tahy včetně `private_reasoning`, rejected, rulings, news, events, applied_rules), commit a push. Při selhání: `history/failed_turn_NNN.json`, žádný commit `state.json`, e‑mail Adamovi (Gmail konektor) s důvodem.
+7. `validate.py`. Při úspěchu: zapiš `state.json`, `history/turn_NNN.json` (stav, tahy včetně `duverny_zapis`, rejected, rulings, news, events, applied_rules), commit a push. Při selhání: `history/failed_turn_NNN.json`, žádný commit `state.json`, e‑mail Adamovi (Gmail konektor) s důvodem.
 8. Trvalá `rulings` ukládej do `docs/rulings.md`, rozhodčí je dostává v každém dalším tahu.
 
-Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER_MODEL`. Výchozí: hráči a kronikář nejsilnější dostupný model (Opus), rozhodčí Sonnet. Adam může přepnout jedním commitem.
+Modely: v `config.py` jedno místo: `PLAYER_MODEL`, `REFEREE_MODEL`, `CHRONICLER_MODEL`. Výchozí: hráči a kronikář nejsilnější dostupný model (Opus), rozhodčí Sonnet. Adam může přepnout jedním commitem. **Od v2.0 (24. 9. 2026):** hráči a kronikář `claude-opus-5-5`, rozhodčí `claude-sonnet-5`. Opus 5.5 přijímá `thinking: adaptive` s `output_config.effort = "low"` a strukturovaný výstup (`output_config.format`) jako Opus 5; ověřeno testovacím voláním `--only A --no-apply`. Záložní model při odmítnutí (server-side fallback) zůstává `claude-opus-4-8`. Ceník v `run_turn.PRICES` podle platform.claude.com: Opus 5.5 vstup 4, výstup 20 USD za milion tokenů, čtení z cache 0.05 × vstupu (ostatní modely 0.1 ×).
+
+**v2.0 důvěrný zápis a záložní model (24. 9. 2026):** pole `private_reasoning` se jmenuje `duverny_zapis` („důvěrný zápis z jednání vlády“, čte ho jen publikum); Opus 5.5 původní pole a popis odmítal jako `reasoning_extraction`. Snímky z v1.x nesou starý název, `run_turn.zapis_of()` a web čtou oba. Když odpoví záložní model (server-side fallback), `call_model` to vypíše, usage nese `fallback_from` (a u odmítnutí `refusal_category`), tah hráče pole `zaloha` s poznámkou a web ji ukáže nad zápisem.
+
+**v2.0 banky a Unie po krizi (24. 9. 2026):** engine má bankovní soustavy `banks_K`, `banks_AUR` a `bank_U` (4.6, 7.2): úvěr `step_bank_lending` po akcích hráčů, vyúčtování `step_banks` po Unii, vymáhání a moratorium ve `step_repayments`, rada Unie `_council_vote` (schválené akce v `players.C.council_pending`, provedení na začátku `apply_actions` dalšího kola) a společná obrana v `_register_invasion`. Domácí akce A rozšiřuje `engine.domestic_types("A")` o `zprisnit_uvery`, `uvolnit_uvery` a `sanace_bank`; schéma hráče i výtah pro rozhodčího z něj vycházejí. Bankovní úvěr jde rozhodčímu jako jedna souhrnná událost `bank_loan` na soustavu a kolo, ne po dlužnících.
 
 Klíč se čte z `ARDAN_API_KEY`, náhradně `ANTHROPIC_API_KEY`; nikdy není v repu.
 
@@ -84,7 +88,7 @@ Jedna statická stránka, žádný build, žádný backend. Načítá `history/*
 - Hlavička: den, tah, fáze Minskyho (anglicky / česky), název Unie po vzniku.
 - Mapa: SVG z `npc.json` souřadnic. Stát = kruh, plocha podle `wealth + paper_wealth`, barva podle statusu (nezávislý šedá, sféra A světle modrá, sféra B světle červená, okupace tmavá barva okupanta, Unie zelená, kandidát zelený obrys), padlé říše se zlatým obrysem. Ikona ložiska oritu, šipky migrace, probíhající invaze jako čárkovaná spojnice s počítadlem tahů, aktivní obchody jako tenké linky.
 - Slider po tazích + tlačítko přehrát (2 s na tah). Vše pod mapou se přepíná se sliderem.
-- Panel tahů: pro každého hráče projev, pod ním rozbalitelné "Co si doopravdy myslel" (`private_reasoning`), seznam akcí, vyřazené akce s důvodem.
+- Panel tahů: pro každého hráče projev, pod ním rozbalitelné "Důvěrný zápis vlády" (`duverny_zapis`, ve starších snímcích `private_reasoning`), seznam akcí, vyřazené akce s důvodem.
 - Zprávy světa daného tahu.
 - Kronika dne, ke kterému tah patří (Markdown render).
 - Grafy: cena oritu, index prosperity, tři národní ukazatele (podíl obchodu A, podíl zdrojů B, nejchudší člen C). Kurzor synchronizovaný se sliderem.
