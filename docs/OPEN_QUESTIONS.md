@@ -4763,3 +4763,7 @@ potvrzen.
 Kronikář na Opus 5.5 (13. 10. 2026): vstup se starým polem `private_reasoning` a nadpisem „skrytá zdůvodnění“
 odmítl jako `reasoning_extraction`; po přejmenování na `duverny_zapis` a „důvěrné zápisy vlád“ prošel bez zálohy.
 
+
+### Přehrání od kola 7 podle v2.0.1 (13. 10. 2026)
+
+Kola 7 až 12 podle v1.14b archivována, přehráno od kola 7 podle v2.0.1, day1_date posunut na 11. 10. 2026, rozhodnutí Adama 13. 10. 2026. Archiv: `history/archive_v1_14b/` (snímky kol 7 až 12, kroniky let 3 a 4, stav po kole 12 jako `state_turn_012.json`).
