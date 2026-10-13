@@ -57,8 +57,7 @@ MIN_REASONING_CHARS = 80
 # delka odpovedi: strop tokenu pro hrace a rozhodciho
 PLAYER_MAX_TOKENS = 5000
 REFEREE_MAX_TOKENS = 4000
-# premysleni: hraci adaptivne s nizkym usilim (Opus 5.5 jako Opus 5 budget_tokens odmita, effort "low" prijima;
-# overeno testovacim volanim v2.0)
+# premysleni: hraci adaptivne s nizkym usilim (Opus 5 budget_tokens odmita, effort "low" prijima; overeno v zari 2026)
 PLAYER_THINKING = {"type": "adaptive"}
 PLAYER_EFFORT = "low"
 # rozhodci: preklad tahu bez premysleni zahazoval akce (tahy 6 az 8), proto adaptivne s nizkym usilim;

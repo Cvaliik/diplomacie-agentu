@@ -9,9 +9,9 @@ from pathlib import Path
 # --- modely ---------------------------------------------------------------
 # Hraci a kronikar nejsilnejsi dostupny model, rozhodci levnejsi.
 # Pokud Opus dochazi, prepni PLAYER_MODEL na Sonnet; kronikar zustava Opus.
-PLAYER_MODEL = "claude-opus-5-5"
+PLAYER_MODEL = "claude-opus-5"   # v2.0.3: zpet z Opus 5.5, ktery tahy hracu odmital (reasoning_extraction)
 REFEREE_MODEL = "claude-sonnet-5"
-CHRONICLER_MODEL = "claude-opus-5-5"
+CHRONICLER_MODEL = "claude-opus-5"
 
 # --- cesty ----------------------------------------------------------------
 ROOT = Path(__file__).parent
