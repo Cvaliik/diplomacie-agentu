@@ -37,8 +37,18 @@ def day_turns(day: int) -> list[int]:
 
 def _state_for_chronicle(state) -> dict:
     s = json.loads(json.dumps(state))
-    s.pop("log", None)
+    # v2.0.1: bez logu a bez poli, ktera kronikar dostava po kolech jinde (odpovedi statu, zpravy, nabidky)
+    for k in ("log", "private_log", "npc_decisions", "offers", "offers_new", "counter_offers", "messages_pending"):
+        s.pop(k, None)
+    for n in (s.get("npc") or {}).values():
+        n.pop("influence_history", None)
+        n.pop("wealth_history", None)
     return s
+
+
+def _cj(obj) -> str:
+    """Kompaktni JSON pro vstup kronikare (v2.0.1)."""
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
 
 
 def _zapisy(moves: dict) -> dict:
@@ -51,6 +61,46 @@ def _zapisy(moves: dict) -> dict:
             m.setdefault("duverny_zapis", old)
         out[pid] = m
     return out
+
+
+MOVE_KEYS = ("public_statement", "duverny_zapis", "poznamky_pro_pristi_tah", "domestic_action", "message",
+             "silent", "mlci", "zaloha")
+
+
+def _move_for_chronicle(m: dict) -> dict:
+    """v2.0.1: z tahu hrace jen to, co kronikar pouziva: projev, duverny zapis, poznamky, domaci akce, zprava,
+    mlceni, zaloha a nazev zanru (bez usage, pokusu a otazek)."""
+    out = {k: m[k] for k in MOVE_KEYS if m.get(k) not in (None, "", False)}
+    if isinstance(m.get("genre"), dict):
+        out["zanr"] = m["genre"].get("name")
+    return out
+
+
+def _compact_state(st) -> dict:
+    """v2.0.1: kompaktni stav kola: faze, ceny, metriky, cena oritu, banky, Unie a u kazdeho statu bohatstvi,
+    sila, obyvatelstvo, prumysl, status, vliv a dluhy."""
+    r = lambda v, d=1: round(float(v or 0.0), d)
+    staty = {}
+    for pid in ("A", "B"):
+        p = st["players"][pid]
+        staty[pid] = {"wealth": r(p.get("wealth")), "paper_wealth": r(p.get("paper_wealth")), "power": r(p.get("power")),
+                      "pop": r(p.get("pop")), "industry": r(p.get("industry"), 2), "occupied": p.get("occupied") or []}
+    for nid, n in st["npc"].items():
+        staty[nid] = {"wealth": r(n.get("wealth")), "paper_wealth": r(n.get("paper_wealth")), "power": r(n.get("power")),
+                      "pop": r(n.get("pop")), "industry": r(n.get("industry"), 2), "status": n.get("status"),
+                      "vliv": {k: r(v) for k, v in (n.get("influence") or {}).items()},
+                      "dluh": {k: r(v) for k, v in (n.get("debt") or {}).items() if float(v or 0) > 0.05},
+                      "prod_orit": r((n.get("prod") or {}).get("orit"))}
+    C = st["players"]["C"]
+    banky = {k: {"kapital": r(b.get("capital")), "padle": bool(b.get("failed"))}
+             for k, b in (("K", st.get("banks_K")), ("AUR", st.get("banks_AUR")), ("U", st.get("bank_U"))) if b}
+    return {"phase": st.get("phase"), "prices": st.get("prices"), "orit_price": (st.get("minsky") or {}).get("orit_price"),
+            "metrics": st.get("metrics"), "banky": banky,
+            "unie": {"active": bool(C.get("active")), "name": C.get("name"), "members": C.get("members") or [],
+                     "candidates": C.get("candidates") or [], "fund": r(C.get("wealth")),
+                     "rada": (C.get("council_votes") or [])[-3:]} if C.get("active") else {"active": False},
+            "staty": staty, "deals": [{k: d.get(k) for k in ("id", "type", "owner", "target", "res", "qty", "price")}
+                                      for d in st.get("deals") or []], "wars": st.get("wars") or []}
 
 
 def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
@@ -66,11 +116,20 @@ def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
                                 + (config.SECRETS_DIR / ("cil_%s.md" % pid)).read_text(encoding="utf-8").strip())
     system = "\n\n".join(system_parts)
 
+    # v2.0.1: za kazde kolo projevy, duverne zapisy, poznamky, Zpravy sveta, akce s vysledky, dorucene zpravy
+    # a kompaktni stav; plny stav jen po poslednim kole roku
     turns = []
     events = []
     for snap in snapshots:
-        turns.append({"turn": snap["turn"], "tahy": _zapisy(snap.get("turns", {})), "akce": snap.get("actions", []),
-                      "vyrazene": snap.get("rejected", []), "zpravy": snap.get("news", [])})
+        st = snap.get("state") or {}
+        turns.append({"turn": snap["turn"], "cas": engine.game_time(snap["turn"]),
+                      "tahy": {pid: _move_for_chronicle(m) for pid, m in _zapisy(snap.get("turns", {})).items()},
+                      "akce": snap.get("actions", []), "vyrazene": snap.get("rejected", []),
+                      "odpovedi_statu": [{k: d.get(k) for k in ("player", "npc", "action", "outcome", "reason")}
+                                         for d in st.get("npc_decisions") or []],
+                      "dorucene_zpravy": snap.get("delivered_messages", []),
+                      "zpravy": snap.get("news", []),
+                      "stav_po_kole": _compact_state(st) if st else None})
         events.append({"turn": snap["turn"], "events": snap.get("events", [])})
     phase = state_after["phase"]
     parts = [
@@ -79,14 +138,14 @@ def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
                                     "finale": "finále"}[kind], phase),
         "",
         "## Kola roku: jaro, léto, zima (projevy, důvěrné zápisy vlád, poznámky hráčů do spisu, akce, vyřazené akce, "
-        "Zprávy světa)",
-        "```json", dump(turns), "```", "",
+        "odpovědi států, doručené zprávy, Zprávy světa, kompaktní stav po kole)",
+        "```json", _cj(turns), "```", "",
         "## Události od enginu",
-        "```json", dump(events), "```", "",
-        "## Stav před rokem",
-        "```json", dump(_state_for_chronicle(state_before)), "```", "",
-        "## Stav po roce",
-        "```json", dump(_state_for_chronicle(state_after)), "```", "",
+        "```json", _cj(events), "```", "",
+        "## Stav před rokem (kompaktní)",
+        "```json", _cj(_compact_state(state_before)), "```", "",
+        "## Stav po roce (úplný)",
+        "```json", _cj(_state_for_chronicle(state_after)), "```", "",
         "## Loňská kronika",
         prev_chronicle or "(žádná)",
     ]

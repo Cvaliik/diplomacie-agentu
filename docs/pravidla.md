@@ -150,7 +150,7 @@ Hra má 3 tahy denně (7:00, 13:00, 20:00), 90 tahů celkem, den 30 = tahy 88 a�
 slot jako `((turn - 1) % 3) + 1`.
 
 Pořadí v tahu:
-1. Hráč A dostane `views/A.json` (jeho pohled na svět) + veřejný log + Zprávy světa posledních 3 tahů. Vrátí tah.
+1. Hráč A dostane `views/A.json` (jeho pohled na svět) + veřejný log posledních 9 tahů (v2.0.1: z posledních 3 tahů plně projevy, Zprávy světa a veřejné akce; z tahů 4 až 9 zpět jen veřejné akce s typem, cílem a částkou a titulky Zpráv světa, bez projevů). Vrátí tah.
    Od v1.11 navíc tři bloky paměti, sestavené z vlastních úvah hráče a dat enginu, nikdy z cizích úvah:
    `tvuj_minuly_zapis` (vlastní `duverny_zapis` z minulého kola, v2.0; do v1.14b `tve_minule_uvahy` z `private_reasoning`), `od_tveho_minuleho_tahu`
    (akce a veřejné výsledky soupeře, jeho projev doslova, vlastní akce a výsledky včetně vyřazení s důvodem, změna

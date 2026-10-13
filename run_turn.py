@@ -58,13 +58,13 @@ MIN_REASONING_CHARS = 80
 PLAYER_MAX_TOKENS = 5000
 REFEREE_MAX_TOKENS = 4000
 # premysleni: hraci adaptivne s nizkym usilim (Opus 5.5 jako Opus 5 budget_tokens odmita, effort "low" prijima;
-# overeno testovacim volanim v2.0), rozhodci bez premysleni
+# overeno testovacim volanim v2.0)
 PLAYER_THINKING = {"type": "adaptive"}
 PLAYER_EFFORT = "low"
-REFEREE_THINKING = {"type": "disabled"}
-# preklad tahu: rozhodci bez premysleni zahazoval akce (tahy 6 az 8), proto adaptivne s nizkym usilim
-REFEREE_ACTIONS_THINKING = {"type": "adaptive"}
-REFEREE_ACTIONS_EFFORT = "low"
+# rozhodci: preklad tahu bez premysleni zahazoval akce (tahy 6 az 8), proto adaptivne s nizkym usilim;
+# v2.0.1: totez nastaveni u vsech volani rozhodciho (otazky, akce, zpravy), aby dalsi volani cetla cache systemu
+REFEREE_THINKING = {"type": "adaptive"}
+REFEREE_EFFORT = "low"
 NOT_TAKEN_NOTE = "rozhodčí akci nepřevzal, převzata z tahu hráče"
 OVER_LIMIT_REASON = "nad limit akcí"
 NO_DOMESTIC = "zadna"   # vyslovna volba bez domaci akce; dal se zpracuje jako null
@@ -250,6 +250,18 @@ def history_path(turn: int) -> Path:
 # verejny log a soukrome zpravy (BUILD.md cast 3, bod 3)
 # --------------------------------------------------------------------------
 
+FULL_LOG_TURNS = 3   # v2.0.1: plne projevy a Zpravy sveta jen z poslednich 3 tahu okna
+
+
+def news_headline(text: str) -> str:
+    """Titulek zpravy: prvni veta bez datelinu („Mesto, rok R:“)."""
+    t = (text or "").strip()
+    if ": " in t[:60]:
+        t = t.split(": ", 1)[1]
+    first = re.split(r"(?<=[.!?])\s+", t, maxsplit=1)[0]
+    return first
+
+
 def public_log(turn: int) -> list[dict]:
     """Poslednich PUBLIC_LOG_TURNS tahu z history/: projevy, Zpravy sveta a verejne akce.
 
@@ -262,6 +274,13 @@ def public_log(turn: int) -> list[dict]:
         if not p.exists():
             continue
         snap = json.loads(read_text(p))
+        if t < turn - FULL_LOG_TURNS:
+            # v2.0.1: starsi tahy okna jen kompaktne: verejne akce (kdo, typ, cil, castka) a titulky Zprav sveta
+            akce = [{k: a[k] for k in ("player", "type", "target", "amount") if a.get(k) is not None}
+                    for a in snap.get("actions") or []]
+            out.append({"turn": t, "verejne_akce": akce,
+                        "titulky": [news_headline(n) for n in snap.get("news") or []]})
+            continue
         statements = {}
         for pid, move in (snap.get("turns") or {}).items():
             statements[pid] = move.get("public_statement", SILENT_STATEMENT)
@@ -943,7 +962,7 @@ def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> Non
         raw = call_model(config.REFEREE_MODEL, referee_system(), questions_prompt(state, npcdata, pid, info),
                          max_tokens=REFEREE_MAX_TOKENS, usage_log=usage_log, cache=True,
                          label="rozhodci otazky %s" % pid,
-                         schema=referee_schema(), thinking=REFEREE_THINKING)
+                         schema=referee_schema(), thinking=REFEREE_THINKING, effort=REFEREE_EFFORT)
         data = parse_json(raw)
     except (ValueError, json.JSONDecodeError):
         data = {}
@@ -960,6 +979,11 @@ def fill_questions(state, npcdata, pid: str, info: dict, usage_log: list) -> Non
 # skladani promptu
 # --------------------------------------------------------------------------
 
+def player_cache_prefix() -> str:
+    """Sdileny cachovany prefix systemu hracu (v2.0.1): docs/format_tahu.md beze zmeny."""
+    return read_text(config.TURN_FORMAT_PATH).strip()
+
+
 def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[str, str]:
     """Vraci (system, user) pro hrace pid."""
     turn = next_turn(state)
@@ -969,8 +993,9 @@ def player_prompt(state, views, pid: str, genre: dict | None = None) -> tuple[st
     # v1.13: blok Forma dnesniho vystoupeni podle vylosovaneho zanru
     base = base.replace("{forma}", genre_block(pid, genre) if genre else "")
     secret = read_text(config.SECRETS_DIR / SECRET_FILES[pid])
-    fmt = read_text(config.TURN_FORMAT_PATH)
-    system = "\n\n".join([base.strip(), secret.strip(), fmt.strip()])
+    # v2.0.1: system = [format_tahu.md] + [persona] + [tajny cil]; prvni blok je bajtove shodny pro A, B i Unii
+    # a jde do cache (call_model cache_prefix), takze dalsi hrac ho cte z cache
+    system = "\n\n".join([player_cache_prefix(), base.strip(), secret.strip()])
     log = public_log(turn)
     msgs = private_messages(state, pid)
     npcdata = json.loads(read_text(config.NPC_PATH))
@@ -1038,11 +1063,42 @@ def referee_system() -> str:
     return "\n\n".join(parts)
 
 
+def referee_state(state) -> dict:
+    """v2.0.1: kompaktni stav pro preklad tahu. Jen to, co rozhodci k overeni akci potrebuje: hraci, NPC
+    (jmeno, druh, status, bohatstvi, sila, vliv, dluhy, pakt), smlouvy, nabidky, ceny, faze, valky, invaze a Unie.
+    Bez soukromeho logu, rozhodnuti NPC, vnitrku Minskyho automatu a historie."""
+    npcdata = json.loads(read_text(config.NPC_PATH))
+    names = {x["id"]: x.get("name") for x in npcdata.get("npc", [])}
+    r = lambda v, d=1: round(float(v or 0.0), d)
+    players = {}
+    for pid in ("A", "B"):
+        p = state["players"][pid]
+        players[pid] = {"wealth": r(p.get("wealth")), "power": r(p.get("power")),
+                        "prod": {k: r(v) for k, v in (p.get("prod") or {}).items()},
+                        "occupied": list(p.get("occupied") or [])}
+    C = state["players"]["C"]
+    union = {"active": bool(C.get("active")), "name": C.get("name"), "members": list(C.get("members") or []),
+             "candidates": list(C.get("candidates") or []), "fund": r(C.get("wealth")),
+             "tariff_rate": C.get("tariff_rate"), "council_pending": list(C.get("council_pending") or [])}
+    pacts = {d["target"]: d["owner"] for d in state.get("deals", []) if d.get("type") == "protect"}
+    npc = {}
+    for nid, n in state["npc"].items():
+        npc[nid] = {"name": names.get(nid), "kind": n.get("kind", "normal"), "status": n.get("status"),
+                    "wealth": r(float(n.get("wealth") or 0) + float(n.get("paper_wealth") or 0)),
+                    "power": r(n.get("power")),
+                    "influence": {k: r(v) for k, v in (n.get("influence") or {}).items()},
+                    "debt": {k: r(v) for k, v in (n.get("debt") or {}).items() if float(v or 0) > 0.05},
+                    "pakt": pacts.get(nid)}
+    return {"meta": {k: state["meta"].get(k) for k in ("turn", "day", "slot", "paused")}, "phase": state.get("phase"),
+            "prices": state.get("prices"), "players": players, "union": union, "npc": npc,
+            "deals": state.get("deals", []), "offers": state.get("offers", []), "wars": state.get("wars", []),
+            "invasions": state.get("invasions", []), "investments_pending": state.get("investments_pending", [])}
+
+
 def referee_actions_prompt(state, moves: dict) -> str:
     """Uloha 1 a 2: preklad tahu na akce. Rozhodci vidi stav (bez historie logu) a tahy."""
     turn = next_turn(state)
-    ctx = copy.deepcopy(state)
-    ctx.pop("log", None)
+    ctx = referee_state(state)
     return "\n".join([
         "# Úloha: překlad tahů %d (den %d)" % (turn, engine.day_of(turn)),
         "",
@@ -1061,7 +1117,7 @@ def referee_actions_prompt(state, moves: dict) -> str:
         "",
         "## Stav světa před tahem",
         "```json",
-        dump(ctx),
+        _compact(ctx),
         "```",
         "",
         "Vrať jediný JSON objekt s poli actions, rejected, rulings. Pole news a questions nech prázdná a leak "
@@ -1254,11 +1310,15 @@ def referee_schema() -> dict:
 
 def call_model(model: str, system: str, user: str, max_tokens: int = 16000, usage_log: list | None = None,
                cache: bool = False, label: str = "", schema: dict | None = None,
-               thinking: dict | None = None, effort: str | None = None) -> str:
+               thinking: dict | None = None, effort: str | None = None, cache_prefix: str | None = None) -> str:
     """Jedno volani Messages API. Vraci text odpovedi; pri odmitnuti prazdny retezec.
     Skutecne usage (input_tokens, output_tokens) se pripise do usage_log."""
     # prompt caching jen tam, kde se stejny system opakuje v kratke dobe (dve volani rozhodciho v tahu)
     sys_block = [{"type": "text", "text": system, **({"cache_control": {"type": "ephemeral"}} if cache else {})}]
+    if cache_prefix and not cache and system.startswith(cache_prefix) and len(system) > len(cache_prefix):
+        # v2.0.1: sdileny prefix hracu (format_tahu.md) jako prvni blok s cache, zbytek systemu bez cache
+        sys_block = [{"type": "text", "text": cache_prefix, "cache_control": {"type": "ephemeral"}},
+                     {"type": "text", "text": system[len(cache_prefix):]}]
     kwargs = dict(model=model, max_tokens=max_tokens, system=sys_block,
                   messages=[{"role": "user", "content": user}],
                   thinking=thinking or {"type": "adaptive"})
@@ -1482,7 +1542,7 @@ def play(pid: str, system: str, user: str, retries: int, turn: int = 0, genre: d
     base_user = user
     for attempt in range(retries + 1):
         raw = call_model(config.PLAYER_MODEL, system, user, max_tokens=PLAYER_MAX_TOKENS, usage_log=usage,
-                         label="hrac %s" % pid, schema=player_schema(pid),
+                         label="hrac %s" % pid, schema=player_schema(pid), cache_prefix=player_cache_prefix(),
                          thinking=PLAYER_THINKING, effort=PLAYER_EFFORT)
         attempts.append(raw)
         try:
@@ -1717,9 +1777,13 @@ def main() -> int:
 
     # 3. hraci paralelne
     retries = 0 if args.only else config.PLAYER_RETRIES   # --only: jedno volani na hrace
-    with concurrent.futures.ThreadPoolExecutor(max_workers=len(players)) as ex:
-        futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn, genres.get(pid)) for pid in players}
-        moves = {pid: f.result() for pid, f in futures.items()}
+    # v2.0.1: prvni hrac sam, aby zalozil cache sdileneho prefixu; ostatni pak paralelne ctou z cache
+    moves = {players[0]: play(players[0], *prompts[players[0]], retries, turn, genres.get(players[0]))}
+    rest = players[1:]
+    if rest:
+        with concurrent.futures.ThreadPoolExecutor(max_workers=len(rest)) as ex:
+            futures = {pid: ex.submit(play, pid, *prompts[pid], retries, turn, genres.get(pid)) for pid in rest}
+            moves.update({pid: f.result() for pid, f in futures.items()})
     # limit akci pred rozhodcim: prebytecne zahranicni akce hrace se vyradi
     over_limit = []
     for pid, m in moves.items():
@@ -1748,7 +1812,7 @@ def main() -> int:
     ref_usage = []
     ref_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_actions_prompt(state, public_moves),
                          max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True, label="rozhodci akce",
-                         schema=referee_schema(), thinking=REFEREE_ACTIONS_THINKING, effort=REFEREE_ACTIONS_EFFORT)
+                         schema=referee_schema(), thinking=REFEREE_THINKING, effort=REFEREE_EFFORT)
     try:
         ref = parse_json(ref_raw)
     except (ValueError, json.JSONDecodeError) as err:
@@ -1777,7 +1841,8 @@ def main() -> int:
     # 6. rozhodci: Zpravy sveta
     news_raw = call_model(config.REFEREE_MODEL, referee_system(), referee_news_prompt(new_state, events),
                           max_tokens=REFEREE_MAX_TOKENS, usage_log=ref_usage, cache=True,
-                          label="rozhodci zpravy", schema=referee_schema(), thinking=REFEREE_THINKING)
+                          label="rozhodci zpravy", schema=referee_schema(), thinking=REFEREE_THINKING,
+                          effort=REFEREE_EFFORT)
     try:
         news = list(parse_json(news_raw).get("news") or [])[:3]
     except (ValueError, json.JSONDecodeError):

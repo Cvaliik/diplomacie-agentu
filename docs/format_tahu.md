@@ -30,6 +30,10 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 Odpověď se kontroluje proti JSON schématu (strukturovaný výstup API): jiná pole ani jiné typy akcí projít nemohou.
 Zpráva se zadává jen v poli `message`, ne v seznamu `actions`.
 
+**Veřejný log (v2.0.1):** dostaneš posledních 9 kol. Z posledních 3 kol plně: projevy všech vlád, Zprávy světa a veřejné
+akce (u zprávy jen kdo komu psal). Z kol 4 až 9 zpět jen kompaktně: číslo kola, veřejné akce (kdo, typ, cíl, částka)
+a titulky Zpráv světa, bez projevů.
+
 **Domácí akce (v1.11):** `domestic_action` je jedna z akcí `invest_tech`, `invest_law`, `invest_industry`,
 `invest_prod`, `arm`, `explore`, vždy na vlastní stát (bez `target`). Do limitu 2 akcí se nepočítá.
 Tytéž investice můžeš dál dávat i do `actions` (např. na NPC ve své sféře); tam zabírají slot.
