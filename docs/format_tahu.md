@@ -8,7 +8,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 ```json
 {
   "public_statement": "Vystoupení ve formě z bloku Forma dnešního vystoupení.",
-  "duverny_zapis": "Důvěrný zápis z jednání vlády: co si vláda skutečně myslí a proč jedná, jak jedná. Kde projev neodpovídá záměru: citace té věty a proč.",
+  "duverny_zapis": "Důvěrný zápis z jednání vlády: co si vláda skutečně myslí a proč jedná, jak jedná. Jednou větou: co vláda v projevu slibuje, komu a co zamlčuje.",
   "actions": [
     { "type": "...", "...": "..." }
   ],
