@@ -1272,7 +1272,10 @@ def player_schema(pid: str) -> dict:
         # domaci akce je vzdy vyslovna volba: investice, nebo "zadna" (null model volil i tam, kde investovat chtel)
         props["domestic_action"] = {
             "type": "object", "additionalProperties": False, "required": ["type"],
-            "properties": {"type": {"type": "string", "enum": list(engine.domestic_types(pid)) + [NO_DOMESTIC]},
+            # v2.0.5: spolecne schema A a B (vsechny domaci typy vcetne bankovnich), aby hraci sdileli cache prefixu;
+            # bankovni domaci akci smi jen A, u B ji player_domestic vyradi s duvodem do soukromeho logu
+            "properties": {"type": {"type": "string", "enum": list(engine.DOMESTIC_TYPES + engine.BANK_DOMESTIC)
+                                    + [NO_DOMESTIC]},
                            "amount": {"type": "number"},
                            "res": {"type": "string", "enum": ["grain", "oil", "metal"]}}}
     return {"type": "object", "additionalProperties": False, "required": list(props), "properties": props}
@@ -1474,6 +1477,13 @@ def player_domestic(actions: list, moves: dict, state) -> list:
         out.append(a)
     for pid, move in moves.items():
         dom = (move or {}).get("domestic_action")
+        if pid in MEMORY_PLAYERS and isinstance(dom, dict) and dom.get("type") in engine.BANK_DOMESTIC                 and dom.get("type") not in engine.domestic_types(pid):
+            turn = int(state["meta"]["turn"]) + 1
+            state.setdefault("private_log", {"A": [], "B": [], "C": []}).setdefault(pid, []).append(
+                {"turn": turn, "npc": None, "action": dom["type"], "outcome": "vyrazeno",
+                 "reason": "domaci akce jen pro Kalveru", "counter": None})
+            print("domaci akce %s hrace %s vyrazena: jen pro Kalveru" % (dom["type"], pid))
+            continue
         if pid in MEMORY_PLAYERS and isinstance(dom, dict) and dom.get("type") in engine.domestic_types(pid):
             act = {"player": pid, "type": dom["type"], "slot": "domestic"}
             for k in ("amount", "res"):
