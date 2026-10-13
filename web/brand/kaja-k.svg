@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <title>Kája Industries – monogram K nad horizontem (světlý režim)</title>
+  <defs>
+    <linearGradient id="k-arc" gradientUnits="userSpaceOnUse" x1="14" y1="0" x2="186" y2="0">
+      <stop offset="0" stop-color="#22252A" stop-opacity=".5"/><stop offset=".3" stop-color="#22252A" stop-opacity=".78"/><stop offset=".5" stop-color="#2F80D1"/><stop offset=".7" stop-color="#22252A" stop-opacity=".78"/><stop offset="1" stop-color="#22252A" stop-opacity=".5"/>
+    </linearGradient>
+    <radialGradient id="k-halo"><stop offset="0" stop-color="#2F80D1" stop-opacity=".3"/><stop offset=".42" stop-color="#2F80D1" stop-opacity=".1"/><stop offset="1" stop-color="#2F80D1" stop-opacity="0"/></radialGradient>
+    <radialGradient id="k-flare"><stop offset="0" stop-color="#2F80D1"/><stop offset=".3" stop-color="#2F80D1" stop-opacity=".85"/><stop offset="1" stop-color="#2F80D1" stop-opacity="0"/></radialGradient>
+    <clipPath id="k-sky"><path d="M-300 -300 H500 V162 H186 Q100 132 14 162 H-300 Z"/></clipPath>
+    <clipPath id="k-text"><rect x="-100" y="-200" width="1200" height="340"/></clipPath>
+  </defs>
+  <g id="horizon-glow">
+    <g clip-path="url(#k-sky)"><ellipse cx="100" cy="147" rx="96" ry="66" fill="url(#k-halo)"/></g>
+    <ellipse cx="100" cy="147" rx="64" ry="2.8" fill="url(#k-flare)"/>
+  </g>
+  <g clip-path="url(#k-text)">
+    <text id="k" x="100" y="130" text-anchor="middle" font-family="Saira, 'Arial Black', sans-serif" font-size="150" font-weight="600" fill="#22252A" style="font-stretch:125%; font-variation-settings:'wdth' 125">K</text>
+  </g>
+  <path id="horizon" d="M14 162 Q100 132 186 162" fill="none" stroke="url(#k-arc)" stroke-width="2.6"/>
+</svg>

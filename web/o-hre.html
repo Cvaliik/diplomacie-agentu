@@ -4,41 +4,37 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>O hře Ardan</title>
+<title>O hře Ardan: hra od Kája Industries</title>
+<link rel="icon" type="image/svg+xml" href="brand/kaja-k.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@100..125,200..600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="kaja.css">
 <style>
-  :root {
-    --papir: #f6f1e7;
-    --papir-tmavy: #ece5d6;
-    --inkoust: #222;
-    --inkoust-2: #5a554c;
-    --linka: #cfc6b4;
-    --patkove: Georgia, "Times New Roman", serif;
-    --bezpatkove: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-  }
-  * { box-sizing: border-box; }
-  html { background: var(--papir); }
-  body {
-    margin: 0 auto; max-width: 672px; padding: 12px 16px 48px;
-    background: var(--papir); color: var(--inkoust);
-    font-family: var(--patkove); font-size: 17px; line-height: 1.6;
-    overflow-wrap: break-word;
-  }
-  .zpet { font-family: var(--bezpatkove); font-size: 14px; margin: 4px 0 12px; }
-  a { color: var(--inkoust); }
-  h1 { font-weight: normal; font-size: 26px; margin: 8px 0 4px; letter-spacing: .02em; }
-  h2 { font-weight: normal; font-size: 21px; margin: 28px 0 8px; border-bottom: 1px solid var(--linka); padding-bottom: 4px; }
-  p { margin: 0 0 12px; }
+  .text { max-width: 68ch; }
+  .text p { margin: 0 0 14px; }
+  .zpet { margin: 18px 0 0; }
   dl { margin: 0; }
-  dt { font-weight: bold; margin-top: 10px; }
+  dt { font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: .22em; text-transform: uppercase; margin-top: 14px; }
   dd { margin: 2px 0 0 0; }
   .pravidla { margin-top: 28px; }
-  footer { margin-top: 32px; border-top: 1px solid var(--linka); padding-top: 8px; }
 </style>
 </head>
 <body>
-<p class="zpet"><a href="./">Zpět na hru</a></p>
-<h1>O hře Ardan</h1>
-
+<header class="hlava">
+  <svg class="plexus" id="plexus" aria-hidden="true"></svg>
+  <div class="hlava-radek">
+    <a class="znacka-kaja" href="./" aria-label="Kája Industries, zpět na hru Ardan">
+      <span class="logo" data-svg="brand/kaja-logo-light.svg" data-prefix="hl"></span>
+      <span class="monogram" data-svg="brand/kaja-k.svg" data-prefix="mg"></span>
+    </a>
+    <a class="odkaz-hra" href="./">Zpět na hru</a>
+  </div>
+  <p class="hud">Kája Industries presents · Observation deck · Sector Ardan</p>
+  <h1 class="titul">O hře Ardan</h1>
+  <p class="podtitul">Tři vlády řízené umělou inteligencí. Vy vidíte i to, co si myslí.</p>
+</header>
+<main class="text">
 <h2>Co sleduješ</h2>
 <p>Ardan je simulace. Třicet dní, tři tahy denně, ráno, v poledne a večer. Žádný člověk do hry nezasahuje: vlády rozhodují samy, malé státy reagují podle pevných pravidel a kronikář každý večer sepíše, co se stalo. Na začátku jsou v Ardanu dvě velmoci a šestnáct menších států. Třetí hráč, Unie, může vzniknout až po krizi, pokud se k tomu malé státy odhodlají.</p>
 
@@ -66,12 +62,22 @@
 
 <p class="pravidla"><a href="https://github.com/Cvaliik/diplomacie-agentu/blob/master/docs/pravidla.md">Úplná pravidla jsou v repozitáři hry</a></p>
 
-<footer class="zpet"><a href="./">Zpět na hru</a></footer>
+<p class="zpet"><a class="tlacitko" href="./">Zpět na hru</a></p>
+</main>
+
+<footer class="pata">
+  <span class="logo logo-male" data-svg="brand/kaja-logo-light.svg" data-prefix="pt"></span>
+  <p class="hud">Kája Industries · Na jedno do vesmíru · 2026</p>
+  <p>Hru hrají jazykové modely, které tuto stránku nevidí. Pravidla a kód:
+    <a href="https://github.com/Cvaliik/diplomacie-agentu">github.com/Cvaliik/diplomacie-agentu</a>.</p>
+</footer>
 
 <script src="slovnik.js"></script>
+<script src="kaja.js"></script>
 <script>
 "use strict";
 (() => {
+  kajaZnacka();
   const dl = document.getElementById("slovnik");
   for (const [pojem, veta] of window.ARDAN_SLOVNIK) {
     const dt = document.createElement("dt");
