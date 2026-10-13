@@ -4767,3 +4767,7 @@ odmítl jako `reasoning_extraction`; po přejmenování na `duverny_zapis` a „
 ### Přehrání od kola 7 podle v2.0.1 (13. 10. 2026)
 
 Kola 7 až 12 podle v1.14b archivována, přehráno od kola 7 podle v2.0.1, day1_date posunut na 11. 10. 2026, rozhodnutí Adama 13. 10. 2026. Archiv: `history/archive_v1_14b/` (snímky kol 7 až 12, kroniky let 3 a 4, stav po kole 12 jako `state_turn_012.json`).
+
+### Kolo 7 přehráno znovu kvůli záloze u B (13. 10. 2026)
+
+První odehrání kola 7 (commit 8cd5241) vrácené: Opus 5.5 tah B odmítl jako `reasoning_extraction` a odpověděl záložní Opus 4.8. Příčinou byla kombinace pokynu citovat větu projevu, která neodpovídá záměru, a popisu persony se slovem lhát (v2.0.2 obojí odstranila; po samotném odstranění citace B dál odmítal). Aby celý běh hrál jeden model, kolo 7 se hraje znovu ze stavu kola 6. Rozhodnutí Adama 13. 10. 2026.
