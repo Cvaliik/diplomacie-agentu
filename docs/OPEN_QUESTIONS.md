@@ -4753,3 +4753,13 @@ ani obranu.
 | rámec banky Unie | první kalibrace 0.5 × wealth místo 0.3 (U1 by jinak měla stejně členů v bídě jako U5); doplněk 0.4 (U1 index v kole 90 ≥ U5) |
 | doplněk 24. 9. | LTV euphoria 0.3, páka bank K a AUR 6, sanace aspoň z poloviny, pohledávky padlých kalverských bank přebírají banky Aurelie, odvod 3 % se neplatí při fondu nad 20 % součtu wealth členů; `private_reasoning` přejmenováno na `duverny_zapis` (Opus 5.5 původní pole odmítal jako `reasoning_extraction`), záložní model jen s poznámkou v logu a na webu |
 
+### Overtrading ve V1 a V5: pojistka místo prahu (rozhodnutí Adama 13. 10. 2026)
+
+Cíl kalibrace „overtrading spouští práh, ne pojistka“ byl ve V1 a V5 vědomě vzdán. Práh i pojistka připadají na kolo 23;
+mřížka páky bank 6 až 10 a LTV euforie 0.3 až 0.5 ukázala, že dřívější práh vylučuje proveditelnou sanaci (díra
+kalverských bank aspoň 160, A ve V5 jen 53 až 65 % stavu V1). Platí páka 6 a LTV euforie 0.3. Rámec banky Unie 0.4
+potvrzen.
+
+Kronikář na Opus 5.5 (13. 10. 2026): vstup se starým polem `private_reasoning` a nadpisem „skrytá zdůvodnění“
+odmítl jako `reasoning_extraction`; po přejmenování na `duverny_zapis` a „důvěrné zápisy vlád“ prošel bez zálohy.
+

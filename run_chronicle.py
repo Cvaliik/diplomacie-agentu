@@ -41,6 +41,18 @@ def _state_for_chronicle(state) -> dict:
     return s
 
 
+def _zapisy(moves: dict) -> dict:
+    """v2.0: snimky do v1.14b nesou pole private_reasoning; kronikar dostane vsude duverny_zapis vlady."""
+    out = {}
+    for pid, m in (moves or {}).items():
+        m = dict(m or {})
+        if "private_reasoning" in m:
+            old = m.pop("private_reasoning")
+            m.setdefault("duverny_zapis", old)
+        out[pid] = m
+    return out
+
+
 def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
                      prev_chronicle: str | None, week_chronicles: dict | None = None,
                      metrics_by_day: dict | None = None) -> tuple[str, str]:
@@ -57,7 +69,7 @@ def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
     turns = []
     events = []
     for snap in snapshots:
-        turns.append({"turn": snap["turn"], "tahy": snap.get("turns", {}), "akce": snap.get("actions", []),
+        turns.append({"turn": snap["turn"], "tahy": _zapisy(snap.get("turns", {})), "akce": snap.get("actions", []),
                       "vyrazene": snap.get("rejected", []), "zpravy": snap.get("news", [])})
         events.append({"turn": snap["turn"], "events": snap.get("events", [])})
     phase = state_after["phase"]
@@ -66,7 +78,7 @@ def chronicle_prompt(day: int, snapshots: list[dict], state_before, state_after,
                                    {"denni": "roční kronika", "tydenni": "bilance sedmi let",
                                     "finale": "finále"}[kind], phase),
         "",
-        "## Kola roku: jaro, léto, zima (projevy, skrytá zdůvodnění, poznámky hráčů do spisu, akce, vyřazené akce, "
+        "## Kola roku: jaro, léto, zima (projevy, důvěrné zápisy vlád, poznámky hráčů do spisu, akce, vyřazené akce, "
         "Zprávy světa)",
         "```json", dump(turns), "```", "",
         "## Události od enginu",
