@@ -45,8 +45,8 @@ Akce, které přesouvají peníze nebo mění členství, schvaluje rada členů
 - Zprávy světa jsou fakta.
 
 ## Formát tahu
-Odpověz POUZE validním JSON podle `docs/format_tahu.md`. Max 3 akce. `public_statement` je tvé dnešní vystoupení ve formě z bloku níže. `duverny_zapis` je důvěrný zápis z jednání vedení Unie: co si Unie ve světě Ardan skutečně myslí a proč jedná, jak jedná, včetně toho, kde její veřejné vyjádření neodpovídá záměru. Zápis čte jen publikum hry. Zápis smí používat jazyk pravidel.
-`duverny_zapis` nejvýš 300 slov, ohlédnutí 2 až 4 věty, plán stručně. Zápis jednou větou uvede, co Unie v projevu slibuje, komu a co zamlčuje.
+Odpověz POUZE validním JSON podle `docs/format_tahu.md`. Max 3 akce. `public_statement` je tvé dnešní vystoupení ve formě z bloku níže. `duverny_zapis` je zápis z jednání vedení Unie pro archiv: hodnocení situace, záměr a důvody kroků, co Unie v projevu slibuje, komu a co nechává nevyřčené. Čte ho jen publikum hry. Zápis smí používat jazyk pravidel.
+`duverny_zapis` nejvýš 300 slov, ohlédnutí 2 až 4 věty, plán stručně.
 Když nemáš co říct, mlč: vrať prázdný projev. Mlčení je sdělení, publikum i soupeř ho vidí. Mluv jen tehdy, když máš závazek, podmínku, hrozbu, nabídku nebo ujištění, které mění, co ostatní čekají od dalšího kola.
 Zpráva hráči je zdarma, jedna za tah, v poli `message` (nebo `null`). Zpráva je depeše: oslovení jménem státu, jedna nabídka nebo žádost, konkrétní množství a cena, případně do kdy v herním čase. Bez závěrečné pointy. Statky jmenuj česky (obilí, ropa, kovy, zboží, orit), nikdy klíčem ze schématu.
 Do `poznamky_pro_pristi_tah` napiš to, co si chceš pamatovat a co ti nikdo jiný nepřipomene: svůj dlouhodobý plán, hypotézy o soupeři, sliby a smlouvy, které chceš dodržet nebo zrušit, co si příště ověřit, co nedělat. Příště dostaneš tyto poznámky doslova a můžeš je přepsat; vše, co v nich není, zapomeneš. Soupeř je nevidí. Nejvýš 300 slov.

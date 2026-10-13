@@ -35,7 +35,7 @@ def main() -> int:
     c = anthropic.Anthropic(api_key=os.environ["ARDAN_API_KEY"])
     r = c.messages.create(model=config.PLAYER_MODEL, max_tokens=run_turn.PLAYER_MAX_TOKENS, system=blocks,
                           messages=[{"role": "user", "content": user}], thinking=run_turn.PLAYER_THINKING,
-                          output_config={"effort": run_turn.PLAYER_EFFORT,
+                          output_config={**({"effort": run_turn.PLAYER_EFFORT} if run_turn.PLAYER_EFFORT else {}),
                                          "format": {"type": "json_schema", "schema": run_turn.player_schema(pid)}})
     u = {"model": r.model, "input_tokens": r.usage.input_tokens, "output_tokens": r.usage.output_tokens,
          "cache_creation_input_tokens": getattr(r.usage, "cache_creation_input_tokens", 0) or 0,

@@ -55,11 +55,12 @@ SILENT_STATEMENT = "Vláda nevydala prohlášení."
 # v1.12: kratsi uvaha znamena neuplnou odpoved (tah 4: prazdna uvaha i akce pri platnem JSON)
 MIN_REASONING_CHARS = 80
 # delka odpovedi: strop tokenu pro hrace a rozhodciho
-PLAYER_MAX_TOKENS = 5000
+PLAYER_MAX_TOKENS = 3000   # v2.0.4: bez premysleni staci 3000 (driv 5000 vcetne premysleni)
 REFEREE_MAX_TOKENS = 4000
-# premysleni: hraci adaptivne s nizkym usilim (Opus 5 budget_tokens odmita, effort "low" prijima; overeno v zari 2026)
-PLAYER_THINKING = {"type": "adaptive"}
-PLAYER_EFFORT = "low"
+# v2.0.4: hraci bez premysleni a bez effortu. S premyslenim Opus 5 i 5.5 nahodne odmital tah hrace jako
+# reasoning_extraction (kolo 7, 13. 10. 2026); bez premysleni oba hraci prosli. Delku drzi PLAYER_MAX_TOKENS.
+PLAYER_THINKING = {"type": "disabled"}
+PLAYER_EFFORT = None
 # rozhodci: preklad tahu bez premysleni zahazoval akce (tahy 6 az 8), proto adaptivne s nizkym usilim;
 # v2.0.1: totez nastaveni u vsech volani rozhodciho (otazky, akce, zpravy), aby dalsi volani cetla cache systemu
 REFEREE_THINKING = {"type": "adaptive"}

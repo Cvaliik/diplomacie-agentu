@@ -25,6 +25,7 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--kolo", type=int, required=True)
     ap.add_argument("--commit", required=True, help="commit se state.json pred kolem")
+    ap.add_argument("--snimek", help="snimek kola mimo history/ (napr. zahozene kolo), z nej otazky novinaru")
     args = ap.parse_args()
     raw = subprocess.run(["git", "show", "%s:state.json" % args.commit], cwd=ROOT, capture_output=True,
                          check=True).stdout.decode("utf-8")
@@ -33,7 +34,8 @@ def main() -> int:
     engine.precompute_needs(state)
     assert run_turn.next_turn(state) == args.kolo, "stav z commitu neni pred kolem %d" % args.kolo
     npcdata = json.loads((ROOT / "npc.json").read_text(encoding="utf-8"))
-    snap = json.loads((ROOT / "history" / ("turn_%03d.json" % args.kolo)).read_text(encoding="utf-8"))
+    snap_path = Path(args.snimek) if args.snimek else ROOT / "history" / ("turn_%03d.json" % args.kolo)
+    snap = json.loads(snap_path.read_text(encoding="utf-8"))
     views = engine.build_views(state, npcdata)
     run_turn.fill_auto_block(state, views)
     for pid in run_turn.active_players(state):

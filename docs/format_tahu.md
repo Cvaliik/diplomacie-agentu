@@ -8,7 +8,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 ```json
 {
   "public_statement": "Vystoupení ve formě z bloku Forma dnešního vystoupení.",
-  "duverny_zapis": "Důvěrný zápis z jednání vlády: co si vláda skutečně myslí a proč jedná, jak jedná. Jednou větou: co vláda v projevu slibuje, komu a co zamlčuje.",
+  "duverny_zapis": "Zápis z jednání vlády pro archiv: hodnocení situace, záměr a důvody kroků, co vláda v projevu slibuje, komu a co nechává nevyřčené.",
   "actions": [
     { "type": "...", "...": "..." }
   ],
@@ -21,7 +21,7 @@ bez komentáře před ním i za ním. Vychází z `docs/pravidla.md` částí 3.
 | pole | typ | povinné | poznámka |
 |---|---|---|---|
 | `public_statement` | text | ano | vystoupení ve formě z bloku „Forma dnešního vystoupení“ (v1.13, `docs/zanry.md`); u formy Ticho prázdný řetězec |
-| `duverny_zapis` | text | ano | důvěrný zápis z jednání vlády; čte ho jen publikum hry, soupeř ne |
+| `duverny_zapis` | text | ano | zápis z jednání vlády pro archiv: hodnocení situace, záměr a důvody kroků, co vláda v projevu slibuje, komu a co nechává nevyřčené. Čte ho jen publikum hry, soupeř ne. |
 | `actions` | seznam | ano | nejvýš 2 akce (Unie 3); prázdný seznam `[]` je platný tah |
 | `domestic_action` | objekt | ano (A a B) | nejvýš 1 domácí akce za tah mimo limit akcí (v1.11); bez domácí akce `{ "type": "zadna" }`; Unie pole nemá |
 | `message` | objekt nebo `null` | ano | nejvýš 1 soukromá zpráva za tah mimo limit akcí: `target` a `text` |

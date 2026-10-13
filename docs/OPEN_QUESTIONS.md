@@ -4775,3 +4775,7 @@ První odehrání kola 7 (commit 8cd5241) vrácené: Opus 5.5 tah B odmítl jako
 ### v2.0.3: hráči a kronikář zpět na Opus 5 (13. 10. 2026)
 
 Opus 5.5 odmítá (reasoning_extraction) tah hráče náhodně i po v2.0.2; v kole 7 dvakrát ze dvou. Hráči a kronikář zpět na Opus 5, rozhodnutí Adama 13. 10. 2026. Lokální druhé odehrání kola 7 (oba hráči přes záložní Opus 4.8) zahozeno a necommitnuto.
+
+### v2.0.4: zápis pro archiv, hráči bez přemýšlení (13. 10. 2026)
+
+Na Opus 5 odmítl v kole 7 tah A (záloha Opus 4.8). Test 1: popis `duverny_zapis` jako zápis z jednání vlády pro archiv (hodnocení situace, záměr a důvody kroků, co vláda v projevu slibuje, komu a co nechává nevyřčené); A prošel, B odmítl (`reasoning_extraction`). Test 2: navíc hráči bez přemýšlení a bez effortu, `max_tokens` 3000; A i B prošli. Platí obojí, rozhodnutí Adama 13. 10. 2026. Lokální kolo 7 na Opus 5 se zálohou u A zahozeno.
