@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-60 -60 1120 276" width="1120" height="276">
+  <title>Kája Industries – primární logo (světlý režim)</title>
+  <defs>
+    <linearGradient id="arc" gradientUnits="userSpaceOnUse" x1="0" y1="0" x2="1000" y2="0">
+      <stop offset="0" stop-color="#22252A" stop-opacity=".34"></stop><stop offset=".3" stop-color="#22252A" stop-opacity=".78"></stop><stop offset=".5" stop-color="#2F80D1"></stop><stop offset=".7" stop-color="#22252A" stop-opacity=".78"></stop><stop offset="1" stop-color="#22252A" stop-opacity=".34"></stop>
+    </linearGradient>
+    <radialGradient id="halo"><stop offset="0" stop-color="#2F80D1" stop-opacity="0.3"></stop><stop offset=".42" stop-color="#2F80D1" stop-opacity="0.1"></stop><stop offset="1" stop-color="#2F80D1" stop-opacity="0"></stop></radialGradient>
+    <radialGradient id="flare"><stop offset="0" stop-color="#2F80D1"></stop><stop offset=".3" stop-color="#2F80D1" stop-opacity=".85"></stop><stop offset="1" stop-color="#2F80D1" stop-opacity="0"></stop></radialGradient>
+    <clipPath id="sky"><path d="M-300 -300 H1300 V118 H1000 Q500 82 0 118 H-300 Z"></path></clipPath>
+    <clipPath id="above-horizon"><rect x="-100" y="-200" width="1200" height="286"></rect></clipPath>
+  </defs>
+  <g id="horizon-glow">
+    <g id="horizon-glow-halo" clip-path="url(#sky)"><ellipse cx="500" cy="100" rx="330" ry="92" fill="url(#halo)"></ellipse></g>
+    <ellipse id="horizon-glow-flare" cx="500" cy="100" rx="180" ry="4.2" fill="url(#flare)"></ellipse>
+  </g>
+  <path id="horizon" d="M0 118 Q500 82 1000 118" fill="none" stroke="url(#arc)" stroke-width="1.7" pathLength="1" stroke-dasharray="1 2" stroke-dashoffset="0"></path>
+  <g id="wordmark" clip-path="url(#above-horizon)">
+    <text id="kaja" x="0" y="74" textLength="300" lengthAdjust="spacing" font-family="Saira, sans-serif" style="font-variation-settings:'wdth' 125; font-stretch:125%" font-size="72" font-weight="600" fill="#22252A">KÁJA</text>
+    <text id="industries" x="346" y="74" textLength="654" lengthAdjust="spacing" font-family="Saira, sans-serif" style="font-variation-settings:'wdth' 125; font-stretch:125%" font-size="72" font-weight="200" fill="#22252A">INDUSTRIES</text>
+  </g>
+  <text id="tagline" x="503.6" y="148" text-anchor="middle" font-family="'IBM Plex Mono', monospace" font-size="19" font-weight="500" letter-spacing="7.2" fill="#22252A">AD ASTRA PER PIVO</text>
+  <g id="light-dot" transform="translate(0 118)" opacity="0">
+    <circle r="18" fill="url(#flare)"></circle><circle r="3.4" fill="#2F80D1"></circle>
+  </g>
+</svg>

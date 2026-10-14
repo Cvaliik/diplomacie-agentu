@@ -1,0 +1,118 @@
+/* Ardan, hra od Kája Industries: společný vzhled (Brand Guide v5, světlý režim Orbital Station).
+   Barvy: Hull White pozadí, Silver přechody a sklo, Steel sekundární text a linky, Graphite text,
+   Ion Blue jen aktivní stavy, ovládací prvky a fokus (max. 5 % plochy). Mapa má vlastní sémantické barvy. */
+:root {
+  --hull: #F3F4F6;
+  --silver: #C8CDD4;
+  --steel: #6E7680;
+  --graphite: #22252A;
+  --ion: #2F80D1;
+  --white: #FFFFFF;
+  --more: #E3E8EE;
+  --zeme: #FBFBFC;
+  --a: #2B4A8C;
+  --b: #B03A3A;
+  --unie: #3F7D45;
+  --zlata: #B8902A;
+  --saira: "Saira", "Segoe UI", Arial, sans-serif;
+  --mono: "IBM Plex Mono", Consolas, monospace;
+}
+* { box-sizing: border-box; }
+html { background: var(--hull); }
+body {
+  margin: 0 auto; max-width: 1080px; padding: 0 20px 48px;
+  background: var(--hull); color: var(--graphite);
+  font-family: var(--saira); font-size: 17px; line-height: 1.6; font-weight: 400; font-stretch: 100%;
+  overflow-wrap: break-word;
+}
+a { color: var(--graphite); text-underline-offset: 3px; text-decoration-color: var(--silver); }
+a:hover { text-decoration-color: var(--ion); }
+:focus-visible { outline: 2px solid var(--ion); outline-offset: 2px; }
+
+/* titulky: Saira 500, šíře 125 %, verzálky, prostrkané */
+h1, h2, h3, .titul { font-family: var(--saira); font-weight: 500; font-stretch: 125%; text-transform: uppercase;
+                     letter-spacing: .16em; color: var(--graphite); }
+h2 { font-size: 15px; margin: 34px 0 10px; padding-bottom: 6px; border-bottom: 1px solid var(--silver); letter-spacing: .2em; }
+h3 { font-size: 14px; margin: 18px 0 6px; letter-spacing: .18em; }
+
+/* HUD popisky: Plex Mono 500, verzálky, +0,22 em */
+.hud, .popis { font-family: var(--mono); font-weight: 500; font-size: 12px; letter-spacing: .22em;
+               text-transform: uppercase; color: var(--steel); margin: 0; overflow-wrap: normal; }
+.popis { margin: 12px 0 2px; }
+.ticho { color: var(--steel); }
+.chyba { color: var(--b); }
+
+/* ------------------------------ hlavička ------------------------------ */
+.hlava { position: relative; padding: 22px 0 14px; border-bottom: 1px solid var(--silver); margin-bottom: 12px; isolation: isolate; }
+.plexus { position: absolute; z-index: -1; right: -20px; top: 0; width: 58%; height: 190px; pointer-events: none;
+          -webkit-mask-image: radial-gradient(ellipse 60% 70% at 72% 40%, #000 30%, transparent 75%);
+          mask-image: radial-gradient(ellipse 60% 70% at 72% 40%, #000 30%, transparent 75%); }
+.plexus line { stroke: var(--steel); stroke-width: .75; }
+.plexus circle { fill: var(--steel); }
+.hlava-radek { display: flex; align-items: flex-start; justify-content: space-between; gap: 16px; }
+.znacka-kaja { display: block; text-decoration: none; line-height: 0; }
+.logo { display: block; width: 240px; min-width: 160px; }
+.logo svg, .monogram svg { display: block; width: 100%; height: auto; overflow: visible; }
+.monogram { display: none; width: 48px; }
+.odkaz-hra { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .22em; text-transform: uppercase;
+             padding: 6px 10px; border: 1px solid var(--graphite); text-decoration: none; }
+.odkaz-hra:hover { border-color: var(--ion); color: var(--ion); }
+.hlava > .hud:first-of-type { margin-top: 18px; }
+.titul { font-size: clamp(30px, 5vw, 44px); line-height: 1.1; margin: 10px 0 4px; letter-spacing: .24em; }
+.podtitul { font-weight: 300; font-size: 18px; margin: 0 0 16px; max-width: 46em; }
+.faze-veta { font-weight: 300; font-size: 16px; margin: 10px 0 0; }
+.aktualizace { text-align: right; margin-top: 6px; }
+
+/* sklo jen pro řádek dlaždic a úvodní lištu */
+.sklo { background: rgba(255, 255, 255, .6); -webkit-backdrop-filter: blur(20px); backdrop-filter: blur(20px);
+        border: 1px solid rgba(255, 255, 255, .9); box-shadow: 0 1px 0 rgba(200, 205, 212, .7), 0 6px 18px rgba(34, 37, 42, .05); }
+.dlazdice { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0; }
+.dlazdice > div { padding: 10px 14px 12px; border-left: 1px solid var(--silver); display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.dlazdice > div:first-child { border-left: 0; }
+.dlazdice b { font-weight: 500; font-size: 24px; line-height: 1.2; font-stretch: 110%; font-variant-numeric: tabular-nums; }
+.dlazdice-2 b { font-size: 18px; font-stretch: 100%; padding-top: 4px; }
+.dlazdice small { font-size: 13px; color: var(--steel); line-height: 1.3; }
+.sipka { font-size: 16px; color: var(--steel); font-weight: 400; }
+
+/* ------------------------------ ovládací prvky ------------------------------ */
+button, .tlacitko { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .16em; text-transform: uppercase;
+                    color: var(--graphite); background: transparent; border: 1px solid var(--graphite); border-radius: 0;
+                    padding: 7px 12px; cursor: pointer; text-decoration: none; line-height: 1.2; }
+button:hover, .tlacitko:hover { border-color: var(--ion); color: var(--ion); }
+button:active, button[aria-pressed="true"] { background: var(--ion); border-color: var(--ion); color: var(--white); }
+
+.uvod { padding: 12px 16px; margin: 12px 0; display: flex; flex-wrap: wrap; align-items: center; gap: 8px 16px; }
+.uvod p { margin: 0; flex: 1 1 420px; font-size: 16px; line-height: 1.5; }
+.uvod-tlacitka { display: flex; gap: 8px; flex: 0 0 auto; }
+
+/* vysvětlivka „?“: kruh Steel, hover Ion Blue */
+.vys { font-family: var(--mono); font-size: 10px; font-weight: 500; letter-spacing: 0; line-height: 1; width: 17px; height: 17px;
+       padding: 0; margin-left: 6px; border: 1px solid var(--steel); border-radius: 50%; color: var(--steel); background: transparent;
+       vertical-align: 1px; cursor: pointer; text-transform: none; display: inline-flex; align-items: center; justify-content: center; }
+.vys:hover, .vys[aria-expanded="true"] { border-color: var(--ion); color: var(--ion); background: transparent; }
+#bublina { position: absolute; z-index: 20; max-width: min(320px, calc(100vw - 24px)); background: var(--white);
+           border: 1px solid var(--silver); padding: 10px 12px; font-family: var(--saira); font-size: 15px; line-height: 1.5;
+           text-transform: none; letter-spacing: 0; color: var(--graphite); }
+#bublina b { font-weight: 500; }
+
+/* ------------------------------ patička ------------------------------ */
+.pata { margin-top: 48px; border-top: 1px solid var(--silver); padding-top: 16px; font-size: 14px; color: var(--steel); }
+.pata .logo-male { width: 160px; margin-bottom: 10px; }
+.pata p { margin: 4px 0; }
+
+@media (max-width: 599px) {
+  body { padding: 0 14px 40px; font-size: 16px; }
+  .logo:not(.logo-male) { display: none; }
+  .monogram { display: block; }
+  .plexus { display: none; }   /* na úzké hlavičce by síť ležela pod textem */
+  .titul { letter-spacing: .18em; }
+  .podtitul { font-size: 16px; }
+  .dlazdice { grid-template-columns: repeat(6, minmax(0, 1fr)); }
+  .dlazdice > div { grid-column: span 2; border-left: 1px solid var(--silver); border-top: 1px solid var(--silver); padding: 8px 10px; }
+  .dlazdice-1, .dlazdice-2 { grid-column: span 3 !important; border-top: 0 !important; }
+  .dlazdice-1, .dlazdice-3 { border-left: 0 !important; }
+  .dlazdice b { font-size: 20px; }
+  .dlazdice .hud { font-size: 11px; letter-spacing: .14em; }
+  .dlazdice-2 b { font-size: 16px; }
+  .uvod p { flex-basis: 100%; font-size: 15px; }
+}
