@@ -1,0 +1,117 @@
+<!doctype html>
+<html lang="cs">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="color-scheme" content="light">
+<title>Ardan v 3D: hra od Kája Industries</title>
+<link rel="icon" type="image/svg+xml" href="brand/kaja-k.svg">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@100..125,200..600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<link rel="stylesheet" href="kaja.css">
+<style>
+  html, body { height: 100%; }
+  body { max-width: none; padding: 0; overflow: hidden; }
+  .scena { position: fixed; inset: 0; }
+  /* síť hvězd jen v okrajích viewportu: maska je uprostřed průhledná, mapa i texty leží mimo ni */
+  .plexus-okraj { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+                  -webkit-mask-image: radial-gradient(ellipse 72% 70% at 50% 48%, transparent 62%, #000 100%);
+                  mask-image: radial-gradient(ellipse 72% 70% at 50% 48%, transparent 62%, #000 100%); }
+  .plexus-okraj line { stroke: var(--steel); stroke-width: .75; }
+  .plexus-okraj circle { fill: var(--steel); }
+  #platno { position: absolute; inset: 0; }
+  #platno canvas { display: block; outline: none; }
+  #popisky { position: absolute; inset: 0; pointer-events: none; }
+  .popisek { font-family: var(--saira); font-weight: 500; font-stretch: 110%; font-size: 12px; letter-spacing: .14em;
+             text-transform: uppercase; color: var(--graphite); white-space: nowrap; pointer-events: none;
+             text-shadow: 0 0 3px #FBFBFC, 0 0 3px #FBFBFC, 0 0 2px #FBFBFC; }
+  .popisek span { display: block; transform: translateY(-16px); }
+  .popisek.jezero span { transform: none; }
+  .popisek.hrac { font-size: 13px; }
+  .popisek.jezero { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: .22em; color: var(--steel); transform: none; }
+
+  .horni-lista { position: absolute; top: 0; left: 0; right: 0; display: flex; align-items: center; justify-content: space-between;
+                 gap: 12px; padding: 12px 16px; pointer-events: none; }
+  .horni-lista > * { pointer-events: auto; }
+  .znak { display: flex; align-items: center; gap: 10px; text-decoration: none; }
+  .znak .monogram { display: block; width: 34px; }
+
+  #tooltip { position: absolute; z-index: 5; pointer-events: none; background: var(--white); border: 1px solid var(--silver);
+             padding: 8px 10px; font-size: 14px; line-height: 1.45; min-width: 170px; }
+  #tooltip b { display: block; font-weight: 500; font-stretch: 110%; text-transform: uppercase; letter-spacing: .12em; font-size: 13px;
+               line-height: 1.3; margin-bottom: 6px; }
+  #tooltip .radek { display: flex; justify-content: space-between; gap: 12px; }
+  #tooltip .radek span:first-child { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .16em;
+                                     text-transform: uppercase; color: var(--steel); }
+
+  .dolni-lista { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(920px, calc(100% - 32px));
+                 display: flex; align-items: center; gap: 10px; padding: 10px 14px; }
+  .lista { flex: 1; min-width: 0; position: relative; padding-bottom: 20px; }
+  .lista input[type=range] { width: 100%; margin: 0; accent-color: var(--ion); }
+  .znacky { position: absolute; left: 8px; right: 8px; top: 22px; height: 16px; }
+  .znacka-den { position: absolute; top: 0; width: 1px; height: 5px; background: var(--silver); }
+  .znacka-den span { position: absolute; top: 7px; transform: translateX(-50%); font-family: var(--mono); font-size: 10px;
+                     color: var(--steel); letter-spacing: .08em; white-space: nowrap; }
+  .znacka-faze { position: absolute; top: -10px; width: 2px; height: 16px; background: var(--ion); transform: translateX(-1px); cursor: help; }
+  .znacka-faze b { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-family: var(--mono);
+                   font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--graphite);
+                   background: var(--white); border: 1px solid var(--silver); padding: 3px 6px; white-space: nowrap; }
+  .znacka-faze:hover b, .znacka-faze:focus b { display: block; }
+  #cas { min-width: 11em; text-align: right; }
+  #cas .hud { display: block; }
+  #cas b { font-weight: 500; font-stretch: 110%; font-size: 15px; }
+
+  /* území pro klávesnici: neviditelná tlačítka v pořadí map.json */
+  .uzemi-klavesnice { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .bez-webgl { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+
+  @media (max-width: 599px) {
+    .dolni-lista { left: 0; right: 0; bottom: 0; transform: none; width: 100%; flex-wrap: wrap; padding: 8px 10px 10px; gap: 8px; }
+    .lista { order: -1; flex-basis: 100%; }
+    .znacka-den span { display: none; }
+    #cas { min-width: 0; margin-left: auto; }
+    .horni-lista .hud { display: none; }
+  }
+</style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<div class="scena" id="scena">
+  <svg class="plexus-okraj" id="plexus-okraj" aria-hidden="true"></svg>
+  <div id="platno" role="img" aria-label="Trojrozměrná mapa světa Ardan"></div>
+  <div id="popisky"></div>
+  <div id="tooltip" hidden></div>
+  <div class="uzemi-klavesnice" id="klavesnice" aria-label="Území na mapě"></div>
+
+  <div class="horni-lista">
+    <a class="znak" href="./" aria-label="Zpět na hru Ardan">
+      <span class="monogram" data-svg="brand/kaja-k.svg" data-prefix="mg"></span>
+      <span class="hud">Ardan · 3D mapa · prototyp</span>
+    </a>
+    <a class="odkaz-hra" href="./">Zpět na hru</a>
+  </div>
+
+  <div class="dolni-lista sklo" id="lista" hidden>
+    <button type="button" id="zpet" aria-label="Předchozí kolo">◀</button>
+    <button type="button" id="dal" aria-label="Další kolo">▶</button>
+    <button type="button" id="prehrat" aria-pressed="false">Přehrát</button>
+    <div class="lista">
+      <input type="range" id="posuvnik" min="1" max="1" value="1" aria-label="Kolo">
+      <div class="znacky" id="znacky" aria-hidden="true"></div>
+    </div>
+    <div id="cas"><span class="hud" id="cas-rok"></span><b id="cas-kolo"></b></div>
+  </div>
+</div>
+
+<script src="kaja.js"></script>
+<script type="module" src="mapa.js"></script>
+</body>
+</html>
