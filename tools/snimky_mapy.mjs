@@ -4,7 +4,7 @@
 // Spustí Edge bez okna s ladicím portem, přes protokol DevTools nastaví šířku zařízení, načte stránku
 // a uloží PNG do tools/screens/. Web musí běžet na lokálním serveru (např. python -m http.server 8765).
 //
-//   node tools/snimky_mapy.mjs http://localhost:8765/web/
+//   node tools/snimky_mapy.mjs http://localhost:8765/web/ [regulární výraz pro výběr snímků]
 //
 import { spawn } from "node:child_process";
 import { writeFileSync, mkdirSync } from "node:fs";
@@ -21,7 +21,12 @@ for (const [s, w, h, mobil] of [["1440", 1440, 900, false], ["390", 390, 844, tr
   SNIMKY.push([`mapa3d-${s}-vychozi-k11`, "mapa.html#kolo=11", w, h, mobil]);
   SNIMKY.push([`mapa3d-${s}-vychozi-k1`, "mapa.html#kolo=1", w, h, mobil]);
   SNIMKY.push([`mapa3d-${s}-kalvera-2x-k11`, "mapa.html#kolo=11&zoom=2&na=A", w, h, mobil]);
+  // etapa 2: panel státu, diplomatická obrazovka (projevy) a kronika
+  SNIMKY.push([`mapa3d-${s}-panel-N3-k11`, "mapa.html#kolo=11&stat=N3", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-projevy-k11`, "mapa.html#kolo=11&otevri=projevy", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-kronika-k11`, "mapa.html#kolo=11&otevri=kronika", w, h, mobil]);
 }
+const FILTR = process.argv[3] ? new RegExp(process.argv[3]) : null;   // volitelně jen některé snímky
 
 const pockej = (ms) => new Promise((r) => setTimeout(r, ms));
 mkdirSync(VYSTUP, { recursive: true });
@@ -45,7 +50,7 @@ ws.addEventListener("message", (ev) => {
 const cdp = (method, params = {}) => new Promise((r) => { id += 1; cekajici.set(id, r); ws.send(JSON.stringify({ id, method, params })); });
 
 await cdp("Page.enable");
-for (const [jmeno, stranka, sirka, vyska, mobil] of SNIMKY) {
+for (const [jmeno, stranka, sirka, vyska, mobil] of SNIMKY.filter((x) => !FILTR || FILTR.test(x[0]))) {
   await cdp("Emulation.setDeviceMetricsOverride", { width: sirka, height: vyska, deviceScaleFactor: 1, mobile: mobil });
   await cdp("Page.navigate", { url: "about:blank" });
   await pockej(300);

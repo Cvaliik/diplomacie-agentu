@@ -1,5 +1,7 @@
-/* Ardan v 3D, etapa 1 (prototyp). three.js z CDN přes importmap (mapa.html), bez bundleru.
-   Geometrie z web/map.json, stav světa po kolech z history/summary.json. Popis v web/MAPA3D.md. */
+/* Ardan v 3D (etapa 2): mapa, HUD, bublina kola, panel státu, projevy a kronika.
+   three.js z CDN přes importmap (mapa.html), bez bundleru. Geometrie z web/map.json, stav světa po kolech
+   z history/summary.json; plné snímky history/turn_NNN.json se čtou až při otevření panelu, projevů
+   nebo pro bublinu kola. Popis v web/MAPA3D.md. */
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 import { CSS2DRenderer, CSS2DObject } from "three/addons/renderers/CSS2DRenderer.js";
@@ -8,17 +10,19 @@ import { LineMaterial } from "three/addons/lines/LineMaterial.js";
 import { LineGeometry } from "three/addons/lines/LineGeometry.js";
 
 const ZAKLAD = "..";
-/* barvy: značka Kája Industries (kaja.css) a sémantické barvy dnešní mapy; Kalvera není Ion Blue */
+/* barvy: značka Kája Industries (kaja.css) a sémantické barvy mapy; Kalvera není Ion Blue */
 const B = {
-  hull: "#F3F4F6", silver: "#C8CDD4", steel: "#6E7680", graphite: "#22252A", ion: "#2F80D1",
+  hull: "#F3F4F6", silver: "#C8CDD4", bok: "#B4BAC3", steel: "#6E7680", graphite: "#22252A", ion: "#2F80D1",
   more: "#E3E8EE", zeme: "#F7F8FA", vysocina: "#DDE1E6",
   A: "#2B4A8C", B: "#BA544A", Atm: "#1A2D57", Btm: "#6E2A24", unie: "#6F9E73", unieHrana: "#3F7D45", zlata: "#B8902A"
 };
-const VYSKA = { zeme: 2, uzemi: 1, vysocina: 3, jezero: 1, mesto: 3 };
+const VYSKA = { zeme: 5, uzemi: 2, vysocina: 4, jezero: 1, mesto: 4 };
 const SIRKA = 1000, HLOUBKA = 700, OX = SIRKA / 2, OZ = HLOUBKA / 2;
 const HORNI = VYSKA.zeme + VYSKA.uzemi;   // horní plocha území
 const HRACI = { A: "Kalverská federace", B: "Lidová republika Ostrogard" };
 const KRATKE = { A: "Kalvera", B: "Ostrogard" };
+const ROD = { A: "a", B: "", C: "a" };   // koncovka slovesa v minulém čase podle rodu (Kalvera, Ostrogard, Unie)
+const BARVA_HRACE = { A: B.A, B: B.B, C: B.unieHrana };
 const FAZE = {
   pre: "Před objevem", displacement: "Šok, vytěsnění", boom: "Rozmach", euphoria: "Euforie",
   overtrading: "Nadměrné obchodování", distress: "Finanční tíseň", panic: "Panika",
@@ -28,17 +32,29 @@ const STATUS = {
   independent: "nezávislý", sphere_A: "sféra Kalvery", sphere_B: "sféra Ostrogardu",
   occupied_A: "okupován Kalverou", occupied_B: "okupován Ostrogardem", union: "člen Unie", candidate: "kandidát Unie"
 };
+const STATEK = { grain: "obilí", oil: "ropa", metal: "kovy", goods: "zboží", orit: "orit" };
+const STATEK_NA = { grain: "obilí", oil: "ropu", metal: "kovy", goods: "zboží", orit: "orit" };
+const VYSLEDEK = {
+  prijato: "přijato", podminka: "přijato s podmínkou", protinavrh: "protinávrh",
+  odmitnuto: "odmítnuto", prednost_druhe_strany: "dalo přednost druhé straně", vyrazeno: "vyřazeno"
+};
+const AKCE_KRATCE = {
+  trade_offer: "nabídka obchodu", loan: "půjčka", protect: "pakt", invade: "invaze", admit: "členství",
+  pressure: "sankce", accept_offer: "přijetí nabídky", arm: "zbrojení", declare_war: "válka"
+};
 const KLIDNE = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 const MOBIL = () => window.matchMedia("(max-width: 599px)").matches;
 const deg = (d) => d * Math.PI / 180;
 const $ = (id) => document.getElementById(id);
 const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 const cis = (n, d = 1) => (n == null || isNaN(Number(n))) ? "–" : Number(n).toLocaleString("cs-CZ", { maximumFractionDigits: d });
+const vys = (pojem) => `<button type="button" class="vys" data-pojem="${esc(pojem)}" aria-label="Co je ${esc(pojem)}">?</button>`;
+const stitek = (text, slaby) => `<span class="stitek-v${slaby ? " slaby" : ""}">${esc(text)}</span>`;
 
 async function nacti(cesta) {
   const r = await fetch(`${ZAKLAD}/${cesta}`, { cache: "no-cache" });
   if (!r.ok) throw new Error(`${cesta}: ${r.status}`);
-  return r.json();
+  return cesta.endsWith(".md") ? r.text() : r.json();
 }
 
 /* ------------------------------ síť hvězd v okrajích ------------------------------ */
@@ -87,14 +103,24 @@ function deska(kruhy, zaklad, vyska) {
   return g;
 }
 const material = (barva) => new THREE.MeshStandardMaterial({ color: barva, roughness: 0.92, metalness: 0 });
-
-function obrys(kruh, y, barva, sirka, kryti) {
-  const body = [];
-  for (const [x, z] of [...kruh, kruh[0]]) { const [sx, sz] = vScene(x, z); body.push(sx, y, sz); }
+const cary = [];   // všechny Line2 (kvůli rozlišení při změně velikosti okna)
+function cara(body, barva, sirka, kryti) {
   const g = new LineGeometry();
   g.setPositions(body);
   const m = new LineMaterial({ color: barva, linewidth: sirka, transparent: kryti < 1, opacity: kryti, worldUnits: false });
-  return new Line2(g, m);
+  const l = new Line2(g, m);
+  cary.push(l);
+  return l;
+}
+function obrys(kruh, y, barva, sirka, kryti) {
+  const body = [];
+  for (const [x, z] of [...kruh, kruh[0]]) { const [sx, sz] = vScene(x, z); body.push(sx, y, sz); }
+  return cara(body, barva, sirka, kryti);
+}
+function kruznice(barva, sirka) {
+  const body = [];
+  for (let i = 0; i <= 64; i++) { const a = (i / 64) * Math.PI * 2; body.push(Math.cos(a), 0, Math.sin(a)); }
+  return cara(body, barva, sirka, 1);
 }
 
 /* ------------------------------ barvy vlivu ------------------------------ */
@@ -103,7 +129,6 @@ const SILVER40 = C(B.zeme).lerp(C(B.silver), 0.4);
 const MAX_VLIV = 20;   // součet vlivu, při kterém je barva plná (práh sféry je 10 u jedné velmoci)
 
 function vzhled(id, st, pakty, kandidati) {
-  // vrací výplň a hranu území pro dané kolo
   const v = { fill: SILVER40.clone(), hrana: C(B.graphite), sirka: 1, kryti: 0.6 };
   if (id === "A" || id === "B") {
     v.fill = C(B[id]); v.hrana = C(B[id + "tm"]); v.sirka = 2; v.kryti = 1;
@@ -126,9 +151,10 @@ function vzhled(id, st, pakty, kandidati) {
   return v;
 }
 
-/* ------------------------------ scéna ------------------------------ */
-const svet = { mapa: null, souhrn: [], jmena: {}, kolo: 0, uzemi: new Map(), mesta: new Map(), vybrany: null, hover: null,
-               D0: 1000, prehravani: null, animace: null, popiskyMale: [] };
+/* ------------------------------ stav stránky ------------------------------ */
+const svet = { mapa: null, souhrn: [], jmena: {}, kolo: 0, uzemi: new Map(), vybrany: null, hover: null, panel: null,
+               D0: 1000, prehravani: null, animace: null, popiskyMale: [], popisekJezera: null, snimky: new Map(),
+               kroniky: null, bublinaCas: null, otevreno: null };
 let renderer, labeler, scene, camera, controls;
 let cekaRender = false;
 const vykresli = () => {
@@ -136,12 +162,20 @@ const vykresli = () => {
   cekaRender = true;
   requestAnimationFrame(() => { cekaRender = false; renderer.render(scene, camera); labeler.render(scene, camera); });
 };
+const jm = (id) => (id === "C" ? (svet.unie || "Unie") : (KRATKE[id] || svet.jmena[id] || id || ""));
+const plneJmeno = (id) => (id in HRACI ? HRACI[id] : jm(id));
+
+function snimek(t) {
+  if (!svet.snimky.has(t)) svet.snimky.set(t, nacti(`history/turn_${String(t).padStart(3, "0")}.json`));
+  return svet.snimky.get(t);
+}
 
 function maWebGL() {
   try { const c = document.createElement("canvas"); return Boolean(c.getContext("webgl2") || c.getContext("webgl")); }
   catch (e) { return false; }
 }
 
+/* ------------------------------ scéna ------------------------------ */
 function postavScenu() {
   const M = svet.mapa;
   scene = new THREE.Scene();
@@ -161,13 +195,12 @@ function postavScenu() {
   more.receiveShadow = true;
   more.renderOrder = -1;
   scene.add(more);
-  // souš: deska výšky 2 s dírou jezera, boční stěny Silver
-  const zeme = new THREE.Mesh(deska(M.land, 0, VYSKA.zeme), [material(B.zeme), material(B.silver)]);
+  // souš: deska výšky 5 s dírou jezera, boční stěny o stupeň tmavší Silver
+  const zeme = new THREE.Mesh(deska(M.land, 0, VYSKA.zeme), [material(B.zeme), material(B.bok)]);
   zeme.receiveShadow = true; zeme.castShadow = true;
   scene.add(zeme);
   // jezero: hladina zapuštěná o 1 pod souš, barva moře
-  const otvor = M.land.slice(1);
-  for (const kruh of otvor) {
+  for (const kruh of M.land.slice(1)) {
     const g = new THREE.ShapeGeometry(tvar([kruh]));
     g.rotateX(-Math.PI / 2);
     g.translate(0, VYSKA.zeme - VYSKA.jezero, 0);
@@ -175,9 +208,9 @@ function postavScenu() {
     h.receiveShadow = true;
     scene.add(h);
   }
-  // vysočina: plochý schod o 3 výš, světlejší Silver místo šrafury
+  // vysočina: plochý schod o 4 výš, světlejší Silver místo šrafury
   for (const v of M.highlands || []) {
-    const m = new THREE.Mesh(deska(v.polygon, VYSKA.zeme, VYSKA.vysocina), [material(B.vysocina), material(B.silver)]);
+    const m = new THREE.Mesh(deska(v.polygon, VYSKA.zeme, VYSKA.vysocina), [material(B.vysocina), material(B.bok)]);
     m.castShadow = true; m.receiveShadow = true;
     scene.add(m);
     scene.add(obrys(v.polygon[0], VYSKA.zeme + VYSKA.vysocina + 0.05, C(B.steel), 1, 0.6));
@@ -190,54 +223,63 @@ function postavScenu() {
     l.computeLineDistances();
     scene.add(l);
   }
-  // území: extruze výšky 1 nad souší, výplň podle vlivu, hrana Line2 (šířka v pixelech)
+  // území, města, prstence, ložiska oritu, popisky
+  const skryty = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
   for (const r of M.regions) {
-    const cap = material(SILVER40.clone()), bok = material(B.silver);
-    const mesh = new THREE.Mesh(deska(r.polygon, VYSKA.zeme, VYSKA.uzemi), [cap, bok]);
+    const cap = material(SILVER40.clone());
+    const mesh = new THREE.Mesh(deska(r.polygon, VYSKA.zeme, VYSKA.uzemi), [cap, material(B.bok)]);
     mesh.castShadow = true; mesh.receiveShadow = true;
-    mesh.userData.id = r.id;
+    mesh.userData = { id: r.id, druh: "uzemi" };
     scene.add(mesh);
     const hrana = obrys(r.polygon[0], HORNI + 0.06, C(B.graphite), 1, 0.6);
     scene.add(hrana);
-    // hlavní město: válec, prstenec pro A, B a členy Unie, oktaedr ložiska oritu
     const [cx, cz] = vScene(r.capital_xy[0], r.capital_xy[1]);
-    const mesto = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, VYSKA.mesto, 28), material(B.graphite));
+    const mesto = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, VYSKA.mesto, 32), material(B.graphite));
     mesto.position.set(cx, HORNI + VYSKA.mesto / 2, cz);
     mesto.castShadow = true;
+    mesto.userData = { id: r.id, druh: "mesto" };
     scene.add(mesto);
-    const prsten = new THREE.Mesh(new THREE.TorusGeometry(1, 0.06, 8, 48), new THREE.MeshBasicMaterial({ color: B.graphite }));
-    prsten.rotateX(Math.PI / 2);
-    prsten.position.set(cx, HORNI + 0.4, cz);
+    // prstenec 1,5 px v barvě hráče; klikací plocha prstence je neviditelný torus
+    // světlý lem pod prstencem, jinak by prstenec A a B na vlastním území splynul s výplní
+    const lem = kruznice(C(B.hull), 4.5);
+    lem.position.set(cx, HORNI + 0.25, cz);
+    lem.visible = false;
+    scene.add(lem);
+    const prsten = kruznice(C(B.graphite), 1.5);
+    prsten.position.set(cx, HORNI + 0.35, cz);
     prsten.visible = false;
     scene.add(prsten);
-    const orit = new THREE.Mesh(new THREE.OctahedronGeometry(2.2), material(B.steel));
-    orit.position.set(cx, HORNI + 2.6, cz);
+    const prstenKlik = new THREE.Mesh(new THREE.TorusGeometry(1, 0.32, 6, 32), skryty);
+    prstenKlik.rotateX(Math.PI / 2);
+    prstenKlik.position.set(cx, HORNI + 0.6, cz);
+    prstenKlik.userData = { id: r.id, druh: "prsten" };
+    scene.add(prstenKlik);
+    const orit = new THREE.Mesh(new THREE.OctahedronGeometry(2.4), material(B.steel));
+    orit.position.set(cx, HORNI + 3, cz);
     orit.castShadow = true;
     orit.visible = false;
     scene.add(orit);
-    // popisek
     const div = document.createElement("div");
     div.className = "popisek" + (r.id === "A" || r.id === "B" ? " hrac" : "");
-    // text ve vnitřním prvku: transformaci obalu přepisuje CSS2DRenderer, posun nad město nese vnitřek
-    const text = document.createElement("span");
+    const text = document.createElement("span");   // posun nad město nese vnitřek, obal posouvá CSS2DRenderer
     text.textContent = r.id in KRATKE ? KRATKE[r.id] : (svet.jmena[r.id] || r.name);
     div.appendChild(text);
     const popisek = new CSS2DObject(div);
     popisek.position.set(cx, HORNI + VYSKA.mesto + 2, cz);
     scene.add(popisek);
     if (!(r.id in KRATKE)) svet.popiskyMale.push(popisek);
-    svet.uzemi.set(r.id, { r, mesh, cap, hrana, mesto, prsten, orit, popisek, v: null, polomer: 2, cil: null });
+    svet.uzemi.set(r.id, { r, mesh, cap, hrana, mesto, lem, prsten, prstenKlik, orit, popisek, v: null, polomer: 3, st: {} });
   }
-  // popisek jezera a Unie
   for (const j of M.lakes || []) {
     if (!j.label_xy) continue;
     const d = document.createElement("div");
     d.className = "popisek jezero";
-    d.textContent = j.name;
+    d.innerHTML = `<span>${esc(j.name)}</span>`;
     const o = new CSS2DObject(d);
     const [x, z] = vScene(j.label_xy[0], j.label_xy[1]);
     o.position.set(x, VYSKA.zeme, z);
     scene.add(o);
+    svet.popisekJezera = o;
   }
   const du = document.createElement("div");
   du.className = "popisek hrac";
@@ -246,38 +288,47 @@ function postavScenu() {
   svet.popisekUnie.visible = false;
   scene.add(svet.popisekUnie);
 
-  // světlo: hemisférické + jedno směrové s měkkým stínem
+  // světlo: hemisférické + jedno směrové s měkkým stínem, elevace kolem 40° pro delší stín
   scene.add(new THREE.HemisphereLight(0xffffff, 0xd9dde3, 1.9));
   const slunce = new THREE.DirectionalLight(0xffffff, 1.6);
-  slunce.position.set(-260, 520, 300);
+  const el = deg(40), az = deg(-135);
+  slunce.position.set(700 * Math.cos(el) * Math.cos(az) * -1, 700 * Math.sin(el), 700 * Math.cos(el) * Math.sin(az) * -1);
   slunce.castShadow = true;
   slunce.shadow.mapSize.set(2048, 2048);
-  Object.assign(slunce.shadow.camera, { left: -620, right: 620, top: 460, bottom: -460, near: 10, far: 1500 });
+  Object.assign(slunce.shadow.camera, { left: -640, right: 640, top: 480, bottom: -480, near: 10, far: 2000 });
   slunce.shadow.radius = 4;
   slunce.shadow.bias = -0.0004;
   scene.add(slunce);
 }
 
 /* ------------------------------ kamera a ovládání ------------------------------ */
+function vychoziVzdalenost(w, h) {
+  const tan = Math.tan(deg(camera.fov / 2));
+  const aspect = w / h;
+  if (MOBIL()) {
+    // mobil: mapa vyplní šířku s okrajem 16 px
+    return (SIRKA / 2) * (w / Math.max(1, w - 32)) / (tan * aspect);
+  }
+  return Math.max(HLOUBKA * 0.66 / tan, SIRKA * 0.62 / (tan * aspect));
+}
+
 function nastavKameru(prvni) {
   const el = $("platno");
   const w = el.clientWidth, h = el.clientHeight;
   renderer.setSize(w, h);
   labeler.setSize(w, h);
-  for (const u of svet.uzemi.values()) u.hrana.material.resolution.set(w, h);
-  scene.traverse((o) => { if (o.material && o.material.isLineMaterial) o.material.resolution.set(w, h); });
+  for (const l of cary) l.material.resolution.set(w, h);
   camera.aspect = w / h;
-  // vzdálenost, ve které je vidět celá mapa (s rezervou na lišty)
-  const tan = Math.tan(deg(camera.fov / 2));
-  const D0 = Math.max(HLOUBKA * 0.62 / tan, SIRKA * 0.62 / (tan * camera.aspect));
-  const pomer = svet.D0 ? controls.getDistance() / svet.D0 : 1;
+  const D0 = vychoziVzdalenost(w, h);
+  const pomer = svet.D0 && !prvni ? controls.getDistance() / svet.D0 : 1;
   svet.D0 = D0;
   controls.minDistance = D0 / 2.5;
   controls.maxDistance = D0 / 0.7;
   if (prvni) {
-    const naklon = deg(MOBIL() ? 40 : 50);
+    const naklon = deg(MOBIL() ? 40 : 55);
     camera.position.set(0, D0 * Math.cos(naklon), D0 * Math.sin(naklon));
-    controls.target.set(0, 0, 0);
+    controls.target.set(0, 0, MOBIL() ? 0 : 20);
+    camera.position.z += controls.target.z;
   } else {
     const smer = camera.position.clone().sub(controls.target).normalize();
     camera.position.copy(controls.target).addScaledVector(smer, D0 * pomer);
@@ -305,23 +356,55 @@ function priblizNa(id, zoom) {
 }
 
 function popiskyPodleZoomu() {
-  // pod 1× jen A, B, Unie a jezero; na úzkém displeji se malé státy slévají, proto tam až od 1,5×
+  // pod 1× jen A, B, Unie a jezero; na úzkém displeji malé státy i jezero až od 1,5×
   const zoom = svet.D0 / controls.getDistance();
   const prah = MOBIL() ? 1.5 : 1;
   for (const p of svet.popiskyMale) p.visible = zoom >= prah - 1e-6;
+  if (svet.popisekJezera) svet.popisekJezera.visible = !MOBIL() || zoom >= 1.5 - 1e-6;
 }
 
 /* ------------------------------ kolo ------------------------------ */
 function radek(t) { return svet.souhrn.find((x) => x.turn === t); }
+
+function adresa() {
+  const h = new URLSearchParams();
+  h.set("kolo", svet.kolo);
+  if (svet.panel) h.set("stat", svet.panel);
+  history.replaceState(null, "", `#${h.toString()}`);
+}
+
+function sipka(nyni, pred) {
+  if (nyni == null || pred == null) return "";
+  const d = Number(nyni) - Number(pred);
+  if (Math.abs(d) < 0.005) return ' <span class="sipka" aria-label="beze změny">→</span>';
+  return d > 0 ? ' <span class="sipka" aria-label="roste">↑</span>' : ' <span class="sipka" aria-label="klesá">↓</span>';
+}
+
+function hud(s) {
+  const i = svet.souhrn.findIndex((x) => x.turn === s.turn);
+  const p = i > 0 ? svet.souhrn[i - 1] : null;
+  $("h-kolo").textContent = s.turn;
+  $("h-rok").textContent = s.cas || `rok ${s.day}`;
+  $("h-faze").textContent = FAZE[s.phase] || s.phase;
+  const idx = s.metrics && s.metrics.prosperity_index;
+  $("h-index").innerHTML = idx != null ? cis(idx, 1) + sipka(idx, p && p.metrics && p.metrics.prosperity_index) : "–";
+  const orit = s.prices && s.prices.orit;
+  $("h-orit").innerHTML = orit != null ? cis(orit, 2) + sipka(orit, p && p.prices && p.prices.orit) : "–";
+  const b = s.banks || {};
+  const kap = (x) => (!x ? "–" : (x.failed ? "pád" : cis(x.capital, 1) + (x.insolvent ? "!" : "")));
+  $("h-banky").textContent = `${kap(b.K)} / ${kap(b.AUR)}`;
+  $("cas-rok").textContent = `${s.cas || `rok ${s.day}`} ·`;
+  $("cas-kolo").textContent = `kolo ${s.turn}`;
+}
 
 function zobraz(t) {
   const s = radek(t);
   if (!s) return;
   svet.kolo = t;
   $("posuvnik").value = t;
-  $("cas-rok").textContent = `${s.cas || `rok ${s.day}`} ·`;
-  $("cas-kolo").textContent = `kolo ${t}`;
-  history.replaceState(null, "", `#kolo=${t}`);
+  hud(s);
+  if (s.union && s.union.name) svet.unie = s.union.name;
+  adresa();
   const pakty = {};
   for (const d of s.deals || []) if (d.type === "protect") pakty[d.target] = d.owner;
   const kandidati = new Set((s.union && s.union.candidates) || []);
@@ -333,27 +416,30 @@ function zobraz(t) {
     const st = s.states[id] || {};
     const v = vzhled(id, st, pakty, kandidati);
     const w = Math.max(0, (st.wealth || 0) + (st.paper_wealth || 0));
-    const polomer = (4 + 10 * (w / maxW)) / 2;
+    const polomer = (6 + 10 * (w / maxW)) / 2;   // průměr 6 až 16
     prechody.push({ u, z: { fill: u.cap.color.clone(), polomer: u.polomer }, na: { fill: v.fill, polomer } });
     u.v = v;
     u.st = st;
-    // prstenec: A a B své barvy, členové Unie zelený
     const hrac = id === "A" || id === "B";
     u.prsten.visible = hrac || clenove.has(id);
+    u.lem.visible = u.prsten.visible;
     u.prsten.material.color.set(hrac ? B[id] : B.unieHrana);
     u.orit.visible = (st.orit || 0) > 0;
     nastavHranu(id);
   }
-  // popisek Unie nad těžištěm hlavních měst členů
   const pu = svet.popisekUnie;
   if (clenove.size) {
     let x = 0, z = 0;
     for (const id of clenove) { const u = svet.uzemi.get(id); x += u.mesto.position.x; z += u.mesto.position.z; }
-    pu.position.set(x / clenove.size, HORNI + 8, z / clenove.size);
+    pu.position.set(x / clenove.size, HORNI + 9, z / clenove.size);
     pu.element.firstChild.textContent = s.union.name || "Unie";
     pu.visible = true;
   } else pu.visible = false;
   animuj(prechody);
+  bublinaKola(t);
+  if (svet.panel) panelStatu(svet.panel);
+  if (svet.otevreno === "projevy") projevy();
+  if (svet.otevreno === "kronika") kronika();
 }
 
 function nastavHranu(id) {
@@ -365,7 +451,6 @@ function nastavHranu(id) {
   m.linewidth = aktivni ? 2 : u.v.sirka;
   m.opacity = aktivni ? 1 : u.v.kryti;
   m.transparent = m.opacity < 1;
-  u.hrana.position.y = aktivni ? 0.04 : 0;
 }
 
 /* přechod barev a velikosti měst 400 ms, lineárně; bez animace při prefers-reduced-motion */
@@ -373,11 +458,14 @@ function animuj(prechody) {
   if (svet.animace) cancelAnimationFrame(svet.animace);
   const nastav = (k) => {
     for (const p of prechody) {
-      p.u.cap.color.lerpColors(p.z.fill, p.na.fill, k);
-      p.u.polomer = p.z.polomer + (p.na.polomer - p.z.polomer) * k;
-      p.u.mesto.scale.set(p.u.polomer, 1, p.u.polomer);
-      p.u.prsten.scale.setScalar(p.u.polomer + 1.6);
-      p.u.orit.position.x = p.u.mesto.position.x + p.u.polomer + 3.4;
+      const u = p.u;
+      u.cap.color.lerpColors(p.z.fill, p.na.fill, k);
+      u.polomer = p.z.polomer + (p.na.polomer - p.z.polomer) * k;
+      u.mesto.scale.set(u.polomer, 1, u.polomer);
+      u.prsten.scale.set(u.polomer + 1.8, 1, u.polomer + 1.8);
+      u.lem.scale.set(u.polomer + 1.8, 1, u.polomer + 1.8);
+      u.prstenKlik.scale.setScalar(u.polomer + 1.8);
+      u.orit.position.x = u.mesto.position.x + u.polomer + 4;
     }
     renderer.render(scene, camera); labeler.render(scene, camera);
   };
@@ -389,6 +477,47 @@ function animuj(prechody) {
     svet.animace = k < 1 ? requestAnimationFrame(krok) : null;
   };
   svet.animace = requestAnimationFrame(krok);
+}
+
+/* ------------------------------ bublina „co se stalo“ ------------------------------ */
+const VETY = [
+  // [priorita, druh události, věta]; co tu není, se nezobrazuje
+  [1, "war_declared", (e) => `${jm(e.aggressor)} vyhlásil${ROD[e.aggressor] ?? ""} válku státu ${jm(e.defender)}.`],
+  [1, "war_end", (e) => `Válka mezi státy ${jm((e.between || [])[0])} a ${jm((e.between || [])[1])} skončila.`],
+  [2, "occupied", (e) => `${jm(e.attacker)} obsadil${ROD[e.attacker] ?? ""} stát ${jm(e.target)}.`],
+  [2, "invade_progress", (e) => (Number(e.turns) <= 1
+    ? `${jm(e.player)} zahájil${ROD[e.player] ?? ""} invazi do státu ${jm(e.target)}.`
+    : `${jm(e.player)} pokračuje v invazi do státu ${jm(e.target)} (${e.turns}. kolo).`)],
+  [3, "union_founded", () => "Krize zrodila Unii menších států."],
+  [3, "phase", (e) => `Svět vstoupil do fáze ${FAZE[e.to] || e.to}.`],
+  [4, "protect_started", (e) => `${jm(e.player)} uzavřel${ROD[e.player] ?? ""} ochranný pakt se státem ${jm(e.target)}.`],
+  [5, "trade_opened", (e) => { const d = e.deal || {}; return `${jm(d.owner)} a ${d.target in HRACI ? "" : "stát "}${jm(d.target)} uzavřeli smlouvu na ${STATEK_NA[d.res] || d.res}.`; }],
+  [6, "loan_given", (e) => `${jm(e.player)} půjčil${ROD[e.player] ?? ""} státu ${jm(e.target)} ${cis(e.amount)}.`]
+];
+
+async function bublinaKola(t) {
+  const b = $("bublina-kola");
+  let veta = null, priorita = 99;
+  try {
+    const sn = await snimek(t);
+    if (svet.kolo !== t) return;
+    for (const e of sn.events || []) {
+      if (e.private) continue;
+      for (const [p, druh, f] of VETY) if (e.kind === druh && p < priorita) { priorita = p; veta = f(e); }
+    }
+  } catch (err) { /* bez snímku jen změna indexu */ }
+  if (!veta) {
+    const i = svet.souhrn.findIndex((x) => x.turn === t);
+    const a = i > 0 ? svet.souhrn[i - 1].metrics : null, s = svet.souhrn[i] && svet.souhrn[i].metrics;
+    if (a && s && Math.abs(s.prosperity_index - a.prosperity_index) >= 0.05) {
+      veta = `Index prosperity ${s.prosperity_index > a.prosperity_index ? "vzrostl" : "klesl"} na ${cis(s.prosperity_index, 1)}.`;
+    }
+  }
+  clearTimeout(svet.bublinaCas);
+  if (!veta || svet.otevreno) { b.hidden = true; return; }
+  b.innerHTML = `<span class="hud">Kolo ${t}</span>${esc(veta)}`;
+  b.hidden = false;
+  svet.bublinaCas = setTimeout(() => { b.hidden = true; }, 6000);
 }
 
 /* ------------------------------ lišta kol ------------------------------ */
@@ -423,34 +552,256 @@ function znackySlideru() {
 
 function posun(krok) {
   const p = $("posuvnik");
-  const t = Math.min(Number(p.max), Math.max(Number(p.min), Number(p.value) + krok));
-  zobraz(t);
+  zobraz(Math.min(Number(p.max), Math.max(Number(p.min), Number(p.value) + krok)));
 }
 
 function prehrat() {
   const tl = $("prehrat");
   if (svet.prehravani) {
     clearInterval(svet.prehravani); svet.prehravani = null;
-    tl.textContent = "Přehrát"; tl.setAttribute("aria-pressed", "false");
+    tl.querySelector(".text-prehrat").textContent = "Přehrát"; tl.setAttribute("aria-pressed", "false");
     return;
   }
   const p = $("posuvnik");
   if (Number(p.value) >= Number(p.max)) zobraz(Number(p.min));
-  tl.textContent = "Zastavit"; tl.setAttribute("aria-pressed", "true");
+  tl.querySelector(".text-prehrat").textContent = "Zastavit"; tl.setAttribute("aria-pressed", "true");
   svet.prehravani = setInterval(() => {
     if (Number(p.value) >= Number(p.max)) { prehrat(); return; }
     posun(1);
   }, 1200);
 }
 
+/* ------------------------------ panel státu ------------------------------ */
+async function panelStatu(id) {
+  const box = $("panel");
+  svet.panel = id;
+  box.hidden = false;
+  adresa();
+  const t = svet.kolo;
+  const s = radek(t) || {};
+  const st = (s.states || {})[id] || {};
+  let e = null;
+  try {   // síla, produkce a dluhy jsou jen v plném snímku: čte se až teď
+    const sn = await snimek(t);
+    if (svet.kolo !== t || svet.panel !== id) return;
+    e = id in (sn.state.npc || {}) ? sn.state.npc[id] : sn.state.players[id];
+  } catch (err) { e = null; }
+  const radky = [];
+  const oddil = (n) => radky.push(["#", n]);
+  const status = id in HRACI ? "velmoc" : (STATUS[st.status] || st.status || "");
+  radky.push(["status", status, id in HRACI ? null : "sféra"]);
+  radky.push(["bohatství", cis((st.wealth || 0) + (st.paper_wealth || 0)) + (st.paper_wealth ? ` (z toho papírové ${cis(st.paper_wealth)})` : "")]);
+  if (e) radky.push(["síla", cis(e.power)]);
+  radky.push(["obyvatelstvo", cis(st.pop, 0)]);
+  if (id in HRACI) {
+    radky.push(["právo", cis(st.law, 2), "právo"]);
+    radky.push(["technologie", cis(st.tech, 2), "technologie"]);
+    radky.push(["průmysl", cis(st.industry, 2), "průmysl"]);
+  }
+  oddil("Suroviny");
+  const sur = st.suroviny || {};
+  for (const res of ["grain", "oil", "metal"]) {
+    const r = sur[res];
+    if (r) radky.push([STATEK[res], `výroba ${cis(r.vyroba)}, potřeba ${cis(r.potreba)}, zásoba ${cis(r.stock)}`]);
+  }
+  if (st.goods) radky.push(["zboží", `výroba ${cis(st.goods.vyroba)}, potřeba ${cis(st.goods.potreba)}, zásoba ${cis(st.goods.stock)}`, "zboží (goods)"]);
+  if ((st.orit || 0) > 0) radky.push(["orit", `těžba ${cis(st.orit)}`, "orit"]);
+  if (!(id in HRACI)) {
+    oddil("Vliv a vazby");
+    radky.push(["vliv Kalvery / Ostrogardu", `${cis((st.influence || {}).A)} / ${cis((st.influence || {}).B)}`, "vliv"]);
+  } else oddil("Vazby");
+  const pakty = (s.deals || []).filter((d) => d.type === "protect" && (d.target === id || d.owner === id));
+  if (pakty.length) radky.push(["pakty", pakty.map((d) => (d.owner === id ? `chrání ${jm(d.target)}` : `pod ochranou ${jm(d.owner)}`)).join(", "), "pakt"]);
+  const smlouvy = (s.deals || []).filter((d) => d.type === "trade" && (d.target === id || d.owner === id));
+  if (smlouvy.length) radky.push(["smlouvy", smlouvy.map((d) => `${STATEK[d.res] || d.res}, ${jm(d.owner === id ? d.target : d.owner)}`).join("; "), "smlouva"]);
+  const db = st.dluh_banky || {};
+  const dl = [["K", "kalverské"], ["AUR", "Aurelie"], ["U", "Unie"]].filter(([k]) => Number(db[k] || 0) > 0.05).map(([k, n]) => `${n} ${cis(db[k])}`);
+  if (dl.length) radky.push(["dluh bankám", dl.join(" · ")]);
+  if (e && e.debt) {
+    const dh = ["A", "B", "C"].filter((k) => Number(e.debt[k] || 0) > 0.05).map((k) => `${jm(k)} ${cis(e.debt[k])}`);
+    if (dh.length) radky.push(["dluh hráčům", dh.join(" · "), "půjčka"]);
+  }
+  if (e && e.prod) {
+    const prod = Object.entries(e.prod).filter(([, v]) => Number(v) > 0).map(([k, v]) => `${STATEK[k] || k} ${cis(v)}`).join(", ");
+    if (prod) radky.splice(4, 0, ["produkce", prod]);
+  }
+  if (!pakty.length && !smlouvy.length && !dl.length && radky[radky.length - 1][0] === "#") radky.push(["", "žádné"]);
+  box.innerHTML = `<button type="button" class="zavrit" aria-label="Zavřít panel státu">×</button>` +
+    `<span class="hud">Kolo ${t} · stát</span><h2>${esc(plneJmeno(id))}</h2>` +
+    `<table>${radky.map(([k, v, p]) => (k === "#" ? `<tr class="oddil"><td colspan="2">${esc(v)}</td></tr>`
+      : `<tr><td>${esc(k)}${p ? vys(p) : ""}</td><td>${esc(v)}</td></tr>`)).join("")}</table>`;
+  box.querySelector(".zavrit").addEventListener("click", zavriPanel);
+}
+
+function zavriPanel() {
+  $("panel").hidden = true;
+  svet.panel = null;
+  const pred = svet.vybrany;
+  svet.vybrany = null;
+  if (pred) nastavHranu(pred);
+  adresa();
+  vykresli();
+}
+
+/* ------------------------------ projevy (diplomatická obrazovka) ------------------------------ */
+function akce(a) {
+  const cil = jm(a.target);
+  const res = STATEK[a.res] || a.res || "";
+  switch (a.type) {
+    case "trade_offer": return `Nabídka obchodu: ${res} ${cis(a.qty)} jednotek, ${cil}, ${cis(a.price_per_unit, 2)}`;
+    case "loan": return `Půjčka: ${cil}, ${cis(a.amount)}`;
+    case "pressure": return `Sankce: ${cil}`;
+    case "protect": return `Vojenský pakt: ${cil}`;
+    case "invade": return `Invaze: ${cil}`;
+    case "invest_tech": return `Investice do technologie: ${a.target ? cil : "vlastní stát"}`;
+    case "invest_law": return `Investice do institucí: ${a.target ? cil : "vlastní stát"}`;
+    case "invest_industry": return `Investice do průmyslu: ${a.target ? cil : "vlastní stát"}`;
+    case "invest_prod": return `Investice do těžby: ${res}, ${a.target ? cil : "vlastní stát"}`;
+    case "explore": return "Průzkum ložisek";
+    case "arm": return `Zbrojení: ${cis(a.amount ?? 8)}`;
+    case "cancel": return a.retreat ? "Ústup z války" : `Zrušení ${a.deal_id || ""}`.trim();
+    case "admit": return `Nabídka členství v Unii: ${cil}`;
+    case "union_fund": return `Převod z fondu Unie: ${cil}, ${cis(a.amount)}`;
+    case "accept_offer": return `Přijetí nabídky ${a.offer_id || ""}`.trim();
+    case "set_tariff": return `Sazba cla: ${cis((a.rate || 0) * 100, 0)} %`;
+    case "declare_war": return `Vyhlášení války: ${cil}`;
+    case "kapitalizace_banky": return `Kapitál bance Unie: ${cis(a.amount)}`;
+    case "refinancovani": return `Refinancování dluhu: ${cil}`;
+    case "moratorium": return `Moratorium na splátky: ${a.target === "vsichni" ? "všichni členové" : cil}`;
+    case "zprisnit_uvery": return "Zpřísnění úvěrů kalverských bank";
+    case "uvolnit_uvery": return "Uvolnění úvěrů kalverských bank";
+    case "sanace_bank": return "Sanace kalverských bank";
+    default: return a.type || "akce";
+  }
+}
+
+function prvniVety(text, n) {
+  const vety = String(text).match(/[^.!?…]+[.!?…]+(\s|$)/g) || [text];
+  return { zacatek: vety.slice(0, n).join("").trim(), zbytek: vety.length > n };
+}
+
+function karta(pid, m, sn, t) {
+  const barva = BARVA_HRACE[pid] || B.steel;
+  const jmeno = pid === "C" ? (svet.unie || "Unie") : HRACI[pid];
+  let h = `<article class="karta"><h3><span class="ctverec" style="background:${barva}"></span>${esc(jmeno)}</h3>`;
+  const g = m.genre || null;
+  if (g && !m.silent) {
+    h += `<p class="hud">${esc(g.id === 8 ? "Stanovisko k události" : g.name)}${g.chair ? `, předsedá ${esc(g.chair)}` : ""}</p>`;
+    if ((g.questions || []).length) {
+      h += `<div class="otazka"><span class="hud">${g.questions.length > 1 ? "Otázky novinářů" : "Otázka novináře"}</span>` +
+           g.questions.map((q) => `<p>${esc(q)}</p>`).join("") + "</div>";
+    }
+  }
+  if (m.silent) h += '<p class="ticho">Vláda nevydala prohlášení.</p>';
+  else if (m.mlci) h += `<p class="ticho">${esc(m.public_statement)} (vláda se rozhodla mlčet)</p>`;
+  else h += `<p class="projev" style="border-left-color:${barva}">${esc(m.public_statement)}</p>`;
+  if (m.zaloha) h += `<p class="hud">${esc(m.zaloha.poznamka || "odpověděl záložní model " + m.zaloha.model)}</p>`;
+  const zapis = m.duverny_zapis || m.private_reasoning;
+  if (zapis) {
+    const { zacatek, zbytek } = prvniVety(zapis, 2);
+    h += `<div class="zapis"><span class="hud">Důvěrný zápis vlády · soupeř nevidí</span>` +
+         `<p data-cely="${esc(zapis)}">${esc(zacatek)}</p>` +
+         (zbytek ? '<button type="button" class="cist-dal">Číst dál</button>' : "") + "</div>";
+  }
+  if (m.poznamky_pro_pristi_tah) {
+    h += `<details class="spis"><summary class="hud">Poznámky do spisu</summary><p>${esc(m.poznamky_pro_pristi_tah)}</p></details>`;
+  }
+  const platne = (sn.actions || []).filter((a) => a.player === pid);
+  const zahranicni = platne.filter((a) => a.slot !== "domestic" && a.type !== "message");
+  const plog = ((sn.state || {}).private_log || {})[pid] || [];
+  const odpovedi = plog.filter((r) => Number(r.turn) === t);
+  if (zahranicni.length) {
+    h += `<p class="popis">Akce</p><ul class="seznam">${zahranicni.map((a) => {
+      const o = odpovedi.find((r) => r.npc === a.target && r.action === a.type);
+      const slaby = o && ["odmitnuto", "vyrazeno", "prednost_druhe_strany"].includes(o.outcome);
+      return `<li>${esc(akce(a))}${o ? stitek(VYSLEDEK[o.outcome] || o.outcome, slaby) : ""}</li>`;
+    }).join("")}</ul>`;
+  }
+  const d = m.domestic_action;
+  if (d && d.type && pid !== "C") {
+    const ev = (sn.events || []).filter((e) => e.player === pid);
+    const hotovo = { arm: "arm", explore: "explore" }[d.type] || `${d.type}_done`;
+    const odl = ev.find((e) => (e.kind === "investment_postponed" || e.kind === "investment_cancelled") && e.type === d.type);
+    const vysl = ev.some((e) => e.kind === hotovo) ? stitek("provedena") : (odl ? stitek(odl.kind === "investment_postponed" ? "odložena" : "propadla", true) : stitek("zadána"));
+    h += `<p class="popis">Domácí akce</p><ul class="seznam"><li>${esc(akce(d))}${vysl}</li></ul>`;
+  }
+  const vyrazene = (sn.rejected || []).filter((r) => r.player === pid);
+  if (vyrazene.length) {
+    h += `<p class="popis">Vyřazeno rozhodčím</p><ul class="seznam">${vyrazene.map((r) =>
+      `<li>${esc(r.action ? akce(r.action) : "akce")}${stitek("vyřazeno", true)} <span class="duvod">${esc(r.reason)}</span></li>`).join("")}</ul>`;
+  }
+  const zprava = platne.find((a) => a.type === "message") || (m.message && m.message.text ? { target: m.message.target, text: m.message.text } : null);
+  if (zprava && zprava.text) h += `<p class="popis">Zpráva pro ${esc(plneJmeno(zprava.target))}</p><p>${esc(zprava.text)}</p>`;
+  return h + "</article>";
+}
+
+async function projevy() {
+  svet.otevreno = "projevy";
+  $("projevy").hidden = false;
+  $("bublina-kola").hidden = true;
+  const t = svet.kolo;
+  $("projevy-nadpis").textContent = `Projevy · kolo ${t}`;
+  const box = $("karty");
+  box.innerHTML = '<p class="ticho">Načítám kolo…</p>';
+  let sn;
+  try { sn = await snimek(t); } catch (e) { box.innerHTML = '<p class="chyba">Snímek kola se nepodařilo načíst.</p>'; return; }
+  if (svet.kolo !== t || svet.otevreno !== "projevy") return;
+  const tahy = sn.turns || {};
+  const poradi = ["A", "B", "C"].filter((p) => tahy[p]);
+  box.innerHTML = poradi.length ? poradi.map((p) => karta(p, tahy[p], sn, t)).join("") : '<p class="ticho">V tomto kole nikdo nejednal.</p>';
+  box.querySelectorAll(".cist-dal").forEach((b) => b.addEventListener("click", () => {
+    const p = b.previousElementSibling;
+    p.textContent = p.dataset.cely;
+    b.remove();
+  }));
+}
+
+/* ------------------------------ kronika ------------------------------ */
+async function kronika() {
+  svet.otevreno = "kronika";
+  $("kronika").hidden = false;
+  $("bublina-kola").hidden = true;
+  const s = radek(svet.kolo) || {};
+  if (!svet.kroniky) {
+    try { svet.kroniky = (await nacti("chronicle/index.json")).days || []; } catch (e) { svet.kroniky = []; }
+  }
+  const dny = [...svet.kroniky].sort((a, b) => Number(a.day) - Number(b.day));
+  const vyber = $("kronika-den");
+  if (!dny.length) { $("kronika-text").innerHTML = '<p class="ticho">Kronika ještě nevyšla; píše se po zimním kole.</p>'; vyber.hidden = true; return; }
+  const k = [...dny].reverse().find((x) => Number(x.day) <= Number(s.day)) || dny[0];
+  vyber.innerHTML = dny.map((x) => `<option value="${x.day}"${x === k ? " selected" : ""}>Rok ${x.day}</option>`).join("");
+  vyber.hidden = false;
+  vyber.onchange = () => ukazKroniku(dny.find((x) => String(x.day) === vyber.value), s);
+  ukazKroniku(k, s);
+}
+
+async function ukazKroniku(k, s) {
+  $("kronika-popis").textContent = Number(k.day) === Number(s.day) ? `rok ${k.day}` : `poslední hotová: rok ${k.day}`;
+  try {
+    const text = await nacti(`chronicle/${k.file}`);
+    $("kronika-text").innerHTML = window.marked ? marked.parse(text) : `<pre>${esc(text)}</pre>`;
+  } catch (e) { $("kronika-text").innerHTML = '<p class="chyba">Kroniku se nepodařilo načíst.</p>'; }
+}
+
+function zavriPrekryv() {
+  $("projevy").hidden = true;
+  $("kronika").hidden = true;
+  svet.otevreno = null;
+}
+
 /* ------------------------------ interakce ------------------------------ */
 const paprsek = new THREE.Raycaster();
-function uzemiPodKurzorem(ev) {
+function zasah(ev) {
   const r = renderer.domElement.getBoundingClientRect();
   const v = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
   paprsek.setFromCamera(v, camera);
-  const zasah = paprsek.intersectObjects([...svet.uzemi.values()].map((u) => u.mesh), false)[0];
-  return zasah ? zasah.object.userData.id : null;
+  const objekty = [];
+  for (const u of svet.uzemi.values()) {
+    objekty.push(u.mesh, u.mesto);
+    if (u.prsten.visible) objekty.push(u.prstenKlik);
+  }
+  const z = paprsek.intersectObjects(objekty, false)[0];
+  return z ? z.object.userData : null;
 }
 
 function tooltip(id, x, y) {
@@ -458,10 +809,9 @@ function tooltip(id, x, y) {
   if (!id) { t.hidden = true; return; }
   const u = svet.uzemi.get(id);
   const st = u.st || {};
-  const jmeno = id in HRACI ? HRACI[id] : (svet.jmena[id] || u.r.name);
   const status = id in HRACI ? "velmoc" : (STATUS[st.status] || st.status || "");
   const vliv = id in HRACI ? "–" : `${cis((st.influence || {}).A)} / ${cis((st.influence || {}).B)}`;
-  t.innerHTML = `<b>${esc(jmeno)}</b>` +
+  t.innerHTML = `<b>${esc(plneJmeno(id))}</b>` +
     `<div class="radek"><span>Status</span><span>${esc(status)}</span></div>` +
     `<div class="radek"><span>Vliv A / B</span><span>${esc(vliv)}</span></div>` +
     `<div class="radek"><span>Bohatství</span><span>${cis((st.wealth || 0) + (st.paper_wealth || 0))}</span></div>`;
@@ -481,16 +831,15 @@ function zvyrazni(id) {
 
 function vyber(id) {
   const pred = svet.vybrany;
-  svet.vybrany = pred === id ? null : id;
-  if (pred) nastavHranu(pred);
-  if (id) nastavHranu(id);
-  console.log(id);   // panel státu přijde v etapě 2
+  svet.vybrany = id;
+  if (pred && pred !== id) nastavHranu(pred);
+  nastavHranu(id);
+  panelStatu(id);
   vykresli();
 }
 
-function pozicePopisku(id) {
-  const u = svet.uzemi.get(id);
-  const p = u.mesto.position.clone().project(camera);
+function pozice(id) {
+  const p = svet.uzemi.get(id).mesto.position.clone().project(camera);
   const r = renderer.domElement.getBoundingClientRect();
   return [r.left + (p.x + 1) / 2 * r.width, r.top + (1 - p.y) / 2 * r.height];
 }
@@ -500,7 +849,8 @@ function napojInterakce() {
   let dolu = null;
   el.addEventListener("pointermove", (ev) => {
     if (ev.pointerType !== "mouse") return;
-    const id = uzemiPodKurzorem(ev);
+    const z = zasah(ev);
+    const id = z ? z.id : null;
     if (id !== svet.hover) zvyrazni(id);
     tooltip(id, ev.clientX, ev.clientY);
     el.style.cursor = id ? "pointer" : "";
@@ -510,23 +860,34 @@ function napojInterakce() {
   el.addEventListener("pointerup", (ev) => {
     if (!dolu || Math.hypot(ev.clientX - dolu[0], ev.clientY - dolu[1]) > 5) { dolu = null; return; }
     dolu = null;
-    const id = uzemiPodKurzorem(ev);
-    if (id) {
-      vyber(id);
-      if (ev.pointerType !== "mouse") { const [x, y] = pozicePopisku(id); tooltip(svet.vybrany ? id : null, x, y); }
-    }
+    const z = zasah(ev);
+    tooltip(null);
+    if (!z) { if (svet.panel) zavriPanel(); return; }   // klik mimo zavře panel
+    if (z.druh === "prsten") { projevy(); return; }      // prstenec města A, B a členů Unie otevře projevy
+    vyber(z.id);
   });
   // klávesnice: Tab prochází území v pořadí map.json, Enter = klik
   const box = $("klavesnice");
   for (const r of svet.mapa.regions) {
     const b = document.createElement("button");
     b.type = "button";
-    b.textContent = r.id in HRACI ? HRACI[r.id] : (svet.jmena[r.id] || r.name);
-    b.addEventListener("focus", () => { zvyrazni(r.id); const [x, y] = pozicePopisku(r.id); tooltip(r.id, x, y); });
+    b.textContent = plneJmeno(r.id);
+    b.addEventListener("focus", () => { zvyrazni(r.id); const [x, y] = pozice(r.id); tooltip(r.id, x, y); });
     b.addEventListener("blur", () => { zvyrazni(null); tooltip(null); });
     b.addEventListener("click", () => vyber(r.id));
     box.appendChild(b);
   }
+  $("bublina-kola").addEventListener("click", () => { $("bublina-kola").hidden = true; });
+  $("o-projevy").addEventListener("click", projevy);
+  $("o-kronika").addEventListener("click", kronika);
+  document.querySelectorAll(".zavrit-prekryv").forEach((b) => b.addEventListener("click", zavriPrekryv));
+  $("p-zpet").addEventListener("click", () => posun(-1));
+  $("p-dal").addEventListener("click", () => posun(1));
+  document.addEventListener("keydown", (ev) => {
+    if (ev.key !== "Escape" || document.getElementById("bublina")) return;   // nejdřív se zavře vysvětlivka
+    if (svet.otevreno) zavriPrekryv();
+    else if (svet.panel) zavriPanel();
+  });
 }
 
 /* ------------------------------ start ------------------------------ */
@@ -579,12 +940,15 @@ async function start() {
   $("prehrat").addEventListener("click", prehrat);
   $("lista").hidden = false;
   znackySlideru();
-  // stav v URL: #kolo=11, volitelně zoom=2&na=A (sdílení a screenshoty)
+  // stav v URL: #kolo=11&stat=N3, pro screenshoty navíc zoom=2&na=A a otevri=projevy|kronika
   const h = new URLSearchParams(location.hash.slice(1));
   const kolo = Number(h.get("kolo")) || Number(p.max);
   if (h.get("na") && Number(h.get("zoom"))) priblizNa(h.get("na"), Math.min(2.5, Math.max(0.7, Number(h.get("zoom")))));
   popiskyPodleZoomu();
   zobraz(Math.min(Number(p.max), Math.max(Number(p.min), kolo)));
+  if (h.get("stat") && svet.uzemi.has(h.get("stat"))) vyber(h.get("stat"));
+  if (h.get("otevri") === "projevy") await projevy();
+  if (h.get("otevri") === "kronika") await kronika();
   window.ARDAN_3D_HOTOVO = true;
 }
 
