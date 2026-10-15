@@ -1,4 +1,4 @@
-/* Slovník pojmů pro web: jediné místo s větami, index.html z něj bere vysvětlivky, o-hre.html seznam pojmů. */
+/* Slovník pojmů pro web: jediné místo s větami, index.html (3D mapa) a text.html z něj berou vysvětlivky, o-hre.html seznam pojmů. */
 "use strict";
 
 window.ARDAN_SLOVNIK = [

@@ -1,5 +1,5 @@
 /* Ardan v 3D (etapa 2): mapa, HUD, bublina kola, panel státu, projevy a kronika.
-   three.js z CDN přes importmap (mapa.html), bez bundleru. Geometrie z web/map.json, stav světa po kolech
+   three.js z CDN přes importmap (index.html), bez bundleru. Geometrie z web/map.json, stav světa po kolech
    z history/summary.json; plné snímky history/turn_NNN.json se čtou až při otevření panelu, projevů
    nebo pro bublinu kola. Popis v web/MAPA3D.md. */
 import * as THREE from "three";
@@ -224,7 +224,6 @@ function postavScenu() {
     scene.add(l);
   }
   // území, města, prstence, ložiska oritu, popisky
-  const skryty = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false });
   for (const r of M.regions) {
     const cap = material(SILVER40.clone());
     const mesh = new THREE.Mesh(deska(r.polygon, VYSKA.zeme, VYSKA.uzemi), [cap, material(B.bok)]);
@@ -239,8 +238,7 @@ function postavScenu() {
     mesto.castShadow = true;
     mesto.userData = { id: r.id, druh: "mesto" };
     scene.add(mesto);
-    // prstenec 1,5 px v barvě hráče; klikací plocha prstence je neviditelný torus
-    // světlý lem pod prstencem, jinak by prstenec A a B na vlastním území splynul s výplní
+    // prstenec 1,5 px v barvě hráče; světlý lem pod prstencem, jinak by prstenec A a B na vlastním území splynul s výplní
     const lem = kruznice(C(B.hull), 4.5);
     lem.position.set(cx, HORNI + 0.25, cz);
     lem.visible = false;
@@ -249,11 +247,6 @@ function postavScenu() {
     prsten.position.set(cx, HORNI + 0.35, cz);
     prsten.visible = false;
     scene.add(prsten);
-    const prstenKlik = new THREE.Mesh(new THREE.TorusGeometry(1, 0.32, 6, 32), skryty);
-    prstenKlik.rotateX(Math.PI / 2);
-    prstenKlik.position.set(cx, HORNI + 0.6, cz);
-    prstenKlik.userData = { id: r.id, druh: "prsten" };
-    scene.add(prstenKlik);
     const orit = new THREE.Mesh(new THREE.OctahedronGeometry(2.4), material(B.steel));
     orit.position.set(cx, HORNI + 3, cz);
     orit.castShadow = true;
@@ -268,7 +261,7 @@ function postavScenu() {
     popisek.position.set(cx, HORNI + VYSKA.mesto + 2, cz);
     scene.add(popisek);
     if (!(r.id in KRATKE)) svet.popiskyMale.push(popisek);
-    svet.uzemi.set(r.id, { r, mesh, cap, hrana, mesto, lem, prsten, prstenKlik, orit, popisek, v: null, polomer: 3, st: {} });
+    svet.uzemi.set(r.id, { r, mesh, cap, hrana, mesto, lem, prsten, orit, popisek, v: null, polomer: 3, st: {} });
   }
   for (const j of M.lakes || []) {
     if (!j.label_xy) continue;
@@ -310,6 +303,15 @@ function vychoziVzdalenost(w, h) {
     return (SIRKA / 2) * (w / Math.max(1, w - 32)) / (tan * aspect);
   }
   return Math.max(HLOUBKA * 0.66 / tan, SIRKA * 0.62 / (tan * aspect));
+}
+
+/* panel a překryvy leží mezi horní lištou a lištou kol: změř je a předej CSS */
+function zmerListy() {
+  const hore = document.querySelector(".hore").getBoundingClientRect();
+  const lista = $("lista");
+  const koren = document.documentElement.style;
+  koren.setProperty("--hore", `${Math.ceil(hore.bottom + 8)}px`);
+  if (!lista.hidden) koren.setProperty("--dole", `${Math.ceil(window.innerHeight - lista.getBoundingClientRect().top + (MOBIL() ? 0 : 8))}px`);
 }
 
 function nastavKameru(prvni) {
@@ -402,6 +404,7 @@ function zobraz(t) {
   if (!s) return;
   svet.kolo = t;
   $("posuvnik").value = t;
+  document.title = `Ardan · kolo ${t}`;
   hud(s);
   if (s.union && s.union.name) svet.unie = s.union.name;
   adresa();
@@ -464,7 +467,6 @@ function animuj(prechody) {
       u.mesto.scale.set(u.polomer, 1, u.polomer);
       u.prsten.scale.set(u.polomer + 1.8, 1, u.polomer + 1.8);
       u.lem.scale.set(u.polomer + 1.8, 1, u.polomer + 1.8);
-      u.prstenKlik.scale.setScalar(u.polomer + 1.8);
       u.orit.position.x = u.mesto.position.x + u.polomer + 4;
     }
     renderer.render(scene, camera); labeler.render(scene, camera);
@@ -514,7 +516,7 @@ async function bublinaKola(t) {
     }
   }
   clearTimeout(svet.bublinaCas);
-  if (!veta || svet.otevreno) { b.hidden = true; return; }
+  if (!veta || svet.otevreno || !$("pruvodce").hidden) { b.hidden = true; return; }
   b.innerHTML = `<span class="hud">Kolo ${t}</span>${esc(veta)}`;
   b.hidden = false;
   svet.bublinaCas = setTimeout(() => { b.hidden = true; }, 6000);
@@ -593,6 +595,8 @@ async function panelStatu(id) {
   radky.push(["bohatství", cis((st.wealth || 0) + (st.paper_wealth || 0)) + (st.paper_wealth ? ` (z toho papírové ${cis(st.paper_wealth)})` : "")]);
   if (e) radky.push(["síla", cis(e.power)]);
   radky.push(["obyvatelstvo", cis(st.pop, 0)]);
+  const rok = tentoRok(id, t);
+  if (rok) radky.push(["tento rok", rok]);
   if (id in HRACI) {
     radky.push(["právo", cis(st.law, 2), "právo"]);
     radky.push(["technologie", cis(st.tech, 2), "technologie"]);
@@ -623,18 +627,48 @@ async function panelStatu(id) {
   }
   if (e && e.prod) {
     const prod = Object.entries(e.prod).filter(([, v]) => Number(v) > 0).map(([k, v]) => `${STATEK[k] || k} ${cis(v)}`).join(", ");
-    if (prod) radky.splice(4, 0, ["produkce", prod]);
+    if (prod) radky.splice(radky.findIndex((r) => r[0] === "obyvatelstvo") + 1, 0, ["produkce", prod]);
   }
   if (!pakty.length && !smlouvy.length && !dl.length && radky[radky.length - 1][0] === "#") radky.push(["", "žádné"]);
+  // tlačítko Projev: velmoci a členové Unie (ti mluví hlasem Unie)
+  const clen = s.union && s.union.active && (s.union.members || []).includes(id);
+  const mluvci = id in HRACI ? id : (clen ? "C" : null);
   box.innerHTML = `<button type="button" class="zavrit" aria-label="Zavřít panel státu">×</button>` +
     `<span class="hud">Kolo ${t} · stát</span><h2>${esc(plneJmeno(id))}</h2>` +
+    (mluvci ? `<button type="button" class="tlacitko-projev" data-hrac="${mluvci}">Projev${mluvci === "C" ? " Unie" : ""}</button>` : "") +
     `<table>${radky.map(([k, v, p]) => (k === "#" ? `<tr class="oddil"><td colspan="2">${esc(v)}</td></tr>`
       : `<tr><td>${esc(k)}${p ? vys(p) : ""}</td><td>${esc(v)}</td></tr>`)).join("")}</table>`;
   box.querySelector(".zavrit").addEventListener("click", zavriPanel);
+  const tl = box.querySelector(".tlacitko-projev");
+  if (tl) tl.addEventListener("click", () => projevy(tl.dataset.hrac));
+}
+
+/* změna od začátku roku: proti poslednímu kolu minulého roku, v prvním roce proti prvnímu kolu */
+function tentoRok(id, t) {
+  const i = svet.souhrn.findIndex((x) => x.turn === t);
+  if (i < 0) return "";
+  const den = svet.souhrn[i].day;
+  let j = svet.souhrn.findIndex((x) => x.day === den);
+  if (j > 0) j -= 1;
+  if (j >= i) return "";
+  const a = svet.souhrn[j].states[id], b = svet.souhrn[i].states[id];
+  if (!a || !b) return "";
+  const zm = (x, d = 1) => { const r = Number(x.toFixed(d)); return r === 0 ? "beze změny" : (r > 0 ? "+" : "−") + cis(Math.abs(r), d); };
+  const w = (x) => (x.wealth || 0) + (x.paper_wealth || 0);
+  const casti = [`bohatství ${zm(w(b) - w(a))}`];
+  if (id in HRACI) casti.push(`průmysl ${zm((b.industry || 0) - (a.industry || 0), 2)}`);
+  else {
+    const ia = a.influence || {}, ib = b.influence || {};
+    casti.push(`vliv K ${zm((ib.A || 0) - (ia.A || 0), 0)} / O ${zm((ib.B || 0) - (ia.B || 0), 0)}`);
+  }
+  if (a.status !== b.status && !(id in HRACI)) casti.push(`dřív ${STATUS[a.status] || a.status}`);
+  return casti.join(", ");
 }
 
 function zavriPanel() {
   $("panel").hidden = true;
+  if (svet.fokusPred && document.contains(svet.fokusPred)) svet.fokusPred.focus();
+  svet.fokusPred = null;
   svet.panel = null;
   const pred = svet.vybrany;
   svet.vybrany = null;
@@ -683,7 +717,7 @@ function prvniVety(text, n) {
 function karta(pid, m, sn, t) {
   const barva = BARVA_HRACE[pid] || B.steel;
   const jmeno = pid === "C" ? (svet.unie || "Unie") : HRACI[pid];
-  let h = `<article class="karta"><h3><span class="ctverec" style="background:${barva}"></span>${esc(jmeno)}</h3>`;
+  let h = `<article class="karta" data-hrac="${pid}"><h3><span class="ctverec" style="background:${barva}"></span>${esc(jmeno)}</h3>`;
   const g = m.genre || null;
   if (g && !m.silent) {
     h += `<p class="hud">${esc(g.id === 8 ? "Stanovisko k události" : g.name)}${g.chair ? `, předsedá ${esc(g.chair)}` : ""}</p>`;
@@ -735,9 +769,10 @@ function karta(pid, m, sn, t) {
   return h + "</article>";
 }
 
-async function projevy() {
-  svet.otevreno = "projevy";
-  $("projevy").hidden = false;
+async function projevy(cil) {
+  if (typeof cil === "string") svet.projevCil = cil;           // z panelu státu: zvýraznit kartu tohoto hráče
+  else if (cil !== undefined) svet.projevCil = null;           // z horní lišty (cil je událost kliknutí)
+  otevriPrekryv("projevy");
   $("bublina-kola").hidden = true;
   const t = svet.kolo;
   $("projevy-nadpis").textContent = `Projevy · kolo ${t}`;
@@ -754,12 +789,24 @@ async function projevy() {
     p.textContent = p.dataset.cely;
     b.remove();
   }));
+  const k = svet.projevCil && box.querySelector(`.karta[data-hrac="${svet.projevCil}"]`);
+  if (k) { k.classList.add("cil"); k.scrollIntoView({ block: "start", behavior: KLIDNE ? "auto" : "smooth" }); }
+}
+
+/* překryv: fokus dovnitř, po zavření zpět na prvek, který ho otevřel */
+function otevriPrekryv(kde) {
+  const jinyByl = svet.otevreno && svet.otevreno !== kde;
+  if (!svet.otevreno) svet.fokusPrekryv = document.activeElement;
+  if (jinyByl) $(svet.otevreno).hidden = true;
+  const bylZavreny = $(kde).hidden;
+  svet.otevreno = kde;
+  $(kde).hidden = false;
+  if (bylZavreny) $(kde).querySelector(".zavrit-prekryv").focus({ preventScroll: true });
 }
 
 /* ------------------------------ kronika ------------------------------ */
 async function kronika() {
-  svet.otevreno = "kronika";
-  $("kronika").hidden = false;
+  otevriPrekryv("kronika");
   $("bublina-kola").hidden = true;
   const s = radek(svet.kolo) || {};
   if (!svet.kroniky) {
@@ -787,6 +834,10 @@ function zavriPrekryv() {
   $("projevy").hidden = true;
   $("kronika").hidden = true;
   svet.otevreno = null;
+  svet.projevCil = null;
+  const f = svet.fokusPrekryv;
+  svet.fokusPrekryv = null;
+  if (f && document.contains(f) && f !== document.body) f.focus({ preventScroll: true });
 }
 
 /* ------------------------------ interakce ------------------------------ */
@@ -796,10 +847,7 @@ function zasah(ev) {
   const v = new THREE.Vector2(((ev.clientX - r.left) / r.width) * 2 - 1, -((ev.clientY - r.top) / r.height) * 2 + 1);
   paprsek.setFromCamera(v, camera);
   const objekty = [];
-  for (const u of svet.uzemi.values()) {
-    objekty.push(u.mesh, u.mesto);
-    if (u.prsten.visible) objekty.push(u.prstenKlik);
-  }
+  for (const u of svet.uzemi.values()) objekty.push(u.mesh, u.mesto);
   const z = paprsek.intersectObjects(objekty, false)[0];
   return z ? z.object.userData : null;
 }
@@ -834,8 +882,8 @@ function vyber(id) {
   svet.vybrany = id;
   if (pred && pred !== id) nastavHranu(pred);
   nastavHranu(id);
-  panelStatu(id);
   vykresli();
+  return panelStatu(id);
 }
 
 function pozice(id) {
@@ -862,8 +910,8 @@ function napojInterakce() {
     dolu = null;
     const z = zasah(ev);
     tooltip(null);
+    svet.fokusPred = null;
     if (!z) { if (svet.panel) zavriPanel(); return; }   // klik mimo zavře panel
-    if (z.druh === "prsten") { projevy(); return; }      // prstenec města A, B a členů Unie otevře projevy
     vyber(z.id);
   });
   // klávesnice: Tab prochází území v pořadí map.json, Enter = klik
@@ -872,9 +920,15 @@ function napojInterakce() {
     const b = document.createElement("button");
     b.type = "button";
     b.textContent = plneJmeno(r.id);
+    b.setAttribute("aria-label", `${plneJmeno(r.id)} (stát a hlavní město): otevřít panel státu`);
     b.addEventListener("focus", () => { zvyrazni(r.id); const [x, y] = pozice(r.id); tooltip(r.id, x, y); });
     b.addEventListener("blur", () => { zvyrazni(null); tooltip(null); });
-    b.addEventListener("click", () => vyber(r.id));
+    b.addEventListener("click", async () => {   // z klávesnice: fokus do panelu, po zavření zpět na tlačítko státu
+      svet.fokusPred = b;
+      await vyber(r.id);
+      const z = $("panel").querySelector(".zavrit");
+      if (z) z.focus({ preventScroll: true });
+    });
     box.appendChild(b);
   }
   $("bublina-kola").addEventListener("click", () => { $("bublina-kola").hidden = true; });
@@ -885,8 +939,90 @@ function napojInterakce() {
   $("p-dal").addEventListener("click", () => posun(1));
   document.addEventListener("keydown", (ev) => {
     if (ev.key !== "Escape" || document.getElementById("bublina")) return;   // nejdřív se zavře vysvětlivka
-    if (svet.otevreno) zavriPrekryv();
+    if (!$("pruvodce").hidden) konecPruvodce();
+    else if (svet.otevreno) zavriPrekryv();
     else if (svet.panel) zavriPanel();
+  });
+}
+
+/* ------------------------------ průvodce první návštěvou ------------------------------ */
+const KROKY = [
+  { cil: () => $("hud-lista"), text: "Kolo, fáze a stav světa. Hra běží tři kola denně." },
+  { cil: () => obdelnikMapy(), text: "Klikni na stát. Barva je vliv velmocí, velikost města bohatství." },
+  { cil: () => $("o-projevy"), text: "Tady vlády mluví, a tady vidíš, co si doopravdy myslí." }
+];
+const KLIC_PRUVODCE = "ardan-pruvodce-hotovo";
+let krokPruvodce = 0;
+
+function pruvodceHotovy() {
+  try { return localStorage.getItem(KLIC_PRUVODCE) === "1"; } catch (e) { return false; }
+}
+
+/* obdélník mapy na obrazovce: průmět okrajů souše, oříznutý mezi lišty */
+function obdelnikMapy() {
+  camera.updateMatrixWorld();   // průvodce může běžet dřív, než se kamera poprvé vykreslí
+  const r = renderer.domElement.getBoundingClientRect();
+  let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+  for (const [x, z] of [[-OX, -OZ], [OX, -OZ], [-OX, OZ], [OX, OZ]]) {
+    const p = new THREE.Vector3(x, VYSKA.zeme, z).project(camera);
+    const sx = r.left + (p.x + 1) / 2 * r.width, sy = r.top + (1 - p.y) / 2 * r.height;
+    x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+  }
+  const hore = parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--hore")) || 0;
+  const dole = window.innerHeight - (parseFloat(getComputedStyle(document.documentElement).getPropertyValue("--dole")) || 0);
+  return { left: Math.max(8, x0), top: Math.max(hore, y0), right: Math.min(window.innerWidth - 8, x1), bottom: Math.min(dole, y1) };
+}
+
+function ukazKrok() {
+  const k = KROKY[krokPruvodce];
+  let cil = k.cil();
+  if (cil instanceof Element) {
+    if (cil.id === "o-projevy") cil.scrollIntoView({ block: "nearest", inline: "nearest" });   // na mobilu je lišta posuvná
+    cil = cil.getBoundingClientRect();
+  }
+  const o = 4;
+  const ram = $("pruvodce-cil");
+  Object.assign(ram.style, { left: `${cil.left - o}px`, top: `${cil.top - o}px`,
+                             width: `${cil.right - cil.left + 2 * o}px`, height: `${cil.bottom - cil.top + 2 * o}px` });
+  $("pruvodce-krok").textContent = `Průvodce · ${krokPruvodce + 1} / ${KROKY.length}`;
+  $("pruvodce-text").textContent = k.text;
+  $("pruvodce-dal").textContent = krokPruvodce === KROKY.length - 1 ? "Hotovo" : "Dál";
+  // karta pod cílem, když se vejde, jinak nad ním, jinak uvnitř u spodního okraje
+  const karta = $("pruvodce-karta");
+  const v = karta.offsetHeight, s = karta.offsetWidth;
+  let top = cil.bottom + 14;
+  if (top + v > window.innerHeight - 8) top = cil.top - v - 14;
+  if (top < 8) top = Math.max(8, cil.bottom - v - 16);
+  const stred = (cil.left + cil.right) / 2;
+  karta.style.left = `${Math.min(window.innerWidth - s - 16, Math.max(16, stred - s / 2))}px`;
+  karta.style.top = `${top}px`;
+}
+
+function startPruvodce(od) {
+  krokPruvodce = od - 1;
+  zavriPrekryv();
+  $("bublina-kola").hidden = true;
+  $("pruvodce").hidden = false;
+  ukazKrok();
+  $("pruvodce-dal").focus({ preventScroll: true });
+}
+
+function konecPruvodce() {
+  $("pruvodce").hidden = true;
+  try { localStorage.setItem(KLIC_PRUVODCE, "1"); } catch (e) { /* bez úložiště se průvodce ukáže znovu */ }
+  if (location.hash.includes("pruvodce=")) adresa();   // odkaz „Průvodce znovu“ z adresy zmizí
+}
+
+function napojPruvodce() {
+  $("pruvodce-dal").addEventListener("click", () => {
+    if (krokPruvodce >= KROKY.length - 1) { konecPruvodce(); return; }
+    krokPruvodce += 1;
+    ukazKrok();
+  });
+  $("pruvodce-preskocit").addEventListener("click", konecPruvodce);
+  // odkaz „Průvodce znovu“ z O hře míří na index.html#pruvodce=1; při změně jen kotvy se stránka nenačte znovu
+  window.addEventListener("hashchange", () => {
+    if (/pruvodce=[1-3]/.test(location.hash)) startPruvodce(Number(location.hash.match(/pruvodce=([1-3])/)[1]));
   });
 }
 
@@ -895,7 +1031,7 @@ async function start() {
   if (typeof vlozSvg === "function") document.querySelectorAll("[data-svg]").forEach(vlozSvg);
   plexusOkraj($("plexus-okraj"));
   if (!maWebGL()) {
-    $("platno").innerHTML = '<div class="bez-webgl"><p>3D mapa potřebuje WebGL.</p><a class="tlacitko" href="index.html">Zpět na mapu ve 2D</a></div>';
+    $("platno").innerHTML = '<div class="bez-webgl"><p>3D mapa potřebuje WebGL.</p><a class="tlacitko" href="text.html">Textová verze hry</a></div>';
     return;
   }
   let npc;
@@ -908,7 +1044,9 @@ async function start() {
   }
   for (const n of npc.npc || []) svet.jmena[n.id] = n.name;
   renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  // mobil s méně než 4 GB paměti (navigator.deviceMemory, jen Chromium): nižší rozlišení plátna
+  const slabe = MOBIL() && navigator.deviceMemory !== undefined && navigator.deviceMemory < 4;
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, slabe ? 1.5 : 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
   renderer.setClearColor(0x000000, 0);
@@ -927,7 +1065,7 @@ async function start() {
   controls.touches = { ONE: THREE.TOUCH.PAN, TWO: THREE.TOUCH.DOLLY_ROTATE };
   controls.addEventListener("change", () => { omezPosun(); popiskyPodleZoomu(); vykresli(); });
   nastavKameru(true);
-  window.addEventListener("resize", () => nastavKameru(false));
+  window.addEventListener("resize", () => { nastavKameru(false); zmerListy(); if (!$("pruvodce").hidden) ukazKrok(); });
   napojInterakce();
 
   if (!svet.souhrn.length) return;
@@ -940,6 +1078,8 @@ async function start() {
   $("prehrat").addEventListener("click", prehrat);
   $("lista").hidden = false;
   znackySlideru();
+  zmerListy();
+  if (document.fonts) document.fonts.ready.then(zmerListy);
   // stav v URL: #kolo=11&stat=N3, pro screenshoty navíc zoom=2&na=A a otevri=projevy|kronika
   const h = new URLSearchParams(location.hash.slice(1));
   const kolo = Number(h.get("kolo")) || Number(p.max);
@@ -949,6 +1089,9 @@ async function start() {
   if (h.get("stat") && svet.uzemi.has(h.get("stat"))) vyber(h.get("stat"));
   if (h.get("otevri") === "projevy") await projevy();
   if (h.get("otevri") === "kronika") await kronika();
+  napojPruvodce();
+  const krok = h.get("pruvodce");   // pruvodce=1 až 3 spustí průvodce od kroku, pruvodce=0 ho potlačí
+  if (krok !== "0" && (Number(krok) >= 1 || !pruvodceHotovy())) startPruvodce(Math.min(3, Math.max(1, Number(krok) || 1)));
   window.ARDAN_3D_HOTOVO = true;
 }
 

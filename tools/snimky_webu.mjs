@@ -16,7 +16,7 @@ const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const PORT = 9333;
 const VYSTUP = join(dirname(fileURLToPath(import.meta.url)), "screens");
 const SNIMKY = [
-  ["index-1440", "index.html", 1440, false], ["index-1024", "index.html", 1024, false], ["index-390", "index.html", 390, true],
+  ["text-1440", "text.html", 1440, false], ["text-1024", "text.html", 1024, false], ["text-390", "text.html", 390, true],
   ["o-hre-1440", "o-hre.html", 1440, false], ["o-hre-390", "o-hre.html", 390, true]
 ];
 

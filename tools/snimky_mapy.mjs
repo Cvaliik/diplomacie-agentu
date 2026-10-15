@@ -1,5 +1,5 @@
 // tools/snimky_mapy.mjs
-// Screenshoty 3D mapy (web/mapa.html) ve velikosti okna, s WebGL přes softwarový SwiftShader.
+// Screenshoty 3D mapy (web/index.html) ve velikosti okna, s WebGL přes softwarový SwiftShader.
 // Odvozeno z tools/snimky_webu.mjs.
 // Spustí Edge bez okna s ladicím portem, přes protokol DevTools nastaví šířku zařízení, načte stránku
 // a uloží PNG do tools/screens/. Web musí běžet na lokálním serveru (např. python -m http.server 8765).
@@ -17,15 +17,20 @@ const EDGE = "C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe";
 const PORT = 9333;
 const VYSTUP = join(dirname(fileURLToPath(import.meta.url)), "screens");
 const SNIMKY = [];
-for (const [s, w, h, mobil] of [["1440", 1440, 900, false], ["390", 390, 844, true]]) {
-  SNIMKY.push([`mapa3d-${s}-vychozi-k11`, "mapa.html#kolo=11", w, h, mobil]);
-  SNIMKY.push([`mapa3d-${s}-vychozi-k1`, "mapa.html#kolo=1", w, h, mobil]);
-  SNIMKY.push([`mapa3d-${s}-kalvera-2x-k11`, "mapa.html#kolo=11&zoom=2&na=A", w, h, mobil]);
-  // etapa 2: panel státu, diplomatická obrazovka (projevy) a kronika
-  SNIMKY.push([`mapa3d-${s}-panel-N3-k11`, "mapa.html#kolo=11&stat=N3", w, h, mobil]);
-  SNIMKY.push([`mapa3d-${s}-projevy-k11`, "mapa.html#kolo=11&otevri=projevy", w, h, mobil]);
-  SNIMKY.push([`mapa3d-${s}-kronika-k11`, "mapa.html#kolo=11&otevri=kronika", w, h, mobil]);
+// [jméno, stránka, šířka, výška, mobil, JS před snímkem]; pruvodce=0 potlačí průvodce první návštěvou
+for (const [s, w, h, mobil] of [["1440", 1440, 900, false], ["1024", 1024, 768, false], ["390", 390, 844, true]]) {
+  SNIMKY.push([`mapa3d-${s}-vychozi-k11`, "index.html#kolo=11&pruvodce=0", w, h, mobil]);
+  if (s === "1024") continue;
+  SNIMKY.push([`mapa3d-${s}-vychozi-k1`, "index.html#kolo=1&pruvodce=0", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-kalvera-2x-k11`, "index.html#kolo=11&zoom=2&na=A&pruvodce=0", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-panel-N3-k11`, "index.html#kolo=11&stat=N3&pruvodce=0", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-panel-A-k11`, "index.html#kolo=11&stat=A&pruvodce=0", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-projevy-k11`, "index.html#kolo=11&otevri=projevy&pruvodce=0", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-kronika-k11`, "index.html#kolo=11&otevri=kronika&pruvodce=0", w, h, mobil]);
+  SNIMKY.push([`mapa3d-${s}-pruvodce-2`, "index.html#kolo=11&pruvodce=2", w, h, mobil]);
 }
+// obrázek pro sdílení (og.png): výchozí pohled bez bubliny kola, kopíruje se do web/og.png
+SNIMKY.push(["og-1200x630", "index.html#kolo=11&pruvodce=0", 1200, 630, false, "document.getElementById('bublina-kola').hidden = true"]);
 const FILTR = process.argv[3] ? new RegExp(process.argv[3]) : null;   // volitelně jen některé snímky
 
 const pockej = (ms) => new Promise((r) => setTimeout(r, ms));
@@ -50,7 +55,7 @@ ws.addEventListener("message", (ev) => {
 const cdp = (method, params = {}) => new Promise((r) => { id += 1; cekajici.set(id, r); ws.send(JSON.stringify({ id, method, params })); });
 
 await cdp("Page.enable");
-for (const [jmeno, stranka, sirka, vyska, mobil] of SNIMKY.filter((x) => !FILTR || FILTR.test(x[0]))) {
+for (const [jmeno, stranka, sirka, vyska, mobil, js] of SNIMKY.filter((x) => !FILTR || FILTR.test(x[0]))) {
   await cdp("Emulation.setDeviceMetricsOverride", { width: sirka, height: vyska, deviceScaleFactor: 1, mobile: mobil });
   await cdp("Page.navigate", { url: "about:blank" });
   await pockej(300);
@@ -62,6 +67,7 @@ for (const [jmeno, stranka, sirka, vyska, mobil] of SNIMKY.filter((x) => !FILTR 
     hotovo = r.result.result.value;
   }
   await pockej(1500);   // přechod barev 400 ms, písma a stíny
+  if (js) { await cdp("Runtime.evaluate", { expression: js }); await pockej(200); }
   const sw = await cdp("Runtime.evaluate", { expression: "document.documentElement.scrollWidth", returnByValue: true });
   const s = await cdp("Page.captureScreenshot", { format: "png" });
   writeFileSync(join(VYSTUP, `${jmeno}.png`), Buffer.from(s.result.data, "base64"));

@@ -1,7 +1,7 @@
-# 3D mapa Ardanu (etapa 2)
+# 3D mapa Ardanu (etapa 3: hlavní stránka)
 
-Stránka `web/mapa.html` + `web/mapa.js`. three.js 0.170.0 z jsDelivr přes importmap (OrbitControls, CSS2DRenderer,
-Line2 pro hrany v pixelech), bez bundleru. Vzhled bere proměnné z `kaja.css`; `index.html` ani běh hry se nemění.
+Hlavní stránka `web/index.html` + `web/mapa.js` (od etapy 3; dřívější hlavní stránka je `web/text.html`). three.js 0.170.0 z jsDelivr přes importmap (OrbitControls, CSS2DRenderer,
+Line2 pro hrany v pixelech), bez bundleru. Vzhled bere proměnné z `kaja.css`; běh hry se nemění.
 
 ## Jak se geometrie staví (jednou při načtení, z `web/map.json`)
 
@@ -32,18 +32,22 @@ Line2 pro hrany v pixelech), bez bundleru. Vzhled bere proměnné z `kaja.css`; 
 - Prstence Unie, ložiska oritu, popisek Unie nad těžištěm hlavních měst členů.
 - Přechod barev a velikostí 400 ms lineárně; při `prefers-reduced-motion` okamžitě.
 - Stav v adrese: `#kolo=11&stat=N3` (otevřený panel státu). Pro screenshoty navíc `zoom=2&na=A` (přiblížení na
-  hlavní město) a `otevri=projevy` nebo `otevri=kronika`; tyto tři se po načtení z adresy nepropisují zpět.
+  hlavní město), `otevri=projevy` nebo `otevri=kronika` a `pruvodce=0` až `3` (0 potlačí průvodce, 1 až 3 ho spustí
+  od kroku); tyto parametry se po načtení z adresy nepropisují zpět.
 
 ## Ovládání
 
 - Myš: levé tlačítko posun po mapě, pravé náklon (35 až 65°), kolečko zoom (0,7 až 2,5×). Posun je omezený na mapu.
 - Dotyk: jeden prst posun, dva prsty zoom a náklon.
 - Hover nad územím i městem: hrana Ion Blue 2 px a tooltip (jméno, status, vliv A / B, bohatství).
-- Klik nebo tap na území či město otevře panel státu, klik na prstenec města A, B nebo člena Unie otevře projevy.
-  Klik mimo území panel zavře.
-- Klávesnice: Tab prochází území v pořadí `map.json` (neviditelná tlačítka), fokus zvýrazní jako hover, Enter = klik.
+- Klik nebo tap na území či město (i jeho prstenec) otevře panel státu. U Kalvery, Ostrogardu a členů Unie má panel
+  tlačítko Projev, které otevře projevy a zvýrazní kartu dané vlády. Klik mimo území panel zavře.
+- Klávesnice: Tab prochází státy (každý i se svým hlavním městem) v pořadí `map.json` přes neviditelná tlačítka; fokus
+  zvýrazní stát a ukáže tooltip, Enter otevře panel a přesune fokus na jeho křížek, Esc panel nebo překryv zavře a vrátí
+  fokus tam, odkud se otevřel.
 - Vykresluje se jen při změně (kamera, hover, přechod kola), ne smyčkou.
-- Bez WebGL: text „3D mapa potřebuje WebGL“ a odkaz na 2D mapu.
+- Bez WebGL: text „3D mapa potřebuje WebGL“ a odkaz na textovou verzi (`text.html`).
+- Mobil s méně než 4 GB paměti (`navigator.deviceMemory`, hlásí jen Chromium): pixelRatio nejvýš 1,5 místo 2.
 
 ## Odchylky od zadání
 
@@ -61,28 +65,43 @@ projevů nebo pro bublinu kola; snímky se drží v paměti stránky. `web_data.
 
 - Horní lišta (sklo, popisky Plex Mono, čísla Saira): kolo a roční období, fáze s „?“, index prosperity a cena oritu
   se šipkou proti minulému kolu, kapitál bank kalverské / Aurelie („pád“ po krachu, „!“ při insolvenci). Vpravo
-  Projevy, Kronika, O hře a Textová verze (index.html). Na mobilu se lišta posouvá vodorovně.
+  Projevy, Kronika, O hře a Textová verze (text.html). Na mobilu se lišta posouvá vodorovně.
 - Bublina „co se stalo“: jedna věta za kolo nad lištou kol, zmizí po 6 s nebo klepnutím, při přehrávání se mění
   s kolem. Pořadí: válka (`war_declared`, `war_end`), invaze (`occupied`, `invade_progress`), změna fáze
   a vznik Unie, pakt (`protect_started`), nová smlouva (`trade_opened`), půjčka (`loan_given`), jinak změna indexu
   prosperity o aspoň 0,05. Soukromé události a typy bez věty se nezobrazují.
-- Panel státu (desktop 380 px vpravo, mobil zespodu 60 % výšky): status, bohatství, síla, obyvatelstvo, produkce,
+- Panel státu (desktop 380 px vpravo, mobil zespodu nejvýš 60 % výšky), leží mezi horní lištou a lištou kol: status, bohatství, síla, obyvatelstvo, produkce,
   u velmocí právo, technologie a průmysl, suroviny (výroba, potřeba, zásoba), zboží, orit, vliv A / B, pakty,
-  smlouvy, dluh bankám a hráčům. Vysvětlivky „?“ ze `slovnik.js`. Zavírá Esc, křížek a klik mimo území.
-- Projevy: překryv nad ztlumenou mapou (40 %), karty Kalvera, Ostrogard a Unie (když v kole jednala). V kartě žánr,
+  smlouvy, dluh bankám a hráčům. Řádek „tento rok“: změna bohatství a vlivu (u velmocí průmyslu) proti
+  poslednímu kolu minulého roku, v prvním roce proti prvnímu kolu, a dřívější status, pokud se změnil. Vysvětlivky „?“ ze `slovnik.js`. Zavírá Esc, křížek a klik mimo území.
+- Projevy: překryv mezi horní lištou a lištou kol nad ztlumenou mapou (40 %), karty Kalvera, Ostrogard a Unie (když v kole jednala). V kartě žánr,
   otázka novináře, projev s linkou v barvě hráče, důvěrný zápis (první dvě věty, „Číst dál“), poznámky do spisu
   sbalené, akce se štítkem výsledku jednání, domácí akce (provedena / odložena / propadla / zadána), vyřazené akce,
-  zpráva soupeři a poznámka o záložním modelu. Šipky listují koly, Esc zavírá, na mobilu karty pod sebou.
+  zpráva soupeři a poznámka o záložním modelu. Šipky listují koly, Esc zavírá, na mobilu karty pod sebou
+  a hlavička překryvu v jednom řádku (Zavřít jako ×).
 - Kronika: překryv s poslední hotovou kronikou k danému kolu (`chronicle/index.json`, markdown přes marked),
   Saira 17 px, řádkování 1,65, šířka 68 znaků. Nahoře výběr roku; když kronika k roku kola ještě není,
   popisek „poslední hotová: rok N“.
+
+## Průvodce, sdílení a přístupnost (etapa 3)
+
+- Průvodce první návštěvou: tři kroky na skle (horní lišta, mapa, tlačítko Projevy), jedna věta, cíl orámovaný Ion Blue
+  a zbytek ztlumený. Dál / Přeskočit, Esc přeskočí. Po dokončení nebo přeskočení se uloží `ardan-pruvodce-hotovo`
+  do localStorage a průvodce se už neukáže; odkaz „Průvodce znovu“ v O hře vede na `./#pruvodce=1`. Bez localStorage
+  (soukromé okno) se ukáže při každé návštěvě. Při `prefers-reduced-motion` bez přechodů.
+- Sdílení: `<title>` se mění na „Ardan · kolo N“ (statický titulek pro náhledy je „Ardan · hra od Kája Industries“,
+  protože roboti sociálních sítí JavaScript nespouštějí), meta description, Open Graph a `og.png` 1200 × 630
+  (snímek `og-1200x630` z `tools/snimky_mapy.mjs`, zkopírovaný do `web/og.png`), favicon `brand/kaja-k.svg`.
+- Kontrast: Steel `#6E7680` na skle nad mapou vycházel 3,5 až 4,5:1. Sklo je na mapě hustší (86 % bílé) a vedlejší
+  text na něm má `#5A616B`: nejhorší případ (sklo nad tmavou modrou okupace) 4,8:1, nad světlou mapou 5,9 až 6,2:1.
+- `prefers-reduced-motion`: přechod barev mezi koly okamžitě, průvodce bez přechodů, posun na kartu bez animace.
 
 ## Co zbývá
 
 - Obchody, pakty, invaze, války a migrace jako čáry nebo oblouky mezi městy.
 - Animovaný přechod kamery, tlačítka zoomu a resetu pohledu.
-- Přepnutí mapa.html na výchozí stránku (etapa 3).
 - Měření fps na skutečném mobilu a případné zjednodušení stínů.
+- `og:image` je relativní cesta; některé sítě chtějí absolutní adresu (doplnit, až bude jistá adresa GitHub Pages).
 
 Screenshoty: `node tools/snimky_mapy.mjs http://localhost:8765/web/ [výběr]` (lokální server nad kořenem repa;
-výběr je regulární výraz na jméno snímku, např. `panel|projevy`).
+výběr je regulární výraz na jméno snímku, např. `panel|projevy`). Textová verze a O hře: `tools/snimky_webu.mjs`.
