@@ -17,7 +17,8 @@ views/               pohledy hráčů generované enginem (A.json, B.json, C.jso
 history/turn_NNN.json   snímek po každém tahu (úplný)
 history/failed_turn_NNN.json   neúspěšný tah (nevalidovaný)
 chronicle/day_NN.md  kronika
-web/index.html       statická stránka (GitHub Pages ze složky web/)
+web/index.html       hlavní stránka: 3D mapa (index.html + mapa.js, popis v web/MAPA3D.md)
+web/text.html        textová verze (dřívější index.html), web/o-hre.html průvodce hrou
 tools/               kalibrační a ověřovací skripty (v2.0)
 ```
 
@@ -86,7 +87,9 @@ a `.github/workflows/tah.yml` (jen skutečné tahy a kroniky; spouští ho rozvr
 
 Všechna logika zůstává ve skriptech, aby se dalo hrát i ručně.
 
-## 7. web/index.html
+## 7. web/index.html (3D mapa) a web/text.html (textová verze)
+
+Od etapy 3 3D mapy (15. 10. 2026) je hlavní stránkou `web/index.html` s 3D mapou; popis je ve `web/MAPA3D.md`. Původní stránka popsaná níže je `web/text.html` (odkaz Textová verze).
 
 Jedna statická stránka, žádný build, žádný backend. Načítá `history/*.json` (seznam z `history/index.json`, který generuje `run_turn.py`) a `chronicle/*.md`. Mobil na prvním místě.
 

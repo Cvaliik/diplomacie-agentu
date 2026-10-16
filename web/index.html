@@ -4,950 +4,278 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light">
-<title>Ardan: hra od Kája Industries</title>
+<title>Ardan · hra od Kája Industries</title>
+<meta name="description" content="Ardan: tři vlády řízené umělou inteligencí ve světě, který jde od rozmachu ke krachu. Sleduj mapu kolo po kole, čti projevy i to, co si vlády doopravdy myslí.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Ardan · hra od Kája Industries">
+<meta property="og:description" content="Tři vlády řízené umělou inteligencí. Ty vidíš i to, co si myslí.">
+<meta property="og:url" content="https://cvaliik.github.io/diplomacie-agentu/web/">
+<meta property="og:image" content="https://cvaliik.github.io/diplomacie-agentu/web/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" type="image/svg+xml" href="brand/kaja-k.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira:wdth,wght@100..125,200..600&family=IBM+Plex+Mono:wght@400;500&display=swap">
 <link rel="stylesheet" href="kaja.css">
 <style>
-  /* ------------------------------ mapa ------------------------------ */
-  .horni { display: grid; grid-template-columns: 1fr; gap: 16px; margin-top: 8px; }
-  .mapa-ram { position: relative; border: 1px solid var(--silver); background: var(--more); }
-  #mapa { width: 100%; height: auto; display: block; touch-action: none; }
-  #mapa .uzemi { cursor: pointer; stroke-linejoin: round; }
-  #mapa .uzemi:focus { outline: none; }
-  #mapa .uzemi:focus-visible { stroke: var(--ion); stroke-width: 3; }
-  #mapa .uzemi.vybrany { stroke: var(--graphite); stroke-width: 3.6; }
-  #mapa text { font-family: var(--saira); fill: var(--graphite); pointer-events: none; }
-  #mapa .jmeno { font-size: 14px; font-weight: 500; letter-spacing: .06em; text-transform: uppercase;
-                 font-stretch: 110%; paint-order: stroke; stroke: rgba(251,251,252,.85); stroke-width: 3px; }
-  #mapa .krajina { font-size: 12px; font-family: var(--mono); letter-spacing: .14em; text-transform: uppercase; fill: var(--steel); }
-  #mapa .stitek { font-family: var(--mono); font-size: 12px; letter-spacing: .08em; }
-  .zoom { position: absolute; right: 8px; top: 8px; display: flex; flex-direction: column; gap: 4px; }
-  .zoom button { width: 32px; height: 32px; padding: 0; font-family: var(--mono); font-size: 16px; background: rgba(255,255,255,.85); }
+  /* vedlejší text na skle: Steel by nad mapou nedal kontrast 4,5:1, proto tmavší odstín a hustší sklo */
+  :root { --steel-sklo: #5A616B; --hore: 132px; --dole: 84px; }
+  .sklo { background: rgba(255, 255, 255, .86); }
+  .sklo .hud, .sklo small, .sklo .sipka, .sklo .znacka-den span, .sklo .vys { color: var(--steel-sklo); }
+  .sklo .vys { border-color: var(--steel-sklo); }
+  html, body { height: 100%; }
+  body { max-width: none; padding: 0; overflow: hidden; }
+  .scena { position: fixed; inset: 0; }
+  /* síť hvězd jen v okrajích viewportu: maska je uprostřed průhledná, mapa i texty leží mimo ni */
+  .plexus-okraj { position: absolute; inset: 0; width: 100%; height: 100%; pointer-events: none;
+                  -webkit-mask-image: radial-gradient(ellipse 72% 70% at 50% 52%, transparent 62%, #000 100%);
+                  mask-image: radial-gradient(ellipse 72% 70% at 50% 52%, transparent 62%, #000 100%); }
+  .plexus-okraj line { stroke: var(--steel); stroke-width: .75; }
+  .plexus-okraj circle { fill: var(--steel); }
+  #platno { position: absolute; inset: 0; }
+  #platno canvas { display: block; outline: none; }
+  #popisky { position: absolute; inset: 0; pointer-events: none; z-index: 1; }   /* vlastní vrstva: CSS2DRenderer dává popiskům vysoký z-index */
+  .popisek { font-family: var(--saira); font-weight: 500; font-stretch: 110%; font-size: 12px; letter-spacing: .14em;
+             text-transform: uppercase; color: var(--graphite); white-space: nowrap; pointer-events: none;
+             text-shadow: 0 0 3px #FBFBFC, 0 0 3px #FBFBFC, 0 0 2px #FBFBFC; }
+  .popisek span { display: block; transform: translateY(-18px); }
+  .popisek.hrac { font-size: 13px; }
+  .popisek.jezero { font-family: var(--mono); font-weight: 500; font-size: 11px; letter-spacing: .22em; color: var(--steel-sklo); }
+  .popisek.jezero span { transform: none; }
 
-  .legenda { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
-             color: var(--steel); margin-top: 8px; line-height: 2; }
-  .legenda i { display: inline-block; width: 13px; height: 11px; vertical-align: -1px; margin-right: 6px; border: 1px solid var(--steel); }
-  .legenda span { margin-right: 14px; white-space: nowrap; }
-  .legenda details { display: inline; }
-  .legenda details[open] { display: block; }
-  .legenda summary { display: inline; cursor: pointer; color: var(--graphite); text-decoration: underline;
-                     text-decoration-color: var(--silver); text-underline-offset: 3px; list-style: none; }
-  .legenda summary::-webkit-details-marker { display: none; }
-  .legenda details[open] summary { color: var(--ion); }
-  .legenda .zbytek { display: block; }
-  .legenda .zbytek span { white-space: normal; display: inline-block; max-width: 100%; }
-  .horni > div, .sloupce > div { min-width: 0; }
+  /* ------------------------------ horní lišta ------------------------------ */
+  .hore { position: absolute; top: 0; left: 0; right: 0; padding: 10px 16px 0; pointer-events: none; z-index: 3; }
+  .hore > * { pointer-events: auto; }
+  .znak { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; margin-bottom: 8px; }
+  .znak .monogram { display: block; width: 32px; }
+  .hud-lista { display: flex; align-items: stretch; overflow-x: auto; scrollbar-width: none; }
+  .hud-lista::-webkit-scrollbar { display: none; }
+  .hud-lista .pole { padding: 8px 14px 9px; border-left: 1px solid var(--silver); display: flex; flex-direction: column;
+                     gap: 1px; min-width: max-content; }
+  .hud-lista .pole:first-child { border-left: 0; }
+  .hud-lista .pole b { font-weight: 500; font-size: 20px; line-height: 1.2; font-stretch: 110%; font-variant-numeric: tabular-nums; }
+  .hud-lista .pole small { font-size: 12px; color: var(--steel); line-height: 1.3; }
+  .hud-lista .pole-faze b { font-size: 16px; font-stretch: 100%; padding-top: 3px; }
+  .hud-lista .odkazy { margin-left: auto; display: flex; align-items: center; gap: 8px; padding: 6px 12px; border-left: 1px solid var(--silver); }
+  .hud-lista .odkazy a, .hud-lista .odkazy button { white-space: nowrap; }
+  .sipka { color: var(--steel); font-weight: 400; font-size: 15px; }
 
-  #stat { font-size: 15px; border-top: 1px solid var(--silver); padding-top: 10px; }
-  #stat h3 { margin-top: 0; }
-  #stat table { border-collapse: collapse; width: 100%; }
-  #stat td { padding: 3px 0; vertical-align: top; line-height: 1.45; }
-  #stat td:first-child { width: 42%; font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .1em;
-                         text-transform: uppercase; color: var(--steel); padding-right: 8px; }
-  #stat .zavrit { float: right; }
+  /* ------------------------------ bublina co se stalo ------------------------------ */
+  #bublina-kola { position: absolute; left: 50%; bottom: 96px; transform: translateX(-50%); max-width: min(620px, calc(100% - 32px));
+                  background: var(--white); border: 1px solid var(--silver); padding: 8px 14px; font-size: 16px; line-height: 1.5;
+                  cursor: pointer; z-index: 2; text-align: center; }
+  #bublina-kola .hud { display: block; margin-bottom: 2px; }
 
-  /* ------------------------------ posuvnik ------------------------------ */
-  .ovladani { display: flex; align-items: center; gap: 8px; margin: 18px 0 2px; }
-  .lista { flex: 1; min-width: 0; position: relative; padding-bottom: 22px; }
+  /* ------------------------------ tooltip ------------------------------ */
+  #tooltip { position: absolute; z-index: 5; pointer-events: none; background: var(--white); border: 1px solid var(--silver);
+             padding: 8px 10px; font-size: 14px; line-height: 1.45; min-width: 170px; }
+  #tooltip b { display: block; font-weight: 500; font-stretch: 110%; text-transform: uppercase; letter-spacing: .12em; font-size: 13px;
+               line-height: 1.3; margin-bottom: 6px; }
+  #tooltip .radek { display: flex; justify-content: space-between; gap: 12px; }
+  #tooltip .radek span:first-child { font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .16em;
+                                     text-transform: uppercase; color: var(--steel); }
+
+  /* ------------------------------ lišta kol ------------------------------ */
+  .dolni-lista { position: absolute; left: 50%; bottom: 16px; transform: translateX(-50%); width: min(920px, calc(100% - 32px));
+                 display: flex; align-items: center; gap: 10px; padding: 10px 14px; z-index: 2; }
+  .lista { flex: 1; min-width: 0; position: relative; padding-bottom: 20px; }
   .lista input[type=range] { width: 100%; margin: 0; accent-color: var(--ion); }
-  .znacky { position: absolute; left: 8px; right: 8px; top: 22px; height: 18px; }
+  .znacky { position: absolute; left: 8px; right: 8px; top: 22px; height: 16px; }
   .znacka-den { position: absolute; top: 0; width: 1px; height: 5px; background: var(--silver); }
-  .znacka-den.popsana { height: 7px; background: var(--steel); }
-  .znacka-den span { position: absolute; top: 8px; transform: translateX(-50%); font-family: var(--mono); font-size: 10px;
+  .znacka-den span { position: absolute; top: 7px; transform: translateX(-50%); font-family: var(--mono); font-size: 10px;
                      color: var(--steel); letter-spacing: .08em; white-space: nowrap; }
-  .znacka-faze { position: absolute; top: -10px; width: 2px; height: 16px; background: var(--ion); transform: translateX(-1px);
-                 cursor: help; }
-  .znacka-faze b { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%);
-                   font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase;
-                   color: var(--graphite); background: var(--white); border: 1px solid var(--silver); padding: 3px 6px; white-space: nowrap; }
+  .znacka-faze { position: absolute; top: -10px; width: 2px; height: 16px; background: var(--ion); transform: translateX(-1px); cursor: help; }
+  .znacka-faze b { display: none; position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); font-family: var(--mono);
+                   font-size: 11px; font-weight: 500; letter-spacing: .14em; text-transform: uppercase; color: var(--graphite);
+                   background: var(--white); border: 1px solid var(--silver); padding: 3px 6px; white-space: nowrap; }
   .znacka-faze:hover b, .znacka-faze:focus b { display: block; }
-  #tah-cislo { min-width: 6.5em; text-align: right; font-family: var(--mono); font-size: 12px; font-weight: 500;
-               letter-spacing: .12em; text-transform: uppercase; color: var(--steel); }
+  #cas { min-width: 10em; text-align: right; }
+  #cas .hud { display: block; }
+  #cas b { font-weight: 500; font-stretch: 110%; font-size: 15px; }
+  .ikona, .krizek { display: none; }
 
-  /* ------------------------------ tahy hracu ------------------------------ */
-  .sloupce { display: grid; grid-template-columns: 1fr; gap: 0 40px; }
-  .hrac { border-top: 1px solid var(--silver); padding-top: 8px; margin-top: 18px; }
-  .hrac:first-child { border-top: 0; margin-top: 0; }
-  .hrac h3 { display: flex; align-items: center; gap: 10px; margin: 6px 0 8px; }
-  .hrac h3 .ctverec { width: 10px; height: 10px; flex: none; }
-  .zanr { margin: 4px 0 6px; }
+  /* ------------------------------ panel státu ------------------------------ */
+  /* panel a překryvy leží mezi horní lištou a lištou kol (--hore a --dole měří mapa.js), obě lišty zůstávají použitelné */
+  #panel { position: absolute; top: var(--hore); right: 16px; bottom: var(--dole); width: 380px; background: var(--white); border: 1px solid var(--silver);
+           z-index: 6; overflow-y: auto; padding: 16px 18px 24px; }
+  #panel h2 { margin: 0 0 4px; border: 0; padding: 0; font-size: 16px; }
+  #panel .zavrit { position: absolute; top: 12px; right: 12px; }
+  #panel .tlacitko-projev { margin-top: 10px; }
+  #panel table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+  #panel td { padding: 4px 0; vertical-align: top; font-size: 15px; line-height: 1.45; }
+  #panel td:first-child { width: 44%; padding-right: 8px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .14em;
+                          text-transform: uppercase; color: var(--steel); }
+  #panel .oddil td { padding-top: 14px; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .22em;
+                     text-transform: uppercase; color: var(--graphite); border-bottom: 1px solid var(--silver); }
+
+  /* ------------------------------ překryvy (projevy, kronika) ------------------------------ */
+  .prekryv { position: absolute; top: var(--hore); bottom: var(--dole); left: 0; right: 0; z-index: 8; background: rgba(243, 244, 246, .6); overflow-y: auto; padding: 16px; }
+  .prekryv-hlava { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; position: sticky; top: -16px; z-index: 1;
+                   margin: -16px -16px 12px; padding: 12px max(16px, calc((100% - 1200px) / 2)); background: var(--hull);
+                   border-bottom: 1px solid var(--silver); }
+  .prekryv-hlava h2 { margin: 0; border: 0; padding: 0; margin-right: auto; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .kronika-popis { display: block; max-width: calc(68ch + 48px); margin: 0 auto 8px; }
+  .karta { scroll-margin-top: 72px; }   /* pod lepící hlavičkou překryvu */
+  .karta.cil { outline: 2px solid var(--ion); outline-offset: 2px; }
+  .karty { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 16px; max-width: 1200px; margin: 0 auto; }
+  .karta { background: var(--white); border: 1px solid var(--silver); padding: 14px 16px; min-width: 0; }
+  .karta h3 { display: flex; align-items: center; gap: 10px; margin: 0 0 8px; }
+  .karta h3 .ctverec { width: 10px; height: 10px; flex: none; }
   .otazka { border-left: 2px solid var(--steel); padding: 2px 0 2px 12px; margin: 6px 0 10px; }
   .otazka p { margin: 4px 0 0; font-style: italic; }
   .projev { margin: 6px 0 10px; padding-left: 12px; border-left: 3px solid var(--graphite); }
-  .zaloha { margin: 8px 0 4px; }
-  details.zapis { background: rgba(200, 205, 212, .25); padding: 8px 12px; margin: 8px 0; }
-  details.zapis summary, details.spis summary { cursor: pointer; }
-  details.zapis p, details.spis p { margin: 6px 0 2px; }
+  .zapis { background: rgba(200, 205, 212, .25); padding: 8px 12px; margin: 8px 0; }
+  .zapis p { margin: 6px 0 0; }
+  .zapis button, .cist-dal { margin-top: 6px; padding: 4px 8px; font-size: 11px; }
   details.spis { margin: 6px 0; }
+  details.spis summary { cursor: pointer; }
   .seznam { margin: 2px 0 8px; padding-left: 18px; }
   .seznam li { margin: 3px 0; }
-  .stitek-v { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .12em;
-              text-transform: uppercase; border: 1px solid var(--graphite); color: var(--graphite); padding: 0 6px;
-              margin-left: 6px; line-height: 1.6; vertical-align: 1px; }
+  .stitek-v { display: inline-block; font-family: var(--mono); font-size: 11px; font-weight: 500; letter-spacing: .12em; text-transform: uppercase;
+              border: 1px solid var(--graphite); color: var(--graphite); padding: 0 6px; margin-left: 6px; line-height: 1.6; vertical-align: 1px; }
   .stitek-v.slaby { border-color: var(--steel); color: var(--steel); }
   .duvod { color: var(--steel); }
-  .zpravy p { margin: 8px 0; }
+  .kronika-text { background: var(--white); border: 1px solid var(--silver); max-width: calc(68ch + 48px); margin: 0 auto;
+                  padding: 18px 24px; font-size: 17px; line-height: 1.65; }
+  .kronika-text h1 { font-size: 18px; margin: 4px 0 12px; }
+  .kronika-text h2 { font-size: 14px; }
+  .kronika-text em { font-style: normal; }
+  select { font-family: var(--mono); font-size: 12px; font-weight: 500; letter-spacing: .1em; text-transform: uppercase;
+           border: 1px solid var(--graphite); background: var(--white); color: var(--graphite); padding: 6px 8px; border-radius: 0; }
 
-  /* ------------------------------ kronika ------------------------------ */
-  #kronika { max-width: 68ch; font-size: 17px; line-height: 1.65; }
-  #kronika h1 { font-size: 20px; margin: 10px 0; }
-  #kronika h2 { font-size: 16px; }
-  #kronika em { font-style: normal; }
+  /* ------------------------------ průvodce první návštěvou ------------------------------ */
+  #pruvodce { position: absolute; inset: 0; z-index: 20; pointer-events: none; }
+  #pruvodce-cil { position: absolute; border: 2px solid var(--ion); box-shadow: 0 0 0 9999px rgba(34, 37, 42, .28); pointer-events: none; }
+  #pruvodce-karta { position: absolute; width: min(360px, calc(100% - 32px)); padding: 14px 16px 12px; pointer-events: auto;
+                    font-family: var(--saira); font-size: 17px; line-height: 1.5; }
+  #pruvodce-karta p { margin: 4px 0 12px; }
+  #pruvodce-karta .tlacitka { display: flex; gap: 8px; justify-content: flex-end; }
+  @media (prefers-reduced-motion: no-preference) {
+    #pruvodce-cil, #pruvodce-karta { transition: top .25s ease, left .25s ease, width .25s ease, height .25s ease; }
+  }
+
+  /* území pro klávesnici: neviditelná tlačítka v pořadí map.json */
+  .uzemi-klavesnice { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .bez-webgl { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
 
   @media (max-width: 599px) {
-    #mapa .jmeno, #mapa .krajina { display: none; }
+    .hore { padding: 8px 10px 0; }
+    .hud-lista .pole { padding: 6px 10px 7px; }
+    .hud-lista .pole b { font-size: 17px; }
+    .dolni-lista { left: 0; right: 0; bottom: 0; transform: none; width: 100%; padding: 8px 10px; gap: 6px; }
+    .dolni-lista button { padding: 7px 9px; }
+    .lista { padding-bottom: 10px; }
+    .znacky { top: 20px; }
     .znacka-den span { display: none; }
-    .legenda span { white-space: normal; }
-  }
-  @media (min-width: 900px) {
-    .horni.otevreno { grid-template-columns: 2fr 1fr; }
-    #stat { border-top: 0; border-left: 1px solid var(--silver); padding: 0 0 0 16px; }
-    .sloupce { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); }
+    #cas { min-width: 0; }
+    #cas .hud { display: none; }
+    .text-prehrat { display: none; }
+    .ikona { display: inline; }
+    #bublina-kola { bottom: 64px; font-size: 15px; }
+    :root { --dole: 58px; }
+    #panel { top: auto; left: 0; right: 0; width: 100%; bottom: var(--dole); height: min(60%, calc(100% - var(--hore) - var(--dole)));
+             border: 0; border-top: 1px solid var(--silver); }
+    .karty { grid-template-columns: 1fr; }
+    .prekryv { padding: 10px; }
+    .prekryv-hlava { flex-wrap: nowrap; gap: 6px; margin: -10px -10px 10px; padding: 8px 10px; top: -10px; }
+    .prekryv-hlava h2 { font-size: 13px; letter-spacing: .14em; }
+    .prekryv-hlava button { padding: 7px 9px; }
+    .prekryv-hlava select { padding: 6px 4px; }
+    .zavrit-prekryv .slovo { display: none; }
+    .zavrit-prekryv .krizek { display: inline; }
+    .kronika-text { padding: 14px 16px; font-size: 16px; }
   }
 </style>
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.170.0/examples/jsm/"
+  }
+}
+</script>
 </head>
 <body>
-<header class="hlava">
-  <svg class="plexus" id="plexus" aria-hidden="true"></svg>
-  <div class="hlava-radek">
-    <a class="znacka-kaja" href="./" aria-label="Kája Industries, Ardan">
-      <span class="logo" id="logo" data-svg="brand/kaja-logo-light.svg" data-prefix="hl"></span>
-      <span class="monogram" id="monogram" data-svg="brand/kaja-k.svg" data-prefix="mg"></span>
-    </a>
-    <a class="odkaz-hra" href="o-hre.html">O hře</a>
-  </div>
-  <p class="hud">Kája Industries presents · Observation deck · Sector Ardan</p>
-  <h1 class="titul">Ardan</h1>
-  <p class="podtitul">Tři vlády řízené umělou inteligencí. Vy vidíte i to, co si myslí.</p>
-  <div class="dlazdice sklo" id="dlazdice">
-    <div class="dlazdice-1"><span class="hud">Kolo</span><b id="d-kolo">–</b><small id="d-kolo-cas"></small></div>
-    <div class="dlazdice-2"><span class="hud">Fáze<button type="button" class="vys" data-pojem="fáze" aria-label="Co je fáze">?</button></span><b id="d-faze">–</b></div>
-    <div class="dlazdice-3"><span class="hud">Index prosperity<button type="button" class="vys" data-pojem="index prosperity" aria-label="Co je index prosperity">?</button></span><b id="d-index">–</b></div>
-    <div class="dlazdice-4"><span class="hud">Orit</span><b id="d-orit">–</b></div>
-    <div class="dlazdice-5"><span class="hud">Banky</span><b id="d-banky">–</b><small>kalverské / Aurelie</small></div>
-  </div>
-  <p class="faze-veta" id="faze-popis"></p>
-  <p class="hud aktualizace" id="aktualizace"></p>
-</header>
+<div class="scena" id="scena">
+  <svg class="plexus-okraj" id="plexus-okraj" aria-hidden="true"></svg>
+  <div id="platno" role="img" aria-label="Trojrozměrná mapa světa Ardan"></div>
+  <div id="popisky"></div>
+  <div id="tooltip" hidden></div>
+  <div class="uzemi-klavesnice" id="klavesnice" role="group" aria-label="Státy a jejich hlavní města"></div>
 
-<main>
-  <div class="uvod sklo" id="uvod" hidden>
-    <p>Ardan je smyšlený svět, kde tři vlády řídí umělé inteligence. Každý den udělají tři tahy: obchodují, uzavírají pakty, půjčují a lžou. Vy vidíte i to, co si doopravdy myslí. Sledujte, komu věřit.</p>
-    <div class="uvod-tlacitka"><a class="tlacitko" href="o-hre.html">Jak to číst</a><button type="button" id="uvod-zavrit">Zavřít</button></div>
-  </div>
-  <p class="chyba" id="chyba" hidden></p>
-  <div class="horni" id="horni">
-    <div>
-      <div class="mapa-ram">
-        <svg id="mapa" viewBox="0 0 1000 700" role="img" aria-label="Mapa světa Ardan">
-          <defs>
-            <marker id="sipka" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
-              <path d="M0,0 L10,5 L0,10 z" fill="#6E7680"/>
-            </marker>
-            <pattern id="srafy" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(35)">
-              <line x1="0" y1="0" x2="0" y2="7" stroke="#22252A" stroke-width="0.8" opacity="0.45"/>
-            </pattern>
-          </defs>
-          <defs id="gradienty"></defs>
-          <g id="vrstva-uzemi"></g>
-          <g id="vrstva-linky"></g>
-          <g id="vrstva-staty"></g>
-          <g id="vrstva-popisky"></g>
-        </svg>
-        <div class="zoom">
-          <button type="button" id="zoom-plus" aria-label="Přiblížit mapu">+</button>
-          <button type="button" id="zoom-minus" aria-label="Oddálit mapu">−</button>
-        </div>
-      </div>
-      <div class="legenda">
-        <span><i style="background:linear-gradient(90deg,rgba(43,74,140,.25),rgba(43,74,140,1))"></i>vliv Kalvery<button type="button" class="vys" data-pojem="vliv" aria-label="Co je vliv">?</button></span>
-        <span><i style="background:linear-gradient(90deg,rgba(186,84,74,.25),rgba(186,84,74,1))"></i>vliv Ostrogardu</span>
-        <span><i style="background:var(--zeme);border:3px solid #2B4A8C"></i>sféra<button type="button" class="vys" data-pojem="sféra" aria-label="Co je sféra">?</button></span>
-        <details>
-          <summary>celá legenda</summary>
-          <span class="zbytek">
-            <span><i style="background:linear-gradient(90deg,rgba(43,74,140,.8) 45%,rgba(186,84,74,.8) 55%)"></i>vliv obou</span>
-            <span>sytost = síla vlivu, poměr barev = kdo vede</span>
-            <span><i style="background:var(--zeme);border:2px solid #ba544a"></i>pakt (obrys barvy ochránce)<button type="button" class="vys" data-pojem="pakt" aria-label="Co je pakt">?</button></span>
-            <span><i style="background:#6f9e73"></i>Unie</span>
-            <span><i style="background:var(--zeme);border:2px solid var(--unie)"></i>kandidát Unie</span>
-            <span><i style="background:var(--zeme);border:2px solid var(--zlata)"></i>padlá říše</span>
-            <span>● hlavní město, plocha podle bohatství</span>
-            <span>◆ ložisko oritu</span>
-            <span>··· námořní trasa</span>
-            <span><i style="background:var(--zeme);background-image:repeating-linear-gradient(55deg,#6E7680 0 1px,transparent 1px 5px)"></i>neobydlená vysočina</span>
-          </span>
-        </details>
+  <div class="hore">
+    <a class="znak" href="./" aria-label="Ardan, hra od Kája Industries">
+      <span class="monogram" data-svg="brand/kaja-k.svg" data-prefix="mg"></span>
+      <span class="hud">Ardan</span>
+    </a>
+    <div class="hud-lista sklo" id="hud-lista" role="region" aria-label="Stav světa">
+      <div class="pole"><span class="hud">Kolo</span><b id="h-kolo">–</b><small id="h-rok"></small></div>
+      <div class="pole pole-faze"><span class="hud">Fáze<button type="button" class="vys" data-pojem="fáze" aria-label="Co je fáze">?</button></span><b id="h-faze">–</b></div>
+      <div class="pole"><span class="hud">Index<button type="button" class="vys" data-pojem="index prosperity" aria-label="Co je index prosperity">?</button></span><b id="h-index">–</b></div>
+      <div class="pole"><span class="hud">Orit</span><b id="h-orit">–</b></div>
+      <div class="pole"><span class="hud">Banky</span><b id="h-banky">–</b><small>kalverské / Aurelie</small></div>
+      <div class="odkazy">
+        <button type="button" id="o-projevy">Projevy</button>
+        <button type="button" id="o-kronika">Kronika</button>
+        <a class="tlacitko" href="o-hre.html">O hře</a>
+        <a class="tlacitko" href="text.html">Textová verze</a>
       </div>
     </div>
-    <section id="stat" hidden></section>
   </div>
 
-  <div class="ovladani">
+  <div id="bublina-kola" role="status" hidden></div>
+
+  <div class="dolni-lista sklo" id="lista" role="region" aria-label="Kola hry" hidden>
     <button type="button" id="zpet" aria-label="Předchozí kolo">◀</button>
+    <button type="button" id="dal" aria-label="Další kolo">▶</button>
+    <button type="button" id="prehrat" aria-pressed="false" aria-label="Přehrát kola"><span class="text-prehrat">Přehrát</span><span class="ikona" aria-hidden="true">▶▶</span></button>
     <div class="lista">
       <input type="range" id="posuvnik" min="1" max="1" value="1" aria-label="Kolo">
       <div class="znacky" id="znacky" aria-hidden="true"></div>
     </div>
-    <button type="button" id="dal" aria-label="Další kolo">▶</button>
-    <button type="button" id="prehrat" aria-pressed="false">Přehrát</button>
-    <span id="tah-cislo"></span>
+    <div id="cas"><span class="hud" id="cas-rok"></span><b id="cas-kolo"></b></div>
   </div>
 
-  <div class="sloupce">
-    <div>
-      <h2>Tahy hráčů</h2>
-      <section id="tah"></section>
-      <h2>Zprávy světa</h2>
-      <section id="zpravy" class="zpravy"></section>
+  <aside id="panel" hidden aria-label="Panel státu"></aside>
+
+  <section class="prekryv" id="projevy" role="dialog" hidden aria-label="Projevy a důvěrné zápisy vlád">
+    <div class="prekryv-hlava">
+      <h2 id="projevy-nadpis">Projevy</h2>
+      <button type="button" id="p-zpet" aria-label="Předchozí kolo">◀</button>
+      <button type="button" id="p-dal" aria-label="Další kolo">▶</button>
+      <button type="button" class="zavrit-prekryv" aria-label="Zavřít projevy"><span class="slovo">Zavřít</span><span class="krizek" aria-hidden="true">×</span></button>
     </div>
-    <div>
-      <h2 id="kronika-nadpis">Kronika</h2>
-      <p class="hud" id="kronika-cas"></p>
-      <section id="kronika"></section>
+    <div class="karty" id="karty"></div>
+  </section>
+
+  <section class="prekryv" id="kronika" role="dialog" hidden aria-label="Kronika">
+    <div class="prekryv-hlava">
+      <h2>Kronika</h2>
+      <select id="kronika-den" aria-label="Rok kroniky"></select>
+      <button type="button" class="zavrit-prekryv" aria-label="Zavřít kroniku"><span class="slovo">Zavřít</span><span class="krizek" aria-hidden="true">×</span></button>
+    </div>
+    <span class="hud kronika-popis" id="kronika-popis"></span>
+    <article class="kronika-text" id="kronika-text"></article>
+  </section>
+
+  <div id="pruvodce" hidden>
+    <div id="pruvodce-cil"></div>
+    <div id="pruvodce-karta" class="sklo" role="dialog" aria-labelledby="pruvodce-krok" aria-describedby="pruvodce-text">
+      <span class="hud" id="pruvodce-krok">Průvodce · 1 / 3</span>
+      <p id="pruvodce-text"></p>
+      <div class="tlacitka">
+        <button type="button" id="pruvodce-preskocit">Přeskočit</button>
+        <button type="button" id="pruvodce-dal">Dál</button>
+      </div>
     </div>
   </div>
-</main>
-
-<footer class="pata">
-  <span class="logo logo-male" data-svg="brand/kaja-logo-light.svg" data-prefix="pt"></span>
-  <p class="hud">Kája Industries · Na jedno do vesmíru · 2026</p>
-  <p>Hru hrají jazykové modely, které tuto stránku nevidí. Pravidla a kód:
-    <a href="https://github.com/Cvaliik/diplomacie-agentu">github.com/Cvaliik/diplomacie-agentu</a>.</p>
-</footer>
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/marked@12.0.2/marked.min.js"></script>
 <script src="slovnik.js"></script>
 <script src="kaja.js"></script>
-<script>
-"use strict";
-const ZAKLAD = "..";
-const HRACI = { A: "Kalverská federace", B: "Lidová republika Ostrogard" };
-const KRATKE = { A: "Kalvera", B: "Ostrogard" };
-const BARVA = { A: "var(--a)", B: "var(--b)", C: "var(--unie)" };
-const FAZE = {
-  pre: "Před objevem", displacement: "Šok, vytěsnění", boom: "Rozmach", euphoria: "Euforie",
-  overtrading: "Nadměrné obchodování", distress: "Finanční tíseň", panic: "Panika",
-  crash: "Krach", depression: "Deprese", recovery: "Zotavení"
-};
-const STATUS = {
-  independent: "nezávislý", sphere_A: "sféra Kalvery", sphere_B: "sféra Ostrogardu",
-  occupied_A: "okupován Kalverou", occupied_B: "okupován Ostrogardem",
-  union: "člen Unie", candidate: "kandidát Unie"
-};
-const STATEK = { grain: "obilí", oil: "ropa", metal: "kovy", goods: "zboží", orit: "orit" };
-const VYSLEDEK = {
-  prijato: "přijato", podminka: "přijato s podmínkou", protinavrh: "protinávrh",
-  odmitnuto: "odmítnuto", prednost_druhe_strany: "dalo přednost druhé straně", vyrazeno: "vyřazeno"
-};
-const AKCE_KRATCE = {
-  trade_offer: "nabídka obchodu", loan: "půjčka", protect: "pakt", invade: "invaze", admit: "členství",
-  pressure: "sankce", accept_offer: "přijetí nabídky", arm: "zbrojení", declare_war: "válka"
-};
-
-const hra = { npc: null, pozice: {}, jmena: {}, druh: {}, index: [], souhrn: [], kroniky: [], snimky: new Map(),
-              tah: 0, vybrany: null, prehravani: null, rMax: 1 };
-
-const $ = (id) => document.getElementById(id);
-const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
-const cis = (n, d = 1) => (n === null || n === undefined || isNaN(Number(n))) ? "–"
-  : Number(n).toLocaleString("cs-CZ", { maximumFractionDigits: d });
-const jm = (id) => hra.jmena[id] || id || "";
-const velke = (t) => (t ? t.charAt(0).toUpperCase() + t.slice(1) : "");
-/* vysvetlivka: maly znak ? u pojmu, veta ze slovniku (slovnik.js) */
-const vys = (pojem) => `<button type="button" class="vys" data-pojem="${esc(pojem)}" aria-label="Co je ${esc(pojem)}">?</button>`;
-/* vysledek akce jako stitek: odmitnuto a vyrazeno tlumene (Steel), ostatni Graphite */
-const stitek = (text, slaby) => `<span class="stitek-v${slaby ? " slaby" : ""}">${esc(text)}</span>`;
-
-async function nacti(cesta) {
-  const r = await fetch(`${ZAKLAD}/${cesta}`, { cache: "no-cache" });
-  if (!r.ok) throw new Error(`${cesta}: ${r.status}`);
-  return cesta.endsWith(".md") ? r.text() : r.json();
-}
-
-/* ------------------------------ uvodni lista ------------------------------ */
-
-function uvodniLista() {
-  const KLIC = "ardan-uvod-zavreno";
-  let zavreno = false;
-  try { zavreno = window.localStorage.getItem(KLIC) === "1"; } catch (e) { zavreno = false; }
-  if (zavreno) return;
-  $("uvod").hidden = false;
-  $("uvod-zavrit").addEventListener("click", () => {
-    $("uvod").hidden = true;
-    try { window.localStorage.setItem(KLIC, "1"); } catch (e) { /* bez ulozeni se lista ukaze znovu */ }
-  });
-}
-
-/* ------------------------------ start ------------------------------ */
-
-async function start() {
-  kajaZnacka();
-  uvodniLista();
-  try {
-    hra.npc = await nacti("npc.json");
-    for (const [id, p] of Object.entries(hra.npc.players || {})) {
-      if (p.x != null) hra.pozice[id] = [p.x, p.y];
-    }
-    hra.jmena = { ...HRACI, C: "Unie" };
-    for (const n of hra.npc.npc) {
-      hra.pozice[n.id] = [n.x, n.y];
-      hra.jmena[n.id] = n.name;
-      hra.druh[n.id] = n.kind || "normal";
-    }
-    const [idx, souhrn, kroniky, mapaUzemi] = await Promise.all([
-      nacti("history/index.json").catch(() => ({ turns: [] })),
-      nacti("history/summary.json").catch(() => ({ turns: [] })),
-      nacti("chronicle/index.json").catch(() => ({ days: [] })),
-      nacti("web/map.json").catch(() => null)
-    ]);
-    hra.mapa = mapaUzemi;
-    if (mapaUzemi) for (const r of mapaUzemi.regions) hra.pozice[r.id] = r.capital_xy;
-    hra.index = (idx.turns || []).filter((t) => typeof t === "object");
-    hra.souhrn = souhrn.turns || [];
-    hra.kroniky = kroniky.days || [];
-  } catch (e) {
-    $("chyba").hidden = false;
-    $("chyba").textContent = `Data hry se nepodařilo načíst (${e.message}).`;
-    return;
-  }
-  if (!hra.souhrn.length) {
-    $("chyba").hidden = false;
-    $("chyba").textContent = "Hra zatím nezačala.";
-    return;
-  }
-  let max = 1;
-  for (const t of hra.souhrn) for (const s of Object.values(t.states)) {
-    max = Math.max(max, (s.wealth || 0) + (s.paper_wealth || 0));
-  }
-  hra.rMax = max;
-  const posledni = hra.souhrn[hra.souhrn.length - 1];
-  const pos = $("posuvnik");
-  pos.min = hra.souhrn[0].turn;
-  pos.max = posledni.turn;
-  pos.value = posledni.turn;
-  pos.addEventListener("input", () => ukaz(Number(pos.value)));
-  $("zpet").addEventListener("click", () => posun(-1));
-  $("dal").addEventListener("click", () => posun(1));
-  $("prehrat").addEventListener("click", prehrat);
-  znackySlideru();
-  zoomMapy();
-  const hotovo = hra.index.filter((t) => t.played_at).pop();
-  if (hotovo) {
-    const d = new Date(hotovo.played_at);
-    const kdy = d.toLocaleString("cs-CZ", { timeZone: "Europe/Prague", day: "numeric", month: "numeric",
-                                             hour: "numeric", minute: "2-digit" });
-    $("aktualizace").textContent = `aktualizováno ${kdy}`;
-  }
-  ukaz(posledni.turn);
-}
-
-function posun(krok) {
-  const pos = $("posuvnik");
-  const t = Math.min(Number(pos.max), Math.max(Number(pos.min), Number(pos.value) + krok));
-  pos.value = t;
-  ukaz(t);
-}
-
-function prehrat() {
-  const tl = $("prehrat");
-  if (hra.prehravani) {
-    clearInterval(hra.prehravani);
-    hra.prehravani = null;
-    tl.textContent = "Přehrát";
-    tl.setAttribute("aria-pressed", "false");
-    return;
-  }
-  const pos = $("posuvnik");
-  if (Number(pos.value) >= Number(pos.max)) { pos.value = pos.min; ukaz(Number(pos.min)); }
-  tl.textContent = "Zastavit";
-  tl.setAttribute("aria-pressed", "true");
-  hra.prehravani = setInterval(() => {
-    if (Number(pos.value) >= Number(pos.max)) { prehrat(); return; }
-    posun(1);
-  }, 2000);
-}
-
-/* posuvnik: znacky dnu (kazde 3. kolo) a zmen faze (svisla carka Ion Blue, nazev pri najeti) */
-function znackySlideru() {
-  const box = $("znacky");
-  box.replaceChildren();
-  const min = Number($("posuvnik").min), max = Number($("posuvnik").max);
-  const rozsah = Math.max(1, max - min);
-  const kde = (t) => `${((t - min) / rozsah) * 100}%`;
-  const popisujKazdy = rozsah > 45 ? 15 : (rozsah > 18 ? 6 : 3);
-  for (let t = min; t <= max; t++) {
-    if (t % 3 !== 0) continue;
-    const z = document.createElement("i");
-    z.className = "znacka-den" + (t % popisujKazdy === 0 ? " popsana" : "");
-    z.style.left = kde(t);
-    if (t % popisujKazdy === 0) z.innerHTML = `<span>${t / 3}. den</span>`;
-    box.appendChild(z);
-  }
-  let pred = null;
-  for (const r of hra.souhrn) {
-    if (pred !== null && r.phase !== pred) {
-      const z = document.createElement("i");
-      z.className = "znacka-faze";
-      z.style.left = kde(r.turn);
-      z.tabIndex = 0;
-      z.innerHTML = `<b>${esc(FAZE[r.phase] || r.phase)} · kolo ${r.turn}</b>`;
-      box.appendChild(z);
-    }
-    pred = r.phase;
-  }
-}
-
-function radek(t) { return hra.souhrn.find((x) => x.turn === t); }
-
-async function ukaz(t) {
-  hra.tah = t;
-  const s = radek(t);
-  if (!s) return;
-  $("tah-cislo").textContent = `kolo ${t}`;
-  hlavicka(s);
-  mapa(s);
-  zpravy(s);
-  kronika(s);
-  $("tah").innerHTML = '<p class="ticho">Načítám kolo…</p>';
-  let snimek;
-  try {
-    snimek = await snimekTahu(t);
-  } catch (e) {
-    if (hra.tah === t) $("tah").innerHTML = `<p class="chyba">Snímek kola se nepodařilo načíst.</p>`;
-    return;
-  }
-  if (hra.tah !== t) return;
-  panelTahu(snimek, t);
-  if (hra.vybrany) panelStatu(hra.vybrany);
-}
-
-async function snimekTahu(t) {
-  if (!hra.snimky.has(t)) {
-    const radekIdx = hra.index.find((x) => x.turn === t);
-    const soubor = radekIdx ? radekIdx.file : `turn_${String(t).padStart(3, "0")}.json`;
-    hra.snimky.set(t, nacti(`history/${soubor}`));
-  }
-  return hra.snimky.get(t);
-}
-
-/* sipka proti minulemu kolu */
-function sipka(nyni, pred) {
-  if (nyni == null || pred == null || isNaN(Number(nyni)) || isNaN(Number(pred))) return "";
-  const d = Number(nyni) - Number(pred);
-  if (Math.abs(d) < 0.005) return ' <span class="sipka" aria-label="beze změny">→</span>';
-  return d > 0 ? ' <span class="sipka" aria-label="roste">↑</span>' : ' <span class="sipka" aria-label="klesá">↓</span>';
-}
-
-function hlavicka(s) {
-  const i = hra.souhrn.findIndex((x) => x.turn === s.turn);
-  const p = i > 0 ? hra.souhrn[i - 1] : null;
-  $("d-kolo").textContent = s.turn;
-  $("d-kolo-cas").textContent = `${s.cas || `rok ${s.day}`} · ${s.day}. den`;
-  $("d-faze").textContent = FAZE[s.phase] || s.phase;
-  const idx = s.metrics && s.metrics.prosperity_index;
-  $("d-index").innerHTML = idx != null ? cis(idx, 1) + sipka(idx, p && p.metrics && p.metrics.prosperity_index) : "–";
-  const orit = s.prices && s.prices.orit;
-  $("d-orit").innerHTML = orit != null ? cis(orit, 2) + sipka(orit, p && p.prices && p.prices.orit) : "zatím není";
-  const b = s.banks || {};
-  const kap = (x) => (!x ? "–" : (x.failed ? "pád" : cis(x.capital, 1) + (x.insolvent ? "!" : "")));
-  $("d-banky").textContent = `${kap(b.K)} / ${kap(b.AUR)}`;
-  const cyklus = window.ARDAN_CYKLUS;
-  $("faze-popis").textContent = cyklus ? (cyklus.faze[cyklus.podle_enginu[s.phase]] || "") : "";
-  if (s.union && s.union.name) hra.jmena.C = s.union.name;
-}
-
-/* ------------------------------ mapa ------------------------------ */
-
-const SVG = "http://www.w3.org/2000/svg";
-function el(nazev, atributy, rodic) {
-  const e = document.createElementNS(SVG, nazev);
-  for (const [k, v] of Object.entries(atributy)) e.setAttribute(k, v);
-  if (rodic) rodic.appendChild(e);
-  return e;
-}
-
-const ZEME = "#FBFBFC";
-const HRAC_RGB = { A: [43, 74, 140], B: [186, 84, 74] };
-const TMAVA = { A: "#1a2d57", B: "#6e2a24" };
-const UNIE_VYPLN = "#6f9e73";
-const INKOUST = "#22252A";
-const LINKA = "#6E7680";
-const LOD = "M-7,0 L7,0 L4,3.5 L-4,3.5 Z M0,0 L0,-8 L5,-2 Z";
-const rgba = (pid, a) => `rgba(${HRAC_RGB[pid].join(",")},${a.toFixed(3)})`;
-
-function polomer(st) {
-  const w = Math.max(0, (st.wealth || 0) + (st.paper_wealth || 0));
-  return Math.max(2.5, 11 * Math.sqrt(w / hra.rMax));
-}
-
-function drahaD(body) { return "M" + body.map((q) => q.join(",")).join(" L"); }
-function polyD(kruhy) { return kruhy.map((r) => "M" + r.map((q) => q.join(",")).join(" L") + " Z").join(" "); }
-
-function vzhled(id, st, pakty, gradienty) {
-  /* vypln podle vlivu, status jako obrys */
-  const v = { fill: ZEME, stroke: INKOUST, width: 0.9, poradi: 0 };
-  if (id === "A" || id === "B") { v.fill = rgba(id, 1); return v; }
-  const infA = Math.max(0, (st.influence || {}).A || 0);
-  const infB = Math.max(0, (st.influence || {}).B || 0);
-  const s = st.status || "independent";
-  if (s === "union") v.fill = UNIE_VYPLN;
-  else if (s === "occupied_A" || s === "occupied_B") v.fill = TMAVA[s.slice(-1)];
-  else if (s === "sphere_A" || s === "sphere_B") v.fill = rgba(s.slice(-1), 1);
-  else if (infA > 0 && infB > 0) {
-    const sat = Math.min(Math.max(infA, infB), 10) / 10;
-    const podil = infA / (infA + infB);
-    const gid = `vliv-${id}`;
-    const g = el("linearGradient", { id: gid, x1: 0, y1: 0, x2: 1, y2: 0 }, gradienty);
-    const okraj = 0.06;
-    el("stop", { offset: 0, "stop-color": rgba("A", 1), "stop-opacity": sat }, g);
-    el("stop", { offset: Math.max(0, podil - okraj), "stop-color": rgba("A", 1), "stop-opacity": sat }, g);
-    el("stop", { offset: Math.min(1, podil + okraj), "stop-color": rgba("B", 1), "stop-opacity": sat }, g);
-    el("stop", { offset: 1, "stop-color": rgba("B", 1), "stop-opacity": sat }, g);
-    v.fill = `url(#${gid})`;
-  } else if (infA > 0 || infB > 0) {
-    const pid = infA > 0 ? "A" : "B";
-    v.fill = rgba(pid, Math.min(Math.max(infA, infB), 10) / 10);
-  }
-  // obrysy: sfera > pakt > kandidat > padla rise
-  if (st.kind === "fallen" || hra.druh[id] === "fallen") { v.stroke = "var(--zlata)"; v.width = 2.8; v.poradi = 1; }
-  if (s === "candidate") { v.stroke = BARVA.C; v.width = 3; v.poradi = 2; }
-  if (pakty[id]) { v.stroke = rgba(pakty[id], 1); v.width = 2.6; v.poradi = 3; }
-  if (s === "sphere_A" || s === "sphere_B") { v.stroke = TMAVA[s.slice(-1)]; v.width = 4.5; v.poradi = 4; }
-  return v;
-}
-
-function mapa(s) {
-  const uzemi = $("vrstva-uzemi"), linky = $("vrstva-linky"), staty = $("vrstva-staty"), popisky = $("vrstva-popisky");
-  uzemi.replaceChildren(); linky.replaceChildren(); staty.replaceChildren(); popisky.replaceChildren();
-  const P = hra.pozice;
-  const M = hra.mapa;
-  const gradienty = $("gradienty");
-  gradienty.replaceChildren();
-  const pakty = {};
-  for (const d of s.deals || []) if (d.type === "protect") pakty[d.target] = d.owner;
-  if (M) {
-    el("path", { d: polyD(M.land), fill: ZEME, "fill-rule": "evenodd" }, uzemi);
-    // uzemi s vyraznym obrysem se kresli az nakonec, aby obrys nebyl prekryty sousedem
-    const serazene = M.regions.map((r) => ({ r, v: vzhled(r.id, s.states[r.id] || {}, pakty, gradienty) }))
-      .sort((x, y) => x.v.poradi - y.v.poradi + (hra.vybrany === x.r.id) - (hra.vybrany === y.r.id));
-    for (const { r, v } of serazene) {
-      const p = el("path", { d: polyD(r.polygon), fill: v.fill, stroke: v.stroke, "stroke-width": v.width,
-                             "fill-rule": "evenodd", class: "uzemi", tabindex: 0, role: "button",
-                             "aria-label": r.id in HRACI ? HRACI[r.id] : jm(r.id) }, uzemi);
-      if (hra.vybrany === r.id) p.classList.add("vybrany");
-      p.addEventListener("click", () => { if (!hra.posunuto) vyber(r.id); });
-      p.addEventListener("keydown", (e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); vyber(r.id); } });
-    }
-    for (const h of M.highlands || []) el("path", { d: polyD(h.polygon), fill: "url(#srafy)", stroke: INKOUST, "stroke-width": 0.9, "fill-rule": "evenodd" }, uzemi);
-    for (const b of M.shores || []) el("path", { d: polyD(b.polygon), fill: ZEME, "fill-rule": "evenodd" }, uzemi);
-    el("path", { d: polyD(M.land), fill: "none", stroke: INKOUST, "stroke-width": 1.6, "fill-rule": "evenodd" }, uzemi);
-    for (const t of M.sea_routes || []) {
-      el("path", { d: drahaD(t.path), fill: "none", stroke: LINKA, "stroke-width": 1.2, "stroke-dasharray": "1 5", "stroke-linecap": "round" }, linky);
-      const [x, y, a] = t.ship;
-      el("path", { d: LOD, fill: LINKA, transform: `translate(${x},${y}) rotate(${a > 90 || a < -90 ? a - 180 : a})` }, linky);
-    }
-    for (const k of [...(M.lakes || []), ...(M.highlands || [])]) {
-      if (!k.label_xy) continue;
-      const t = el("text", { x: k.label_xy[0], y: k.label_xy[1], "text-anchor": "middle", class: "krajina" }, popisky);
-      t.textContent = k.name;
-    }
-  }
-  const spoj = (a, b, atr) => {
-    if (!P[a] || !P[b]) return null;
-    return el("line", { x1: P[a][0], y1: P[a][1], x2: P[b][0], y2: P[b][1], ...atr }, linky);
-  };
-  for (const [z, kam] of s.migration || []) {
-    spoj(z, kam, { stroke: LINKA, "stroke-width": 1.1, "marker-end": "url(#sipka)", opacity: 0.8 });
-  }
-  for (const d of s.deals || []) {
-    if (d.type === "trade") spoj(d.owner, d.target, { stroke: LINKA, "stroke-width": 1.2 });
-    else if (d.type === "pressure") spoj(d.owner, d.target, { stroke: BARVA[d.owner] || INKOUST, "stroke-width": 1.5, "stroke-dasharray": "2 5" });
-  }
-  const stred = (a, b) => [(P[a][0] + P[b][0]) / 2, (P[a][1] + P[b][1]) / 2];
-  for (const v of s.invasions || []) {
-    if (spoj(v.attacker, v.target, { stroke: BARVA[v.attacker] || INKOUST, "stroke-width": 3, "stroke-dasharray": "10 7" })) {
-      const [x, y] = stred(v.attacker, v.target);
-      el("text", { x, y: y - 6, "text-anchor": "middle", class: "stitek" }, popisky).textContent = `invaze ${v.turns}/${v.need}`;
-    }
-  }
-  for (const w of s.wars || []) {
-    if (spoj(w.aggressor, w.defender, { stroke: BARVA.B, "stroke-width": 3.5, "stroke-dasharray": "14 8" })) {
-      const [x, y] = stred(w.aggressor, w.defender);
-      el("text", { x, y: y - 8, "text-anchor": "middle", class: "stitek" }, popisky).textContent = "válka";
-    }
-  }
-  for (const [id, st] of Object.entries(s.states)) {
-    if (!P[id]) continue;
-    const [x, y] = P[id];
-    const r = polomer(st);
-    el("circle", { cx: x, cy: y, r, fill: INKOUST }, staty);
-    if ((st.orit || 0) > 0) {
-      const ox = x - 10, oy = y + 13;
-      el("polygon", { points: `${ox},${oy - 6} ${ox + 5},${oy} ${ox},${oy + 6} ${ox - 5},${oy}`, fill: INKOUST }, staty);
-    }
-    const t = el("text", { x: x + r + 4, y: y + 5, class: "jmeno" }, popisky);
-    t.textContent = (id === "A" || id === "B") ? KRATKE[id] : jm(id);
-  }
-}
-
-/* zoom a posun mapy pres viewBox: tlacitka + a −, kolecko mysi, tazeni a sevreni dvema prsty */
-function zoomMapy() {
-  const svg = $("mapa");
-  const ZAKL = { x: 0, y: 0, w: 1000, h: 700 };
-  let vb = { ...ZAKL };
-  const nastav = () => svg.setAttribute("viewBox", `${vb.x} ${vb.y} ${vb.w} ${vb.h}`);
-  const omez = () => {
-    vb.w = Math.min(ZAKL.w, Math.max(ZAKL.w / 5, vb.w));
-    vb.h = vb.w * ZAKL.h / ZAKL.w;
-    vb.x = Math.min(ZAKL.w - vb.w, Math.max(0, vb.x));
-    vb.y = Math.min(ZAKL.h - vb.h, Math.max(0, vb.y));
-  };
-  const priblizit = (k, cx, cy) => {
-    const nw = vb.w / k;
-    vb.x = cx - (cx - vb.x) * (nw / vb.w);
-    vb.y = cy - (cy - vb.y) * (nw / vb.w);
-    vb.w = nw;
-    omez(); nastav();
-  };
-  const bod = (ev) => {
-    const r = svg.getBoundingClientRect();
-    return [vb.x + (ev.clientX - r.left) / r.width * vb.w, vb.y + (ev.clientY - r.top) / r.height * vb.h];
-  };
-  $("zoom-plus").addEventListener("click", () => priblizit(1.5, vb.x + vb.w / 2, vb.y + vb.h / 2));
-  $("zoom-minus").addEventListener("click", () => priblizit(1 / 1.5, vb.x + vb.w / 2, vb.y + vb.h / 2));
-  svg.addEventListener("wheel", (ev) => {
-    if (!ev.ctrlKey && vb.w === ZAKL.w && ev.deltaY > 0) return;   // oddalena mapa nebrzdi posun stranky
-    ev.preventDefault();
-    const [cx, cy] = bod(ev);
-    priblizit(ev.deltaY < 0 ? 1.2 : 1 / 1.2, cx, cy);
-  }, { passive: false });
-  const prsty = new Map();
-  let start = null;
-  svg.addEventListener("pointerdown", (ev) => {
-    prsty.set(ev.pointerId, [ev.clientX, ev.clientY]);
-    hra.posunuto = false;
-    start = { vb: { ...vb }, prsty: new Map(prsty) };
-  });
-  svg.addEventListener("pointermove", (ev) => {
-    if (!prsty.has(ev.pointerId) || !start) return;
-    prsty.set(ev.pointerId, [ev.clientX, ev.clientY]);
-    const r = svg.getBoundingClientRect();
-    if (prsty.size === 1 && vb.w < ZAKL.w) {
-      const [x0, y0] = start.prsty.get(ev.pointerId) || [ev.clientX, ev.clientY];
-      const dx = ev.clientX - x0, dy = ev.clientY - y0;
-      if (Math.abs(dx) + Math.abs(dy) > 4) hra.posunuto = true;
-      vb.x = start.vb.x - dx / r.width * start.vb.w;
-      vb.y = start.vb.y - dy / r.height * start.vb.h;
-      omez(); nastav();
-    } else if (prsty.size === 2 && start.prsty.size === 2) {
-      const [a, b] = [...prsty.values()];
-      const [a0, b0] = [...start.prsty.values()];
-      const d = Math.hypot(a[0] - b[0], a[1] - b[1]), d0 = Math.hypot(a0[0] - b0[0], a0[1] - b0[1]);
-      if (d0 > 0) {
-        hra.posunuto = true;
-        vb = { ...start.vb };
-        const cx = vb.x + ((a0[0] + b0[0]) / 2 - r.left) / r.width * vb.w;
-        const cy = vb.y + ((a0[1] + b0[1]) / 2 - r.top) / r.height * vb.h;
-        priblizit(d / d0, cx, cy);
-      }
-    }
-  });
-  const konec = (ev) => { prsty.delete(ev.pointerId); start = prsty.size ? { vb: { ...vb }, prsty: new Map(prsty) } : null; };
-  svg.addEventListener("pointerup", konec);
-  svg.addEventListener("pointercancel", konec);
-}
-
-function vyber(id) {
-  hra.vybrany = hra.vybrany === id ? null : id;
-  const s = radek(hra.tah);
-  if (s) mapa(s);
-  if (!hra.vybrany) { $("stat").hidden = true; $("horni").classList.remove("otevreno"); return; }
-  panelStatu(hra.vybrany);
-  if (window.matchMedia("(max-width: 599px)").matches) $("stat").scrollIntoView({ behavior: "smooth", block: "nearest" });
-}
-
-async function panelStatu(id) {
-  const box = $("stat");
-  box.hidden = false;
-  $("horni").classList.add("otevreno");
-  const s = radek(hra.tah);
-  const zakl = s && s.states[id];
-  let e = null;
-  try {
-    const snimek = await snimekTahu(hra.tah);
-    e = id in (snimek.state.npc || {}) ? snimek.state.npc[id] : snimek.state.players[id];
-  } catch (err) { e = null; }
-  const radky = [];
-  const bohatstvi = zakl ? (zakl.wealth || 0) + (zakl.paper_wealth || 0) : null;
-  radky.push(["bohatství", cis(bohatstvi, 1) + (zakl && zakl.paper_wealth ? ` (z toho papírové ${cis(zakl.paper_wealth, 1)})` : "")]);
-  if (e) {
-    radky.push(["síla", cis(e.power, 1)]);
-    radky.push(["obyvatelstvo", cis(e.pop, 0)]);
-    const prod = Object.entries(e.prod || {}).filter(([, v]) => Number(v) > 0)
-      .map(([k, v]) => `${STATEK[k] || k} ${cis(v, 1)}`).join(", ");
-    radky.push(["produkce", prod || "–"]);
-    if (e.influence) {
-      radky.push(["vliv Kalvery", cis(e.influence.A, 1), "vliv"]);
-      radky.push(["vliv Ostrogardu", cis(e.influence.B, 1), "vliv"]);
-    }
-    if (e.status) radky.push(["postavení", STATUS[e.status] || e.status, "sféra"]);
-    // v2.0: dluh u bank podle soustav (publikum vidi rozdeleni, hraci jen soucet)
-    const d = e.debt || {};
-    const dl = [["BANKY_K", "kalverské"], ["BANKY_AUR", "Aurelie"], ["BANKA_U", "Unie"]]
-      .filter(([k]) => Number(d[k] || 0) > 0.05).map(([k, n]) => `${n} ${cis(d[k], 1)}`);
-    if (dl.length) radky.push(["dluh u bank", dl.join(" · ")]);
-    const dh = ["A", "B", "C"].filter((k) => Number(d[k] || 0) > 0.05).map((k) => `${jm(k) || HRACI[k] || k} ${cis(d[k], 1)}`);
-    if (dh.length) radky.push(["dluh u hráčů", dh.join(" · ")]);
-  }
-  if (id === "A" && s && s.banks && s.banks.K) {
-    const k = s.banks.K;
-    radky.push(["kalverské banky", k.failed ? "zkrachovaly" : `kapitál ${cis(k.capital, 1)}, pohledávky ${cis(k.claims, 1)}, ` +
-      `dividenda ${cis(k.dividend, 2)}, politika ${k.policy === "tight" ? "přísná" : "běžná"}${k.insolvent ? ", insolvence" : ""}`]);
-  }
-  // v1.11: ukazatele pro publikum u vsech statu (summary.json, pro starsi tahy ze snimku)
-  const ind = zakl && zakl.goods ? zakl : (e ? {
-    goods: { stock: (e.stock || {}).goods, vyroba: e.goods_out, potreba: (e.need || {}).goods },
-    industry: e.industry, law: e.law, tech: e.tech } : null);
-  if (ind && id !== "C") {
-    const g = ind.goods || {};
-    const sur = ind.suroviny || (e ? surovinyZeSnimku(e) : {});
-    let vydrzi = Infinity, omezuje = "";
-    for (const res of ["grain", "oil", "metal"]) {
-      const r = sur[res];
-      if (!r) continue;
-      radky.push([STATEK[res], `zásoba ${cis(r.stock, 1)}, výroba ${cis(r.vyroba, 1)}, potřeba ${cis(r.potreba, 1)}`]);
-      const chybi = Number(r.potreba || 0) - Number(r.vyroba || 0);
-      if (chybi > 1e-9) {
-        const tahu = Math.max(0, Number(r.stock || 0)) / chybi;
-        if (tahu < vydrzi) { vydrzi = tahu; omezuje = STATEK[res]; }
-      }
-    }
-    if (Object.keys(sur).length) {
-      radky.push(["vydrží bez dovozu", vydrzi === Infinity ? "neomezeně"
-        : `${Math.floor(vydrzi)} ${tahuSlovo(Math.floor(vydrzi))} (${omezuje})`]);
-    }
-    radky.push(["zboží (goods)", `zásoba ${cis(g.stock, 1)}, výroba ${cis(g.vyroba, 1)}, potřeba ${cis(g.potreba, 1)}`, "zboží (goods)"]);
-    radky.push(["průmysl", cis(ind.industry, 2), "průmysl"]);
-    radky.push(["právo", cis(ind.law, 2), "právo"]);
-    radky.push(["technologie", cis(ind.tech, 2), "technologie"]);
-  }
-  if (e) {
-    const namorni = ((hra.mapa && hra.mapa.sea_links) || []).filter((p) => p.includes(id))
-      .map((p) => { const druhy = p[0] === id ? p[1] : p[0]; return druhy in KRATKE ? KRATKE[druhy] : jm(druhy); });
-    if (namorni.length) radky.push(["námořní spojení", namorni.join(", ")]);
-    if (e.kind === "fallen") radky.push(["", "padlá říše"]);
-    if (e.coups) radky.push(["pády vlády", cis(e.coups, 0)]);
-  }
-  box.innerHTML = `<button type="button" class="zavrit" aria-label="Zavřít panel státu">zavřít</button><h3>${esc(id in HRACI ? HRACI[id] : jm(id))}</h3>
-    <table>${radky.map(([k, v, p]) => `<tr><td>${esc(k)}${p ? vys(p) : ""}</td><td>${esc(v)}</td></tr>`).join("")}</table>`;
-  box.querySelector("button").addEventListener("click", () => vyber(id));
-}
-
-/* domaci akce hrace (v1.11): vlastni radek s vysledkem podle udalosti enginu */
-function domaciAkce(pid, m, snimek) {
-  const d = m.domestic_action;
-  if (!d || !d.type) return '<p class="popis">Domácí akce</p><p class="ticho">V tomto kole žádná.</p>';
-  const ev = (snimek.events || []).filter((e) => e.player === pid);
-  const hotovo = { arm: "arm", explore: "explore" }[d.type] || `${d.type}_done`;
-  let vysledek = "nepřevzata", slaby = true;
-  if (ev.some((e) => e.kind === hotovo)) { vysledek = "provedena"; slaby = false; }
-  else {
-    const odl = ev.find((e) => (e.kind === "investment_postponed" || e.kind === "investment_cancelled") && e.type === d.type);
-    if (odl) { vysledek = odl.kind === "investment_postponed" ? "odložena" : "propadla"; slaby = odl.kind !== "investment_postponed"; }
-    else if ((snimek.actions || []).some((a) => a.player === pid && a.slot === "domestic")) { vysledek = "zadána"; slaby = false; }
-    const duvod = odl && odl.reason ? `<span class="duvod"> ${esc(odl.reason)}</span>` : "";
-    return `<p class="popis">Domácí akce</p><ul class="seznam"><li>${esc(akce(d))}${stitek(vysledek, slaby)}${duvod}</li></ul>`;
-  }
-  return `<p class="popis">Domácí akce</p><ul class="seznam"><li>${esc(akce(d))}${stitek(vysledek, slaby)}</li></ul>`;
-}
-
-/* suroviny ze snimku tahu, kdyz je summary.json jeste nema: efektivni vyroba podle 4.1 */
-function surovinyZeSnimku(e) {
-  const out = {};
-  const tech = Number(e.tech || 0), pop = Number(e.pop || 0), start = Number(e.pop_start || 0) || 100;
-  for (const res of ["grain", "oil", "metal"]) {
-    out[res] = { stock: (e.stock || {})[res], vyroba: Number((e.prod || {})[res] || 0) * (1 + tech / 20) * (pop / start),
-                 potreba: (e.need || {})[res] };
-  }
-  return out;
-}
-const tahuSlovo = (n) => (n === 1 ? "kolo" : (n >= 2 && n <= 4 ? "kola" : "kol"));
-
-/* ------------------------------ tah ------------------------------ */
-
-function akce(a) {
-  const cil = jm(a.target);
-  const res = STATEK[a.res] || a.res || "";
-  switch (a.type) {
-    case "trade_offer": return `Nabídka obchodu: ${res} ${cis(a.qty, 1)} jednotek, ${cil}, ${cis(a.price_per_unit, 2)}`;
-    case "loan": return `Půjčka: ${cil}, ${cis(a.amount, 1)}`;
-    case "pressure": return `Sankce: ${cil}` + (a.demand ? ` („${a.demand}“)` : "");
-    case "protect": return `Vojenský pakt: ${cil}`;
-    case "invade": return `Invaze: ${cil}`;
-    case "invest_tech": return `Investice do technologie: ${cil || "vlastní stát"}`;
-    case "invest_law": return `Investice do institucí: ${cil || "vlastní stát"}`;
-    case "invest_industry": return `Investice do průmyslu: ${cil || "vlastní stát"}`;
-    case "invest_prod": return `Investice do těžby: ${res}, ${cil || "vlastní stát"}`;
-    case "explore": return "Průzkum ložisek";
-    case "arm": return `Zbrojení: ${cis(a.amount ?? 8, 1)}`;
-    case "cancel": return a.retreat ? "Ústup z války" : `Zrušení ${a.deal_id || ""}`.trim();
-    case "message": return `Zpráva pro ${cil}` + (a.text ? `: „${a.text}“` : "");
-    case "admit": return `Nabídka členství v Unii: ${cil}`;
-    case "union_fund": return `Převod z fondu Unie: ${cil}, ${cis(a.amount, 1)}`;
-    case "accept_offer": return `Přijetí nabídky ${a.offer_id || ""}`.trim();
-    case "set_tariff": return `Sazba cla: ${cis((a.rate || 0) * 100, 0)} %`;
-    case "declare_war": return `Vyhlášení války: ${cil}`;
-    case "kapitalizace_banky": return `Kapitál bance Unie: ${cis(a.amount, 1)}`;
-    case "refinancovani": return `Refinancování dluhu: ${cil} u ${a.creditor === "BANKY_AUR" ? "bank Aurelie" : "kalverských bank"}`;
-    case "moratorium": return `Moratorium na splátky: ${a.target === "vsichni" ? "všichni členové" : cil}`;
-    case "zprisnit_uvery": return "Zpřísnění úvěrů kalverských bank";
-    case "uvolnit_uvery": return "Uvolnění úvěrů kalverských bank";
-    case "sanace_bank": return "Sanace kalverských bank";
-    default: return a.type || "akce";
-  }
-}
-
-/* duverny zapis: vychozi rozbaleny; kdo ho sbali, ma ho sbaleny i dal (localStorage) */
-const KLIC_ZAPIS = "ardan-zapis-sbaleny";
-function zapisRozbaleny() {
-  try { return window.localStorage.getItem(KLIC_ZAPIS) !== "1"; } catch (e) { return true; }
-}
-
-function panelTahu(snimek, t) {
-  const box = $("tah");
-  const tahy = snimek.turns || {};
-  const hraci = Object.keys(tahy).sort();
-  if (!hraci.length) { box.innerHTML = '<p class="ticho">V tomto kole nikdo nejednal.</p>'; return; }
-  const plog = (snimek.state && snimek.state.private_log) || {};
-  const otevreno = zapisRozbaleny() ? " open" : "";
-  box.innerHTML = hraci.map((pid) => {
-    const m = tahy[pid] || {};
-    const jmeno = pid === "C" ? (hra.jmena.C || "Unie") : (HRACI[pid] || pid);
-    const platne = (snimek.actions || []).filter((a) => a.player === pid);
-    const seznam = platne.length ? platne : (m.actions || []);
-    const vyrazene = (snimek.rejected || []).filter((r) => r.player === pid);
-    const npc = (plog[pid] || []).filter((r) => Number(r.turn) === t);
-    let html = `<div class="hrac" style="--hrac:${BARVA[pid] || "var(--steel)"}"><h3><span class="ctverec" style="background:${BARVA[pid] || "var(--steel)"}"></span>${esc(jmeno)}</h3>`;
-    const pokusy = m.attempts ? ` Počet pokusů: ${cis(m.attempts, 0)}.` : "";
-    // v1.13: zanr vystoupeni, otazky novinaru a udalost stanoviska
-    const g = m.genre || null;
-    if (g && !m.silent) {
-      const nazev = g.id === 8 ? "Stanovisko k události" : g.name;
-      html += `<p class="zanr hud">${esc(nazev)}${g.id === 8 && g.event ? `: ${esc(g.event)}` : ""}${g.chair ? `, předsedá ${esc(g.chair)}` : ""}</p>`;
-      if ([2, 3, 7].includes(g.id) && (g.questions || []).length) {
-        html += `<div class="otazka"><span class="hud">${g.questions.length > 1 ? "Otázky novinářů" : "Otázka novináře"}</span>` +
-                g.questions.map((q) => `<p>${esc(q)}</p>`).join("") + "</div>";
-      }
-    }
-    if (m.silent) html += `<p class="ticho">Vláda nevydala prohlášení.${pokusy}</p>`;
-    else if (m.mlci) html += `<p class="ticho">${esc(m.public_statement)} (vláda se rozhodla mlčet)</p>`;
-    else if (g && g.id === 6) html += `<p class="ticho">${esc(m.public_statement || "Vláda dnes nevystoupila.")}</p>`;
-    else html += `<p class="projev" style="border-left-color:${BARVA[pid] || "var(--graphite)"}">${esc(m.public_statement)}</p>`;
-    // v2.0: duverny_zapis (starsi snimky private_reasoning); pouziti zalozniho modelu vzdy s poznamkou
-    const zapis = m.duverny_zapis || m.private_reasoning;
-    if (m.zaloha) html += `<p class="hud zaloha">${esc(m.zaloha.poznamka || ("odpověděl záložní model " + m.zaloha.model))}</p>`;
-    if (zapis) {
-      html += `<details class="zapis"${otevreno}><summary class="hud">Důvěrný zápis vlády · soupeř nevidí</summary><p>${esc(zapis)}</p></details>`;
-    } else if (!m.silent) {
-      html += '<p class="ticho">Důvěrný zápis nezaznamenán (technická chyba, odpověď hráče dorazila neúplná).</p>';
-    }
-    if (m.poznamky_pro_pristi_tah) {
-      html += `<details class="spis"><summary class="hud">Poznámky do spisu</summary><p>${esc(m.poznamky_pro_pristi_tah)}</p></details>`;
-    }
-    const zahranicni = seznam.filter((a) => a.slot !== "domestic");
-    if (zahranicni.length) {
-      html += `<p class="popis">Akce</p><ul class="seznam">${zahranicni.map((a) => `<li>${esc(akce(a))}</li>`).join("")}</ul>`;
-    } else if (!m.silent && !m.domestic_action) {
-      html += '<p class="ticho">Bez akcí (technická chyba, odpověď hráče dorazila neúplná).</p>';
-    }
-    if ((pid === "A" || pid === "B") && !m.silent) html += domaciAkce(pid, m, snimek);
-    if (vyrazene.length) {
-      html += `<p class="popis">Vyřazeno rozhodčím</p><ul class="seznam">${vyrazene.map((r) =>
-        `<li>${esc(r.action ? akce(r.action) : "akce")}${stitek("vyřazeno", true)}<span class="duvod"> ${esc(r.reason)}</span></li>`).join("")}</ul>`;
-    }
-    if (npc.length) {
-      html += `<p class="popis">Odpovědi států</p><ul class="seznam">${npc.map((r) => {
-        const kdo = r.npc ? jm(r.npc) : "";
-        const co = AKCE_KRATCE[r.action] || r.action || "";
-        const slaby = r.outcome === "odmitnuto" || r.outcome === "vyrazeno" || r.outcome === "prednost_druhe_strany";
-        return `<li>${esc(kdo)}${co ? ` (${esc(co)})` : ""}${stitek(VYSLEDEK[r.outcome] || r.outcome, slaby)}` +
-               (r.outcome === "protinavrh" ? vys("protinávrh") : "") +
-               (r.reason && r.outcome !== "prednost_druhe_strany" ? ` <span class="duvod">„${esc(r.reason)}“</span>` : "") + "</li>";
-      }).join("")}</ul>`;
-    }
-    return html + "</div>";
-  }).join("") + radaUnie(radek(t));
-  box.querySelectorAll("details.zapis").forEach((d) => d.addEventListener("toggle", () => {
-    try { window.localStorage.setItem(KLIC_ZAPIS, d.open ? "0" : "1"); } catch (e) { /* bez ulozeni */ }
-  }));
-}
-
-/* v2.0: hlasovani rady Unie, spolecna obrana a moratorium v kole */
-function radaUnie(s) {
-  const u = (s && s.union) || {};
-  let html = "";
-  const hl = u.votes || [];
-  if (hl.length) {
-    html += `<p class="popis">Rada Unie</p><ul class="seznam">${hl.map((v) => {
-      const proti = (v.proti || []).map(jm).join(", ");
-      return `<li>${esc(akce(v.action || {}))}${stitek(v.approved ? "schváleno" : "odmítnuto", !v.approved)}` +
-        (proti ? ` <span class="duvod">proti ${esc(proti)}</span>` : ' <span class="duvod">nikdo proti</span>') + "</li>";
-    }).join("")}</ul>`;
-  }
-  const ob = u.defense || [];
-  if (ob.length) {
-    html += `<p class="popis">Společná obrana</p><ul class="seznam">${ob.map((d) =>
-      `<li>${esc(jm(d.attacker) || HRACI[d.attacker] || d.attacker)} napadá ${esc((d.targets || []).map(jm).join(", "))}, obrana od kola ${cis(d.since, 0)}</li>`).join("")}</ul>`;
-  }
-  const mo = Object.entries(u.moratoria || {});
-  if (mo.length) {
-    html += `<p class="popis">Moratorium</p><ul class="seznam">${mo.map(([n, m]) =>
-      `<li>${esc(jm(n))}: kola ${cis(m.from, 0)} až ${cis(m.until, 0)}</li>`).join("")}</ul>`;
-  }
-  return html ? `<div class="hrac"><h3><span class="ctverec" style="background:${BARVA.C}"></span>${esc(hra.jmena.C || "Unie")}: rada a obrana</h3>${html}</div>` : "";
-}
-
-function zpravy(s) {
-  const z = s.news || [];
-  $("zpravy").innerHTML = z.length ? z.map((x) => `<p>${esc(x)}</p>`).join("") : '<p class="ticho">Žádné zprávy.</p>';
-}
-
-/* kronika: kdyz kronika roku jeste neni, ukaze se posledni hotova */
-const kronikyCache = new Map();
-async function kronika(s) {
-  const den = s.day;
-  let zaznam = hra.kroniky.find((k) => Number(k.day) === Number(den));
-  let posledni = false;
-  if (!zaznam) {
-    zaznam = hra.kroniky.filter((k) => Number(k.day) < Number(den)).sort((a, b) => Number(b.day) - Number(a.day))[0];
-    posledni = Boolean(zaznam);
-  }
-  const box = $("kronika");
-  if (!zaznam) {
-    $("kronika-nadpis").textContent = "Kronika";
-    $("kronika-cas").textContent = "";
-    box.innerHTML = '<p class="ticho">Kronika ještě nevyšla; píše se po zimním kole.</p>';
-    return;
-  }
-  const rok = zaznam.day;
-  $("kronika-nadpis").textContent = "Kronika";
-  $("kronika-cas").textContent = `Kronika · rok ${rok}` + (posledni ? " (poslední hotová)" : (zaznam.typ !== "roční" ? ` (${zaznam.typ})` : "")) +
-    (zaznam.real ? ` · ${zaznam.real}` : "");
-  if (!kronikyCache.has(zaznam.file)) kronikyCache.set(zaznam.file, nacti(`chronicle/${zaznam.file}`));
-  try {
-    const text = await kronikyCache.get(zaznam.file);
-    if (radek(hra.tah) && radek(hra.tah).day !== den) return;
-    box.innerHTML = window.marked ? marked.parse(text) : `<pre>${esc(text)}</pre>`;
-  } catch (e) {
-    box.innerHTML = '<p class="chyba">Kroniku se nepodařilo načíst.</p>';
-  }
-}
-
-start();
-</script>
+<script type="module" src="mapa.js"></script>
 </body>
 </html>
