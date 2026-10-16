@@ -92,6 +92,8 @@ projevů nebo pro bublinu kola; snímky se drží v paměti stránky. `web_data.
 - Sdílení: `<title>` se mění na „Ardan · kolo N“ (statický titulek pro náhledy je „Ardan · hra od Kája Industries“,
   protože roboti sociálních sítí JavaScript nespouštějí), meta description, Open Graph a `og.png` 1200 × 630
   (snímek `og-1200x630` z `tools/snimky_mapy.mjs`, zkopírovaný do `web/og.png`), favicon `brand/kaja-k.svg`.
+  `og:url` a `og:image` jsou absolutní adresy na `https://cvaliik.github.io/diplomacie-agentu/web/` (sítě relativní
+  cestu u náhledu nenačtou); je to jediná absolutní adresa na webu.
 - Kontrast: Steel `#6E7680` na skle nad mapou vycházel 3,5 až 4,5:1. Sklo je na mapě hustší (86 % bílé) a vedlejší
   text na něm má `#5A616B`: nejhorší případ (sklo nad tmavou modrou okupace) 4,8:1, nad světlou mapou 5,9 až 6,2:1.
 - `prefers-reduced-motion`: přechod barev mezi koly okamžitě, průvodce bez přechodů, posun na kartu bez animace.
@@ -101,7 +103,6 @@ projevů nebo pro bublinu kola; snímky se drží v paměti stránky. `web_data.
 - Obchody, pakty, invaze, války a migrace jako čáry nebo oblouky mezi městy.
 - Animovaný přechod kamery, tlačítka zoomu a resetu pohledu.
 - Měření fps na skutečném mobilu a případné zjednodušení stínů.
-- `og:image` je relativní cesta; některé sítě chtějí absolutní adresu (doplnit, až bude jistá adresa GitHub Pages).
 
 Screenshoty: `node tools/snimky_mapy.mjs http://localhost:8765/web/ [výběr]` (lokální server nad kořenem repa;
 výběr je regulární výraz na jméno snímku, např. `panel|projevy`). Textová verze a O hře: `tools/snimky_webu.mjs`.
